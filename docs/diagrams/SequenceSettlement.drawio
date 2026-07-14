@@ -1,0 +1,21 @@
+<mxfile host="app.diagrams.net" modified="2026-07-13T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="sequence-settlement" name="Confirm Settlement">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="u" value="Miembro" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;fillColor=#ffffff;strokeColor=#000000" vertex="1" parent="1"><mxGeometry x="50" y="40" width="90" height="620" as="geometry"/></mxCell>
+        <mxCell id="c" value="Cliente" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1"><mxGeometry x="230" y="40" width="100" height="620" as="geometry"/></mxCell>
+        <mxCell id="api" value="Cloud Function" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1"><mxGeometry x="430" y="40" width="110" height="620" as="geometry"/></mxCell>
+        <mxCell id="use" value="ConfirmSettlement&#xa;Use Case" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1"><mxGeometry x="640" y="40" width="120" height="620" as="geometry"/></mxCell>
+        <mxCell id="db" value="Firestore" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="1"><mxGeometry x="870" y="40" width="100" height="620" as="geometry"/></mxCell>
+        <mxCell id="q1" value="Confirmar liquidación" style="endArrow=block;html=1" edge="1" parent="1" source="u" target="c"><mxGeometry relative="1" as="geometry"><mxPoint x="170" y="155" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q2" value="POST /settlements/{id}/confirm" style="endArrow=block;html=1" edge="1" parent="1" source="c" target="api"><mxGeometry relative="1" as="geometry"><mxPoint x="390" y="220" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q3" value="Autorizar y validar versión" style="endArrow=block;html=1" edge="1" parent="1" source="api" target="use"><mxGeometry relative="1" as="geometry"><mxPoint x="600" y="285" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q4" value="Transacción: validar deuda y confirmar" style="endArrow=block;html=1" edge="1" parent="1" source="use" target="db"><mxGeometry relative="1" as="geometry"><mxPoint x="830" y="350" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q5" value="Actualizar proyección, auditoría, evento" style="endArrow=block;html=1;dashed=1" edge="1" parent="1" source="db" target="use"><mxGeometry relative="1" as="geometry"><mxPoint x="810" y="415" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q6" value="200 CONFIRMED" style="endArrow=block;html=1;dashed=1" edge="1" parent="1" source="use" target="api"><mxGeometry relative="1" as="geometry"><mxPoint x="590" y="480" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="q7" value="Balances actualizados" style="endArrow=block;html=1;dashed=1" edge="1" parent="1" source="api" target="c"><mxGeometry relative="1" as="geometry"><mxPoint x="380" y="545" as="targetPoint"/></mxGeometry></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,27 @@
+<mxfile host="app.diagrams.net" modified="2026-07-13T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="database" name="Firestore Schema">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+        <mxCell id="users" value="users/{userId}&#xa;displayName · email · preferences" style="shape=swimlane;html=1;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1"><mxGeometry x="40" y="60" width="190" height="90" as="geometry"/></mxCell>
+        <mxCell id="groups" value="groups/{groupId}&#xa;name · currency · profile" style="shape=swimlane;html=1;rounded=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="1"><mxGeometry x="360" y="60" width="200" height="90" as="geometry"/></mxCell>
+        <mxCell id="members" value="groupMembers/{id}&#xa;groupId · userId · role · status" style="shape=swimlane;html=1;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1"><mxGeometry x="40" y="230" width="220" height="90" as="geometry"/></mxCell>
+        <mxCell id="expenses" value="expenses/{expenseId}&#xa;groupId · paidBy · money · profileVersion" style="shape=swimlane;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1"><mxGeometry x="360" y="220" width="240" height="100" as="geometry"/></mxCell>
+        <mxCell id="splits" value="expenseSplits/{splitId}&#xa;expenseId · userId · amount" style="shape=swimlane;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1"><mxGeometry x="700" y="220" width="210" height="90" as="geometry"/></mxCell>
+        <mxCell id="settlements" value="settlements/{id}&#xa;groupId · from · to · status" style="shape=swimlane;html=1;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="1"><mxGeometry x="360" y="400" width="220" height="90" as="geometry"/></mxCell>
+        <mxCell id="balances" value="balances/{id}&#xa;groupId · userId · balance" style="shape=swimlane;html=1;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="1"><mxGeometry x="700" y="400" width="210" height="90" as="geometry"/></mxCell>
+        <mxCell id="profiles" value="calculationProfiles/{id}&#xa;strategies · version" style="shape=swimlane;html=1;rounded=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="1"><mxGeometry x="700" y="60" width="210" height="90" as="geometry"/></mxCell>
+        <mxCell id="audit" value="auditLogs/{id}&#xa;entity · operation · actor" style="shape=swimlane;html=1;rounded=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="1"><mxGeometry x="960" y="300" width="180" height="90" as="geometry"/></mxCell>
+        <mxCell id="a1" style="endArrow=block;html=1" edge="1" parent="1" source="users" target="members"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a2" style="endArrow=block;html=1" edge="1" parent="1" source="groups" target="members"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a3" style="endArrow=block;html=1" edge="1" parent="1" source="groups" target="expenses"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a4" style="endArrow=block;html=1" edge="1" parent="1" source="expenses" target="splits"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a5" style="endArrow=block;html=1" edge="1" parent="1" source="groups" target="settlements"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a6" style="endArrow=block;html=1" edge="1" parent="1" source="groups" target="balances"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a7" style="endArrow=block;html=1" edge="1" parent="1" source="groups" target="profiles"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a8" style="endArrow=block;html=1;dashed=1" edge="1" parent="1" source="expenses" target="audit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="a9" style="endArrow=block;html=1;dashed=1" edge="1" parent="1" source="settlements" target="audit"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
