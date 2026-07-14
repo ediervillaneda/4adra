@@ -37,14 +37,14 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 
 ## Documentación de dominio (`domain/`)
 
-- [ ] `domain/Expense.md`
-- [ ] `domain/Group.md`
-- [ ] `domain/Member.md`
-- [ ] `domain/Settlement.md`
-- [ ] `domain/Balance.md`
-- [ ] `domain/Money.md`
-- [ ] `domain/Currency.md`
-- [ ] `domain/Events.md`
+- [x] `domain/Expense.md`
+- [x] `domain/Group.md`
+- [x] `domain/Member.md`
+- [x] `domain/Settlement.md`
+- [x] `domain/Balance.md`
+- [x] `domain/Money.md`
+- [x] `domain/Currency.md`
+- [x] `domain/Events.md`
 
 ## Diagramas (`diagrams/`)
 
