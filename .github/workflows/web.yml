@@ -1,0 +1,66 @@
+name: Web CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/web.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/web.yml'
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-build:
+    name: Lint · Pruebas · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (web/package.json)
+        id: scaffold
+        run: |
+          if [ -f web/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::web/package.json no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
+          fi
+
+      - name: Configurar Node.js
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependencias (npm ci)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: npm ci
+
+      - name: Lint (Angular ESLint)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: npm run lint
+
+      - name: Pruebas unitarias con cobertura
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: npm test -- --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Análisis de dependencias (npm audit)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build de producción
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: npm run build -- --configuration=production

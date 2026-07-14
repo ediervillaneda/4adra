@@ -106,13 +106,13 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-008 — Stack y estructura técnica de Fase 0
 
 **Fecha:** 2026-07-13
-**Estado:** Proposed
+**Estado:** Accepted (confirmado por el responsable del proyecto el 2026-07-13)
 
-**Contexto:** `Roadmap.md` Fase 0 exige una base repetible (repositorio, entornos, CI) pero ningún documento fijaba versiones ni herramientas concretas, bloqueando el primer commit de código.
+**Contexto:** `Roadmap.md` Fase 0 exige una base repetible (repositorio, entornos, CI) pero ningún documento fijaba versiones ni herramientas concretas, bloqueando el primer commit de código. El repositorio local no tenía `git remote` configurado, así que el hosting/CI tampoco estaba decidido.
 
-**Decisión:** Un solo repositorio con tres directorios de nivel superior e independientes (`backend/`, `web/`, `android/`), cada uno con su propio gestor de dependencias y lockfile — no se fuerza una herramienta de monorepo (Nx/Turborepo) porque Gradle (Android) y npm (backend/web) no comparten orquestación real y añadirla hoy sería complejidad sin beneficio, conforme a la preferencia de `AGENTS.md` por la alternativa más simple. Versiones de referencia: Node.js LTS activa vigente al iniciar Fase 0 (fijada en `backend/.nvmrc` y `web/.nvmrc` al crearlos), npm con lockfile (`package-lock.json`) como gestor por defecto, TypeScript estricto (`strict: true`), Angular en su versión LTS vigente, Kotlin/Gradle con el Android Gradle Plugin estable más reciente al iniciar el cliente Android. CI: GitHub Actions, con un workflow por directorio (`backend`, `web`, `android`) que ejecuta el pipeline descrito en `Deployment.md`.
+**Decisión:** Repositorio en GitHub con GitHub Actions como CI (un workflow por directorio: `backend`, `web`, `android`, ejecutando el pipeline de `Deployment.md`). Un solo repositorio con tres directorios de nivel superior e independientes (`backend/`, `web/`, `android/`), cada uno con su propio gestor de dependencias y lockfile — sin herramienta de monorepo (Nx/Turborepo): Gradle (Android) y npm (backend/web) no comparten orquestación real y añadirla hoy sería complejidad sin beneficio, conforme a la preferencia de `AGENTS.md` por la alternativa más simple. Gestor de paquetes: npm con lockfile (`package-lock.json`) para `backend/` y `web/`. Node.js: se deja como "LTS activa vigente" en vez de fijar un número ahora — se confirma contra nodejs.org en el momento de crear `backend/.nvmrc`/`web/.nvmrc` durante el scaffolding real, para no quedar desactualizado. TypeScript estricto (`strict: true`), Angular en su versión LTS vigente, Kotlin/Gradle con el Android Gradle Plugin estable más reciente al iniciar el cliente Android.
 
-**Consecuencias:** Cada plataforma puede evolucionar su toolchain de forma independiente sin coordinarse con una herramienta de monorepo. Las versiones exactas deben confirmarse y fijarse en los archivos reales (`package.json`, `.nvmrc`, Gradle Wrapper) en cuanto se cree cada directorio; este ADR fija el criterio, no el número exacto, para no quedar obsoleto. Estado `Proposed` porque son valores por defecto razonables, no una decisión de negocio confirmada explícitamente.
+**Consecuencias:** Cada plataforma puede evolucionar su toolchain de forma independiente sin coordinarse con una herramienta de monorepo. Las versiones exactas de Node/Angular/Kotlin/AGP deben fijarse en los archivos reales (`package.json`, `.nvmrc`, Gradle Wrapper) en cuanto se cree cada directorio — este ADR fija el criterio (npm, GitHub Actions, carpetas independientes), no el número de versión exacto. Repositorio remoto ya creado y conectado (`https://github.com/ediervillaneda/4adra`). Workflows de GitHub Actions creados en `.github/workflows/` (`backend.yml`, `web.yml`, `android.yml`, más `openapi-lint.yml` y `firebase-config.yml`, que validan hoy mismo `docs/api/openapi.yaml` y `firestore.rules`/`storage.rules` sin necesitar scaffolding de código); los tres primeros se activan automáticamente cuando exista `package.json`/`gradlew` real en cada carpeta.
 
 ---
 
@@ -169,6 +169,17 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 **Consecuencias:** Estos valores quedan reflejados en `Security.md`, `api/Expenses.md`, `api/Members.md`, `api/Reports.md` y `ApiSpecification.md`. Estado `Proposed` para los valores sin base legal confirmada (retención y anonimización), que deben validarse con asesoría legal antes de lanzamiento a producción; el resto (`Accepted` en la práctica) son parámetros técnicos de bajo riesgo y fácilmente ajustables.
 
 ---
+
+## ADR-012 — Nombre de paquete Android
+
+**Fecha:** 2026-07-13
+**Estado:** Proposed
+
+**Contexto:** Ni Android ni Firebase permiten identificadores cuyo primer segmento empiece con dígito, así que "4adra" no es válido como `applicationId`. El project ID de Firebase ya resolvió esto usando `adra-54655` (sin el "4"). El nombre de paquete es esencialmente permanente una vez publicado en Play Store.
+
+**Decisión:** `com.adra.app`, siguiendo la misma convención que ya adoptó el project ID de Firebase, para que ambos identificadores cuenten la misma historia.
+
+**Consecuencias:** Debe coincidir exactamente con el `applicationId` de Gradle y con el nombre de la app Android registrada dentro del proyecto Firebase `adra-54655` al generar `google-services.json`. Estado `Proposed` hasta confirmarse en el momento de crear el proyecto Gradle real (Fase 0).
 
 ## Cómo añadir una decisión
 

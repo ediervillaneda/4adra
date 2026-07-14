@@ -1,0 +1,101 @@
+name: Android CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-build:
+    name: Lint · Pruebas unitarias · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (android/gradlew)
+        id: scaffold
+        run: |
+          if [ -f android/gradlew ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::android/gradlew no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
+          fi
+
+      - name: Configurar JDK
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cachear dependencias de Gradle
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+        # ktlint/detekt según docs/CodingStandards.md
+      - name: Lint (ktlint/detekt)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: android
+        run: ./gradlew lint ktlintCheck detekt
+
+      - name: Pruebas unitarias (JUnit + MockK)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: android
+        run: ./gradlew test
+
+      - name: Build
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: android
+        run: ./gradlew build
+
+  instrumented-tests:
+    name: Pruebas instrumentadas (Compose UI Test)
+    runs-on: ubuntu-latest
+    needs: lint-test-build
+    # Solo en push a main: los emuladores de Android son lentos y consumen
+    # muchos minutos de CI; no se ejecutan en cada PR.
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (android/gradlew)
+        id: scaffold
+        run: |
+          if [ -f android/gradlew ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configurar JDK
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Habilitar KVM para el emulador
+        if: steps.scaffold.outputs.exists == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Pruebas instrumentadas (connectedAndroidTest)
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          working-directory: android
+          script: ./gradlew connectedAndroidTest

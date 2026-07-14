@@ -1,7 +1,7 @@
 {
   "projects": {
-    "development": "4adra-dev",
-    "staging": "4adra-staging",
-    "production": "4adra-prod"
+    "development": "adra-54655",
+    "staging": "adra-54655-staging",
+    "production": "adra-54655-prod"
   }
 }

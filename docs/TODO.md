@@ -79,7 +79,10 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `firestore.indexes.json` — índices compuestos de `DatabaseSchema.md`.
 - [x] `.firebaserc.example` — plantilla de alias de proyecto por entorno (copiar a `.firebaserc`, ignorado por git).
 - [x] `docs/api/openapi.yaml` — contrato HTTP machine-readable, espejo de `ApiSpecification.md`/`api/*.md`.
+- [x] `.github/workflows/backend.yml`, `web.yml`, `android.yml` — CI por plataforma (se omiten sin fallar hasta que exista scaffolding real).
+- [x] `.github/workflows/openapi-lint.yml`, `firebase-config.yml` — validan hoy mismo `docs/api/openapi.yaml` y `firestore.rules`/`storage.rules`/`firestore.indexes.json`, sin necesitar código de aplicación.
 - [ ] `backend/README.md`, `web/README.md`, `android/README.md` — placeholders de estructura; pendiente el scaffolding real (Fase 0).
+- [x] `web/src/environments/environment.ts` — configuración del cliente Firebase del proyecto `development` (`adra-54655`); pendiente restringir la API key en Google Cloud Console (ver checklist Fase 0).
 
 ## Regla de mantenimiento
 

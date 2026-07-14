@@ -17,8 +17,18 @@ Disponer de una base segura y repetible para desarrollo: repositorio, entornos, 
 
 ### Repositorio y entornos
 
-- [ ] Confirmar o ajustar ADR-008 (Node.js LTS exacta, npm vs otro gestor, versión de Angular, versión de Kotlin/AGP) — hoy son valores por defecto propuestos, no confirmados.
-- [ ] Copiar `.firebaserc.example` a `.firebaserc` y sustituir los IDs de proyecto por los reales una vez creados en Firebase Console (`4adra-dev`, `4adra-staging`, `4adra-prod` o los nombres reales).
+- [x] ADR-008 confirmado: GitHub + GitHub Actions, carpetas independientes sin herramienta de monorepo, npm, Node.js "LTS vigente" (número exacto pendiente de fijar al hacer el scaffolding real).
+- [x] Repositorio remoto creado y conectado: `https://github.com/ediervillaneda/4adra`.
+- [x] Workflows de GitHub Actions creados (`.github/workflows/backend.yml`, `web.yml`, `android.yml`) según el pipeline de `docs/Deployment.md`. Cada uno comprueba si existe scaffolding real (`package.json`/`gradlew`) y si no, se omite sin fallar — no bloquean CI mientras las carpetas solo tengan el `README.md` placeholder. Bonus, ya activos hoy sin scaffolding: `openapi-lint.yml` (valida `docs/api/openapi.yaml` con Redocly, verificado localmente con exit 0) y `firebase-config.yml` (valida `firebase.json`/`firestore.indexes.json` como JSON y `firestore.rules`/`storage.rules` arrancando el Emulator Suite con un proyecto demo).
+- [ ] Cuando se cree `backend/package.json`, definir los scripts npm que `backend.yml` ya asume: `format:check`, `lint`, `typecheck`, `test` (con `--coverage`), `test:integration` (pensado para correr dentro de `firebase emulators:exec`), `test:contract` (contra `docs/api/openapi.yaml`), `build`.
+- [ ] Cuando se cree `web/package.json`, definir los scripts que `web.yml` ya asume: `lint`, `test` (Karma/Jest headless), `build`.
+- [ ] Cuando se cree el proyecto Android, confirmar que existen las tareas Gradle que `android.yml` ya asume: `lint`, `ktlintCheck`, `detekt`, `test`, `build`, `connectedAndroidTest`.
+- [ ] Al crear `backend/.nvmrc` y `web/.nvmrc`, confirmar contra nodejs.org cuál es la LTS activa vigente en ese momento y fijarla (ADR-008 deja el criterio, no el número).
+- [x] Proyecto Firebase `development` creado en Firebase Console: `adra-54655` (config de cliente Web ya guardada en `web/src/environments/environment.ts`). Reflejado en `.firebaserc.example`.
+- [ ] Restringir la API key de `adra-54655` en Google Cloud Console (Credentials → Application restrictions → HTTP referrers) al dominio real de la Web una vez se despliegue; hoy no tiene restricción.
+- [ ] Copiar `.firebaserc.example` a `.firebaserc` (real, ignorado por git) apuntando a `adra-54655` para poder desplegar `firestore.rules`/`storage.rules`/`firestore.indexes.json` (tarea ya listada arriba).
+- [ ] Crear los proyectos Firebase `staging` y `production` (separados de `adra-54655`) cuando corresponda, y sus respectivos `environment.staging.ts`/`environment.production.ts` en `web/`.
+- [ ] Registrar la app Android en el proyecto Firebase `adra-54655` con `applicationId` = `com.adra.app` (ver `android/README.md`, ADR-012) y descargar `google-services.json` — no está incluido en la config Web que se compartió.
 - [ ] Crear los tres proyectos Firebase (development, staging, production) descritos en `docs/Deployment.md`, cada uno con Auth, Firestore, Storage y Cloud Messaging habilitados.
 - [ ] Definir plantillas de variables de entorno sin secretos (`.env.example` por plataforma) según `docs/DevelopmentGuide.md`.
 

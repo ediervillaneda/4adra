@@ -1,0 +1,154 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-build:
+    name: Formato · Lint · Tipos · Pruebas · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (backend/package.json)
+        id: scaffold
+        run: |
+          if [ -f backend/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::backend/package.json no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
+          fi
+
+      - name: Configurar Node.js
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias (npm ci)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm ci
+
+      - name: Formato (Prettier)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run format:check
+
+      - name: Lint (ESLint estricto)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run lint
+
+      - name: Comprobación de tipos (tsc --noEmit)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Pruebas unitarias con cobertura (Jest)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm test -- --coverage
+
+      - name: Análisis de dependencias (npm audit)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run build
+
+  emulator-integration:
+    name: Pruebas de integración (Firebase Emulator)
+    runs-on: ubuntu-latest
+    needs: lint-test-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (backend/package.json)
+        id: scaffold
+        run: |
+          if [ -f backend/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de integración."
+          fi
+
+      - name: Configurar Node.js
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias (npm ci)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm ci
+
+      - name: Instalar Firebase CLI
+        if: steps.scaffold.outputs.exists == 'true'
+        run: npm install -g firebase-tools
+
+      - name: Ejecutar pruebas de integración dentro del Firebase Emulator Suite
+        if: steps.scaffold.outputs.exists == 'true'
+        # Se ejecuta desde la raíz del repo porque firebase.json vive ahí.
+        run: |
+          firebase emulators:exec \
+            --project demo-4adra \
+            --only auth,firestore,storage \
+            "npm --prefix backend run test:integration"
+
+  contract-tests:
+    name: Pruebas de contrato (docs/api/openapi.yaml)
+    runs-on: ubuntu-latest
+    needs: lint-test-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar scaffolding (backend/package.json)
+        id: scaffold
+        run: |
+          if [ -f backend/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de contrato."
+          fi
+
+      - name: Configurar Node.js
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias (npm ci)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm ci
+
+      - name: Ejecutar pruebas de contrato contra docs/api/openapi.yaml
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run test:contract

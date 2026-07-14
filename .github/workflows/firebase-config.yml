@@ -1,0 +1,60 @@
+name: Firebase Config Validation
+
+# Valida la configuración de plataforma que ya existe hoy (firebase.json,
+# firestore.rules, storage.rules, firestore.indexes.json) sin necesitar
+# backend/web/android todavía ni un proyecto Firebase real: usa un
+# --project demo-* solo para que los emuladores tengan un ID de proyecto
+# donde cargar las reglas y detectar errores de sintaxis.
+
+on:
+  push:
+    paths:
+      - 'firebase.json'
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - '.github/workflows/firebase-config.yml'
+  pull_request:
+    paths:
+      - 'firebase.json'
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - '.github/workflows/firebase-config.yml'
+
+jobs:
+  validate-json:
+    name: Validar JSON (firebase.json / firestore.indexes.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar sintaxis JSON
+        run: |
+          python3 -c "import json; json.load(open('firebase.json')); print('firebase.json OK')"
+          python3 -c "import json; json.load(open('firestore.indexes.json')); print('firestore.indexes.json OK')"
+
+  validate-rules:
+    name: Validar reglas (Firestore + Storage vía Emulator Suite)
+    runs-on: ubuntu-latest
+    needs: validate-json
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Cargar firestore.rules y storage.rules en el Emulator Suite
+        # firebase.json no tiene ningún proyecto real asociado todavía
+        # (ver .firebaserc.example); un --project demo-* alcanza para que
+        # el emulador arranque y falle rápido si hay un error de sintaxis
+        # en las reglas.
+        run: |
+          firebase emulators:exec \
+            --project demo-4adra \
+            --only firestore,storage \
+            "echo 'firestore.rules y storage.rules cargaron sin errores de sintaxis'"
