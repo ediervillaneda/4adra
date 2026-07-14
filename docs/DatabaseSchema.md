@@ -13,10 +13,10 @@ Define el esquema lógico de Firestore. Evitar duplicación innecesaria, optimiz
 
 ```text
 users/                groups/               groupMembers/
-expenses/             expenseSplits/        settlements/
-balances/             categories/           exchangeRates/
-calculationProfiles/  notifications/         auditLogs/
-appSettings/
+invitations/          expenses/             expenseSplits/
+settlements/          balances/             categories/
+exchangeRates/        calculationProfiles/  notifications/
+auditLogs/            appSettings/
 ```
 
 ### `users/{userId}`
@@ -34,38 +34,48 @@ appSettings/
 ### `groupMembers/{membershipId}`
 
 ```json
-{"groupId":"groupId","userId":"userId","role":"OWNER","joinedAt":"Timestamp","status":"ACTIVE"}
+{"groupId":"groupId","userId":"userId","role":"OWNER","status":"ACTIVE","invitedAt":"Timestamp","joinedAt":"Timestamp","updatedAt":"Timestamp"}
 ```
+
+### `invitations/{invitationId}`
+
+```json
+{"groupId":"groupId","email":"juan@example.com","role":"MEMBER","status":"PENDING","createdBy":"userId","createdAt":"Timestamp","expiresAt":"Timestamp"}
+```
+
+Colección a nivel raíz porque `POST /invitations/{invitationId}/accept|decline` se resuelve por identidad global, no anidada bajo el grupo. Una invitación aceptada o rechazada no se borra; conserva su estado final para auditoría.
 
 ### `expenses/{expenseId}`
 
 ```json
-{"groupId":"groupId","title":"Hotel","description":"","categoryId":"categoryId","paidBy":"userId","currency":"USD","exchangeRate":1,"originalAmount":500,"convertedAmount":500,"calculationProfileVersion":1,"expenseDate":"Timestamp","createdBy":"userId","createdAt":"Timestamp","updatedAt":"Timestamp","status":"ACTIVE"}
+{"groupId":"groupId","title":"Hotel","description":"","categoryId":"categoryId","paidBy":"userId","currency":"USD","exchangeRate":"1.000000","originalAmount":"500.00","convertedAmount":"500.00","calculationProfileVersion":1,"expenseDate":"Timestamp","createdBy":"userId","createdAt":"Timestamp","updatedAt":"Timestamp","status":"ACTIVE"}
 ```
 
 ### `expenseSplits/{splitId}`
 
 ```json
-{"expenseId":"expenseId","groupId":"groupId","userId":"userId","splitType":"EQUAL","amount":125,"percentage":25,"shares":1}
+{"expenseId":"expenseId","groupId":"groupId","userId":"userId","splitType":"EQUAL","amount":"125.00","percentage":"25","shares":1}
 ```
 
 ### `settlements/{settlementId}`
 
 ```json
-{"groupId":"groupId","fromUser":"userId","toUser":"userId","currency":"USD","amount":50,"status":"PENDING","createdAt":"Timestamp","confirmedAt":null}
+{"groupId":"groupId","fromUser":"userId","toUser":"userId","currency":"USD","amount":"50.00","status":"PENDING","createdAt":"Timestamp","confirmedAt":null}
 ```
 
 ### `balances/{balanceId}`
 
 ```json
-{"groupId":"groupId","userId":"userId","paid":850,"consumed":600,"balance":250,"updatedAt":"Timestamp"}
+{"groupId":"groupId","userId":"userId","paid":"850.00","consumed":"600.00","balance":"250.00","updatedAt":"Timestamp"}
 ```
+
+Todo campo monetario (`amount`, `originalAmount`, `convertedAmount`, `exchangeRate`, `paid`, `consumed`, `balance`) se persiste como cadena decimal, nunca como número nativo de Firestore, para evitar la representación en punto flotante (`double`) que usa internamente ese tipo. `percentage` sigue la misma regla por su sensibilidad decimal; `shares` es un entero de ponderación y puede persistirse como número.
 
 Balances son materializados y regenerables; no se editan manualmente.
 
 ### Catálogos y soporte
 
-- `categories/{id}`: nombre, icono, color y orden.
+- `categories/{id}`: nombre, icono, color y orden. Catálogo global gestionado por la plataforma, compartido por todos los grupos; no hay colección ni gestión por grupo.
 - `exchangeRates/{id}`: `from`, `to`, `rate`, proveedor y captura; una tasa usada no cambia.
 - `calculationProfiles/{id}`: nombre, versión y nombres de estrategias (`split`, `settlement`, `rounding`, `currency`, `balance`). Las versiones son inmutables.
 - `notifications/{id}`: usuario, título, mensaje, lectura y fecha.
@@ -78,6 +88,7 @@ Balances son materializados y regenerables; no se editan manualmente.
 - `settlements`: `groupId + status`, `fromUser + status`, `toUser + status`.
 - `balances`: `groupId + userId`.
 - `groupMembers`: `groupId + userId`, `userId + status`.
+- `invitations`: `groupId + status`, `email + status`.
 
 ## Convenciones
 

@@ -96,7 +96,7 @@ DELETE /api/v1/groups/{groupId}/members/{userId}
 POST /api/v1/groups/{groupId}/leave
 ```
 
-Owner puede remover miembros; Administrator puede remover Member o ReadOnly si la política del grupo lo permite. Un miembro puede abandonar el grupo solo si no es el último Owner y si sus obligaciones abiertas se han resuelto o la política de cierre permite su salida.
+Owner puede remover miembros; Administrator puede remover Member o ReadOnly si la política del grupo lo permite. Un miembro puede abandonar el grupo solo si no es el último Owner y su balance en ese grupo es exactamente cero; lo mismo aplica para ser removido. No existe excepción por política de grupo: mientras el balance sea distinto de cero, ambas operaciones responden `409 OUTSTANDING_BALANCE`.
 
 La remoción cambia el estado a `REMOVED`; el usuario no puede participar en gastos nuevos. Los registros históricos permanecen y los balances se recalculan cuando corresponda.
 

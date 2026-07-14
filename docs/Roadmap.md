@@ -44,6 +44,7 @@ Presenta una evolución por etapas. El roadmap orienta la priorización, pero no
 **Objetivo:** diferenciar el producto con cálculos extensibles y reproducibles.
 
 - `CalculationEngine`, registro de estrategias y `CalculationProfile` versionado.
+- Reparto `Custom` (combinación de importes fijos, porcentajes y residuo), no incluido en el MVP de Fase 1.
 - Perfiles por grupo, conservación de versión en gastos y pruebas doradas históricas.
 - Redondeo determinista, manejo de residuales y múltiples monedas con tasa congelada.
 - Estrategias adicionales de liquidación: `MinimumTransactions`, `PriorityBased` y extensiones aprobadas.

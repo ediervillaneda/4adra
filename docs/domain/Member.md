@@ -31,8 +31,9 @@ Los permisos efectivos se evalúan en backend con la membresía activa; nunca se
 - No se puede remover/degradar al último Owner activo.
 - Una invitación aceptada crea o reactiva la membresía de modo idempotente.
 - Remover un miembro conserva sus gastos y liquidaciones históricos, pero impide participación nueva.
+- Ni abandonar el grupo ni ser removido son válidos mientras el balance del miembro en ese grupo sea distinto de cero; no hay excepción por política de grupo.
 
-Transferir propiedad es atómico: activar/promover destinatario antes de degradar propietario anterior. Abandonar grupo sigue las mismas reglas y la política de saldos pendientes.
+Transferir propiedad es atómico: activar/promover destinatario antes de degradar propietario anterior. Abandonar grupo sigue las mismas reglas que remover, incluida la validación de balance cero.
 
 ## Eventos
 

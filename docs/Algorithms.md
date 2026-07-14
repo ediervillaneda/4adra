@@ -68,6 +68,8 @@ Ejemplo: gasto de 100.00 con shares 1 y 2 (`Σ shares = 3`) produce `valorPorSha
 
 ### Custom Split
 
+> Disponible desde Roadmap Fase 2 (motor configurable), no en el MVP de Fase 1.
+
 Combina reglas válidas (porcentajes, fijos y residuo). Resolver primero importes fijos, luego porcentajes sobre la base definida por el perfil y finalmente asignar residuo; rechazar totales negativos o inconsistentes.
 
 Ejemplo: gasto de 200.00 con un importe fijo de 50.00 para un participante y el saldo restante (150.00) repartido 50/50 entre los otros dos produce 50.00, 75.00 y 75.00.
@@ -95,6 +97,8 @@ La estrategia se selecciona desde el perfil del grupo. Toda estrategia debe decl
 `ValidationStrategy` se ejecuta antes que cualquier otra estrategia y rechaza la operación completa si falla, sin persistir cambios parciales. Cubre, como mínimo: totales de split (`INVALID_SPLIT`), porcentajes o shares no positivos, participantes o pagador fuera del grupo o inactivos (`MEMBER_NOT_ACTIVE`), moneda o tasa no admitida (`CURRENCY_MISMATCH`), y para liquidaciones, origen igual a destino (`SELF_SETTLEMENT`), importe no positivo (`INVALID_SETTLEMENT_AMOUNT`) e importe superior a la deuda vigente (`SETTLEMENT_AMOUNT_EXCEEDS_DEBT`); ver `docs/ApiSpecification.md`, `docs/api/Expenses.md` y `docs/api/Settlements.md` para el catálogo completo de errores.
 
 `docs/DatabaseSchema.md` persiste en `calculationProfiles/{id}` los nombres de las estrategias `split`, `settlement`, `rounding`, `currency` y `balance` de cada versión publicada; si `ValidationStrategy` llega a variar entre perfiles, su identificador y versión deben añadirse ahí para mantener la misma trazabilidad histórica que el resto del motor.
+
+**Pendiente de especificar:** este documento define en detalle únicamente la variante por defecto de cada estrategia (`Equal`/`ExactAmount`/`Percentage`/`Shares`/`Custom` para split, `Classic` para balance —ver `docs/domain/Balance.md`—, `MinimumTransactions` para settlement, `HistoricRate` para moneda y `HalfEven` para redondeo). `CashFlow` y `Historical` (balance) y `DailyRate`, `ManualRate` y `AverageRate` (moneda) solo están nombradas, sin contrato (entradas, casos límite, pruebas doradas). Las settlement alternas (`Greedy`, `MinimumMoneyMoved`, `PriorityBased`, `RoundRobin`, en "Otras estrategias") tienen una descripción breve pero tampoco un contrato completo como `MinimumTransactions`. Conforme a `DevelopmentGuide.md`, ninguna debe implementarse sin definirse aquí primero.
 
 ## Optimización de liquidaciones
 

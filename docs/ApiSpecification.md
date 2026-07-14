@@ -48,6 +48,8 @@ Define el contrato HTTP público para Android y Web. Firebase Cloud Functions im
 
 Listas: `limit` entre 1 y 100 (25 por defecto) y `pageToken` para paginación.
 
+La tabla anterior es un resumen; cada recurso documenta su catálogo completo de códigos en `docs/api/*.md` (por ejemplo `MEMBER_ALREADY_ACTIVE`, `LAST_OWNER`, `OUTSTANDING_BALANCE` en `Members.md`, o `SELF_SETTLEMENT`, `SETTLEMENT_AMOUNT_EXCEEDS_DEBT` en `Settlements.md`).
+
 ## Recursos
 
 ### Perfil autenticado
@@ -68,8 +70,11 @@ Listas: `limit` entre 1 y 100 (25 por defecto) y `pageToken` para paginación.
 | `POST /groups/{groupId}/archive` | Archiva grupo |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |
+| `POST /invitations/{invitationId}/accept` | Acepta una invitación pendiente dirigida al actor |
+| `POST /invitations/{invitationId}/decline` | Rechaza una invitación pendiente dirigida al actor |
 | `PATCH /groups/{groupId}/members/{userId}` | Cambia rol o estado |
-| `DELETE /groups/{groupId}/members/{userId}` | Desactiva membresía |
+| `DELETE /groups/{groupId}/members/{userId}` | Remueve membresía (Owner/Administrator) |
+| `POST /groups/{groupId}/leave` | El actor abandona el grupo (si no es el último Owner y no tiene deuda pendiente) |
 
 ```json
 POST /groups
@@ -140,6 +145,14 @@ POST /groups/grp_123/settlements
 ```
 
 Una confirmada no se modifica; una corrección se registra como operación compensatoria.
+
+### Categorías
+
+| Método y ruta | Descripción |
+|---|---|
+| `GET /categories` | Lista el catálogo global de categorías (compartido por todos los grupos) |
+
+Las categorías son un catálogo gestionado por la plataforma, no por cada grupo; este endpoint es de solo lectura para los clientes. Su administración (alta/edición) es una operación interna fuera del alcance de este contrato.
 
 ### Perfiles, reportes y adjuntos
 

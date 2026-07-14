@@ -33,10 +33,10 @@ La pertenencia activa y rol se verifican en servidor dentro de una transacción 
 |---|---:|---:|---:|---:|
 | Consultar grupo, gastos y balances | Sí | Sí | Sí | Sí |
 | Crear gasto | Sí | Sí | Sí | No |
-| Editar/eliminar gasto | Sí | Sí | Según política del autor | No |
+| Editar/eliminar gasto | Sí | Sí | Sí, cualquier gasto activo del grupo | No |
 | Invitar/remover miembros | Sí | Sí | No | No |
 | Cambiar roles o archivar | Sí | No | No | No |
-| Confirmar liquidación | Sí | Sí | Según política | No |
+| Confirmar liquidación | Sí | Sí | Sí, si es pagador o destinatario | No |
 | Activar perfil de cálculo | Sí | Sí | No | No |
 
 Nunca permitir que un grupo quede sin Owner. Firestore y Storage deben denegar por defecto; los recursos financieros se escriben mediante funciones autenticadas.

@@ -19,22 +19,24 @@ Define qué operaciones están permitidas y cómo se comporta la plataforma. Est
 
 Un usuario puede crear y pertenecer a grupos, registrar gastos y confirmar liquidaciones. No puede acceder ni modificar grupos sin pertenencia, ni borrar auditoría.
 
+Un miembro no puede abandonar el grupo ni ser removido mientras su balance en ese grupo sea distinto de cero: debe liquidarse (total o parcialmente hasta llegar a cero) antes de que la salida sea válida. No existe excepción por política de grupo para esta regla.
+
 Un grupo debe conservar al menos un propietario, puede tener administradores, gastos y archivarse; archivarlo no elimina sus registros.
 
 | Rol | Permisos principales |
 |---|---|
 | Owner | Administrar, roles, miembros y archivo |
 | Administrator | Gastos, invitaciones y confirmación de liquidaciones |
-| Member | Registrar gastos, comentar y consultar balances |
+| Member | Registrar, editar y eliminar cualquier gasto activo del grupo, comentar y consultar balances |
 | ReadOnly | Consultar información |
 
-Un administrador no puede eliminar al propietario.
+Un administrador no puede eliminar al propietario. Un Member puede editar o eliminar (soft delete) cualquier gasto activo del grupo, no solo los que registró.
 
 ## Gastos y repartos
 
 Todo gasto requiere grupo, pagador, moneda, monto positivo, fecha y tipo de división. No se aceptan montos cero o negativos, monedas inexistentes ni grupos inexistentes.
 
-Tipos: `Equal`, `ExactAmount`, `Percentage`, `Shares`, `Custom`.
+Tipos: `Equal`, `ExactAmount`, `Percentage`, `Shares`, `Custom`. El MVP (Roadmap Fase 1) habilita `Equal`, `ExactAmount`, `Percentage` y `Shares`; `Custom` se habilita en Fase 2 junto con el motor de perfiles configurable.
 
 - Igual: todos aportan lo mismo.
 - Monto exacto: la suma coincide con el gasto.
@@ -60,7 +62,7 @@ Una liquidación no modifica gastos; solo reduce deuda. Estados: `Pending`, `Con
 
 ## Adjuntos, comentarios y categorías
 
-Las categorías son configurables. Adjuntos (imágenes, PDF, facturas y comprobantes) se guardan en Firebase Storage, no Firestore. Los comentarios no alteran gastos ni balances, pero forman parte del historial.
+Las categorías son un catálogo global gestionado por la plataforma, común a todos los grupos (no configurable por grupo). Adjuntos (imágenes, PDF, facturas y comprobantes) se guardan en Firebase Storage, no Firestore. Los comentarios son una capacidad planificada para `Roadmap.md` Fase 3 (no forman parte del modelo de entidades ni del esquema actual): cuando se especifiquen, no deberán alterar gastos ni balances, y deberán formar parte del historial auditable.
 
 ## Eliminación, auditoría y notificaciones
 

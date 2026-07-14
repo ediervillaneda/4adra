@@ -61,7 +61,7 @@ Nunca instanciar dependencias concretas dentro de un caso de uso ni acceder a Fi
 
 ## Modelo oficial
 
-Entidades permitidas: `User`, `Group`, `Member`/`Membership`, `Expense`, `Split`, `Balance`, `Settlement`, `Category`, `Currency`, `ExchangeRate`, `Attachment`, `Notification` y `AuditLog`.
+Entidades permitidas: `User`, `Group`, `Member`/`Membership`, `Invitation`, `Expense`, `Split`, `Balance`, `Settlement`, `Category`, `Currency`, `ExchangeRate`, `Attachment`, `Notification` y `AuditLog`.
 
 Usar value objects para conceptos importantes: `Money`, `Percentage`, `CurrencyCode`, `Email`, `UserId`, `GroupId` y `ExpenseId`. Evitar primitivos para conceptos de dominio.
 

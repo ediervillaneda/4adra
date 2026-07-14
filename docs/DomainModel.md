@@ -12,6 +12,7 @@ Define los conceptos del negocio, sus relaciones e invariantes. El dominio es in
 
 ```text
 User -- Membership -- Group
+                       ├── Invitation
                        ├── Expense -- Split
                        │             └── Attachment
                        ├── Settlement
@@ -32,6 +33,10 @@ Conjunto que comparte gastos (`Id`, `Name`, `Description`, `Image`, `DefaultCurr
 ### Membership
 
 Relación usuario-grupo: `UserId`, `GroupId`, `Role`, `JoinedAt`, `Status`. Roles: `Owner`, `Administrator`, `Member`, `ReadOnly`.
+
+### Invitation
+
+Solicitud de incorporación a un grupo, previa a la `Membership`: `Id`, `GroupId`, `Email`, `Role` propuesto, `Status` (`PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`), `ExpiresAt`, `CreatedBy`, `CreatedAt`. Aceptarla crea o reactiva una `Membership` `ACTIVE` de forma idempotente; una invitación vencida, revocada o ya procesada no puede reutilizarse. Ver `docs/api/Members.md` para el contrato completo.
 
 ### Expense
 
@@ -79,6 +84,7 @@ Posición regenerable por usuario y grupo: `GroupId`, `UserId`, `Paid`, `Consume
 `Group` es el agregado raíz y contiene miembros, gastos, liquidaciones y balances. Las modificaciones respetan sus reglas.
 
 - Debe existir al menos un `Owner` activo.
+- Un miembro no puede abandonar el grupo ni ser removido mientras su balance en ese grupo sea distinto de cero.
 - Todo gasto pertenece a un grupo y tiene un solo pagador.
 - Todo participante del reparto pertenece al grupo.
 - Los splits suman el total del gasto.
