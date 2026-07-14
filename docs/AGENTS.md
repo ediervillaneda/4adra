@@ -103,7 +103,7 @@ Todo cambio debe compilar, conservar pruebas existentes, incluir pruebas nuevas,
 - Preferir la alternativa más simple, mantenible y consistente.
 - No introducir dependencias ni deuda técnica deliberadamente.
 
-Las funcionalidades deben actualizar, cuando aplique: `Architecture.md`, `DomainModel.md`, `DatabaseSchema.md`, `ApiSpecification.md`, `BusinessRules.md`, `Algorithms.md`, `Security.md` y `Roadmap.md`.
+Las funcionalidades deben actualizar, cuando aplique: `Architecture.md`, `DomainModel.md`, `DatabaseSchema.md`, `ApiSpecification.md`, `BusinessRules.md`, `Algorithms.md`, `Security.md`, `Roadmap.md` y, si agregan o cambian una pantalla, `UISpecification.md`.
 
 ## Objetivo final
 

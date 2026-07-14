@@ -30,6 +30,10 @@ Diferenciar el producto con cálculos extensibles y reproducibles: `CalculationE
 - [ ] Pruebas doradas por estrategia: mismas entradas producen siempre la misma salida, incluso tras publicar una estrategia nueva.
 - [ ] Prueba de reproducción histórica: activar un perfil nuevo en un grupo no altera el resultado de gastos ya creados (criterio de salida de Fase 2 en `docs/Roadmap.md`).
 
+### Android y Web
+
+- [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 2 — Motor configurable" (perfil de cálculo del grupo, simulación de perfiles, paso `Custom` en crear/editar gasto).
+
 ### Aplicación / API
 
 - [ ] `PUT /groups/{groupId}/calculation-profile` completamente funcional con validación de perfil publicado y compatible.

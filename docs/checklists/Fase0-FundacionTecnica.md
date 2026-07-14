@@ -56,9 +56,41 @@ Disponer de una base segura y repetible para desarrollo: repositorio, entornos, 
 
 ### Android (`android/`)
 
-- [ ] Inicializar proyecto Kotlin/Jetpack Compose con Hilt.
-- [ ] Configurar ktlint/detekt.
-- [ ] Repositorio remoto que encapsule la API y respete estados sellados (`Loading/Content/Empty/Error`).
+- [ ] **Crear el proyecto en Android Studio** (no a mano — genera correctamente `gradlew`/`gradle-wrapper.jar` y fija versiones de Gradle/AGP compatibles entre sí):
+  - New Project → **Empty Activity** (plantilla Jetpack Compose, según `AGENTS.md`/ADR-008).
+  - **Package name:** `com.edier.adra.app` — debe coincidir exactamente con `android/app/google-services.json` (ADR-012), si no, Firebase no reconoce la app.
+  - **Save location:** la carpeta `android/` de este repo (no una carpeta nueva aparte), para que el módulo `app` quede en `android/app/` y el `google-services.json` que ya está ahí caiga en su lugar sin moverlo.
+  - Language: Kotlin. Minimum SDK: 21+ (ajustar si se necesita otro mínimo).
+- [ ] **Agregar el plugin de Google Services** al `build.gradle.kts` de la raíz del proyecto (`android/build.gradle.kts`):
+  ```kotlin
+  plugins {
+      // ...
+      id("com.google.gms.google-services") version "4.5.0" apply false
+  }
+  ```
+- [ ] **Aplicar el plugin y el SDK de Firebase** en el `build.gradle.kts` del módulo `app` (`android/app/build.gradle.kts`):
+  ```kotlin
+  plugins {
+      id("com.android.application")
+      id("com.google.gms.google-services")
+      // ...
+  }
+
+  dependencies {
+      // Firebase BoM: fija versiones compatibles entre SDKs de Firebase
+      implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+
+      // Firebase Auth es el único SDK de Firebase que el cliente Android
+      // usa directamente (ADR-009: Firestore/Storage solo vía la API,
+      // nunca con el SDK cliente). No agregar firebase-firestore ni
+      // firebase-storage aquí.
+      implementation("com.google.firebase:firebase-auth")
+  }
+  ```
+- [ ] Sincronizar el proyecto (`Sync Now` en Android Studio) y confirmar que compila.
+- [ ] Configurar Hilt para inyección de dependencias.
+- [ ] Configurar ktlint/detekt (`docs/CodingStandards.md`).
+- [ ] Repositorio remoto que encapsule la API y respete estados sellados (`Loading/Content/Empty/Error`) — nunca acceso directo a Firestore/Storage desde el cliente (ADR-009).
 
 ### Firebase
 

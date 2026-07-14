@@ -28,6 +28,7 @@ Facilitar el uso cotidiano entre participantes: adjuntos, comentarios, notificac
 
 ### Android y Web
 
+- [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 3 — Colaboración y experiencia" (varias siguen marcadas "pendiente de especificar backend" ahí mismo — resolver esa especificación primero, ver más arriba).
 - [ ] Visor/subida de adjuntos por gasto.
 - [ ] Hilo de comentarios por gasto (una vez especificado el backend).
 - [ ] Centro de notificaciones in-app + push.

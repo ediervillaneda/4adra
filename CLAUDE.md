@@ -18,6 +18,7 @@ Mapa de la documentación:
 - `docs/Security.md`, `docs/Deployment.md` — controles de seguridad y proceso de despliegue.
 - `docs/CodingStandards.md`, `docs/TestingGuide.md`, `docs/DevelopmentGuide.md` — convenciones de código, estrategia de pruebas y guía de contribución.
 - `docs/Roadmap.md`, `docs/Decisions.md` (ADRs), `docs/Glossary.md` (lenguaje ubicuo) — evolución, decisiones y terminología.
+- `docs/UISpecification.md` — inventario de pantallas, navegación y reglas de presentación (Android y Web, todas las fases); precede a los wireframes visuales, que todavía no existen.
 - `docs/api/*.md` — contrato HTTP detallado por recurso (Auth, Groups, Expenses, Members, Balances, Settlements, Reports).
 - `docs/domain/*.md` — detalle de cada entidad/value object del dominio.
 - `docs/diagrams/*.drawio`, `docs/examples/*.json` — diagramas y payloads de ejemplo.

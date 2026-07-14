@@ -24,6 +24,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `Roadmap.md` — Evolución planificada.
 - [x] `Decisions.md` — Registro de decisiones (ADR).
 - [x] `Glossary.md` — Lenguaje ubicuo.
+- [x] `UISpecification.md` — Inventario de pantallas, navegación y reglas de presentación (Android y Web, todas las fases). No incluye wireframes visuales ni sistema de diseño de marca — ver "Pendiente fuera de este documento" dentro del archivo.
 
 ## Documentación de API (`api/`)
 

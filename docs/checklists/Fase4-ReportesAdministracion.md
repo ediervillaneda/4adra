@@ -26,6 +26,7 @@ Mejorar visibilidad, exportación y gobernanza: exportaciones CSV/XLSX/PDF/JSON,
 
 ### Android y Web
 
+- [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 4 — Reportes y administración".
 - [ ] Flujo de solicitud/descarga de reportes.
 - [ ] Panel administrativo (si aplica a este producto) para Owner/Administrator: archivo de grupo, exportaciones, auditoría visible.
 

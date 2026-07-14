@@ -188,6 +188,7 @@ When changing code, update the corresponding docs in `docs/`:
 - `Algorithms.md` — algorithm changes
 - `Security.md` — security changes
 - `Roadmap.md` — milestone changes
+- `UISpecification.md` — new/changed screens, navigation, or presentation rules (Android/Web)
 
 ---
 

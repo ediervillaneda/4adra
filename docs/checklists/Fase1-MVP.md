@@ -50,6 +50,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 ### Android y Web (MVP)
 
+- [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 1 — MVP" (autenticación/perfil, grupos y miembros, gastos, balances y liquidaciones).
 - [ ] Autenticación (Firebase Auth SDK) y perfil.
 - [ ] Crear/listar/archivar grupos.
 - [ ] Invitar miembro, aceptar/rechazar invitación.
