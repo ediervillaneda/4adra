@@ -1,0 +1,31 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# Android
+.gradle/
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# Build
+build/
+out/
+
+# Logs
+*.log
