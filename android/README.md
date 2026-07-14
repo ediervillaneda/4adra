@@ -4,7 +4,11 @@ Directorio previsto para el cliente Android de 4adra: Kotlin, Jetpack Compose, M
 
 Vacío intencionalmente — el scaffolding real (proyecto Gradle, módulos) es parte de la Fase 0, ver `docs/checklists/Fase0-FundacionTecnica.md`.
 
-**Nombre de paquete / `applicationId`:** `com.adra.app` (Proposed, ver `docs/Decisions.md`). Sigue la misma convención que el project ID de Firebase (`adra-54655`, sin el "4" inicial porque ni Android ni Firebase aceptan segmentos que empiecen con dígito). Debe coincidir con el nombre de la app Android que se registre dentro de ese mismo proyecto Firebase al generar `google-services.json`. Es esencialmente permanente una vez publicado en Play Store — confirmar antes de crear el proyecto Gradle real.
+**Nombre de paquete / `applicationId`:** `com.edier.adra.app` — registrado en Firebase (proyecto `adra-54655`, mismo `project_number` `996278378799` que el cliente Web), ver ADR-012 en `docs/Decisions.md`. Es esencialmente permanente una vez publicado en Play Store.
+
+**`google-services.json`:** ya está en `android/app/google-services.json` con el `package_name` correcto (`com.edier.adra.app`) — esa es la ubicación estándar que busca el plugin `com.google.gms.google-services` por defecto (junto al módulo `:app`, no en la raíz de `android/`). Queda una copia vieja del registro anterior (`com.edier.cuadra.app`) en `android/google-services.json` (raíz); ya no se usa, se puede borrar.
+
+No es un secreto en el mismo sentido que una clave de cuenta de servicio (Admin SDK): Google documenta explícitamente que `google-services.json` es seguro de incluir en el APK/repositorio, porque no otorga acceso privilegiado por sí solo. La protección real sigue siendo la misma de siempre: `firestore.rules`/`storage.rules` denegando acceso directo de clientes (ADR-009) y, específicamente para esta API key, restringirla en Google Cloud Console (Credentials → esa key → Application restrictions → **Android apps**, con el `applicationId` `com.edier.adra.app` y el SHA-1 del certificado de firma) antes de publicar — hoy no tiene esa restricción. Pendiente en el checklist de Fase 0.
 
 ## Reglas clave
 

@@ -83,6 +83,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `.github/workflows/openapi-lint.yml`, `firebase-config.yml` — validan hoy mismo `docs/api/openapi.yaml` y `firestore.rules`/`storage.rules`/`firestore.indexes.json`, sin necesitar código de aplicación.
 - [ ] `backend/README.md`, `web/README.md`, `android/README.md` — placeholders de estructura; pendiente el scaffolding real (Fase 0).
 - [x] `web/src/environments/environment.ts` — configuración del cliente Firebase del proyecto `development` (`adra-54655`); pendiente restringir la API key en Google Cloud Console (ver checklist Fase 0).
+- [x] `android/app/google-services.json` — config del cliente Android, `applicationId` `com.edier.adra.app` (ADR-012), proyecto Firebase `adra-54655`. Copia vieja del registro anterior en `android/google-services.json` (raíz) pendiente de borrar manualmente.
 
 ## Regla de mantenimiento
 

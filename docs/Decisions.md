@@ -173,13 +173,13 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-012 — Nombre de paquete Android
 
 **Fecha:** 2026-07-13
-**Estado:** Proposed
+**Estado:** Accepted (registrado en Firebase y `google-services.json` reemplazado)
 
-**Contexto:** Ni Android ni Firebase permiten identificadores cuyo primer segmento empiece con dígito, así que "4adra" no es válido como `applicationId`. El project ID de Firebase ya resolvió esto usando `adra-54655` (sin el "4"). El nombre de paquete es esencialmente permanente una vez publicado en Play Store.
+**Contexto:** Ni Android ni Firebase permiten identificadores cuyo primer segmento empiece con dígito, así que "4adra" no es válido como `applicationId`. El nombre de paquete es esencialmente permanente una vez publicado en Play Store. Se propusieron primero `com.adra.app` y luego `com.eacorp.adra` como alternativas basadas en dominio. Se registró por error `com.edier.cuadra.app` en Firebase (proyecto `adra-54655`) — confirmado que "Cuadra" **no** era un cambio de marca intencional, fue una inconsistencia al escribirlo.
 
-**Decisión:** `com.adra.app`, siguiendo la misma convención que ya adoptó el project ID de Firebase, para que ambos identificadores cuenten la misma historia.
+**Decisión:** `com.edier.adra.app`, siguiendo la convención ya usada en el resto del proyecto (`adra-54655`, "4adra"/"adra" en toda la documentación). Ya registrado en el proyecto Firebase `adra-54655` (mismo `project_number` `996278378799`); `android/app/google-services.json` actualizado con el nuevo `package_name`.
 
-**Consecuencias:** Debe coincidir exactamente con el `applicationId` de Gradle y con el nombre de la app Android registrada dentro del proyecto Firebase `adra-54655` al generar `google-services.json`. Estado `Proposed` hasta confirmarse en el momento de crear el proyecto Gradle real (Fase 0).
+**Consecuencias:** El `applicationId` de Gradle debe ser exactamente `com.edier.adra.app` cuando se cree el proyecto real. El registro anterior (`com.edier.cuadra.app`) sigue existiendo en Firebase Console como app duplicada — eliminarlo ahí es opcional/limpieza, no bloqueante. Queda pendiente restringir la API key de este `google-services.json` en Google Cloud Console (`com.edier.adra.app` + SHA-1 del certificado de firma) antes de publicar.
 
 ## Cómo añadir una decisión
 

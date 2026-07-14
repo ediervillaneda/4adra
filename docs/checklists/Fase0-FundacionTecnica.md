@@ -28,7 +28,11 @@ Disponer de una base segura y repetible para desarrollo: repositorio, entornos, 
 - [ ] Restringir la API key de `adra-54655` en Google Cloud Console (Credentials → Application restrictions → HTTP referrers) al dominio real de la Web una vez se despliegue; hoy no tiene restricción.
 - [ ] Copiar `.firebaserc.example` a `.firebaserc` (real, ignorado por git) apuntando a `adra-54655` para poder desplegar `firestore.rules`/`storage.rules`/`firestore.indexes.json` (tarea ya listada arriba).
 - [ ] Crear los proyectos Firebase `staging` y `production` (separados de `adra-54655`) cuando corresponda, y sus respectivos `environment.staging.ts`/`environment.production.ts` en `web/`.
-- [ ] Registrar la app Android en el proyecto Firebase `adra-54655` con `applicationId` = `com.adra.app` (ver `android/README.md`, ADR-012) y descargar `google-services.json` — no está incluido en la config Web que se compartió.
+- [x] Confirmado: "Cuadra" no es un cambio de marca, fue una inconsistencia al registrar la app — el nombre correcto es `com.edier.adra.app` (ADR-012).
+- [x] App Android re-registrada en Firebase con `applicationId` = `com.edier.adra.app` y `android/app/google-services.json` reemplazado por el correcto.
+- [ ] Opcional: eliminar de Firebase Console el registro Android duplicado `com.edier.cuadra.app`.
+- [ ] Restringir la API key de Android en Google Cloud Console a `com.edier.adra.app` + SHA-1 del certificado de firma, antes de publicar (ver `android/README.md`).
+- [ ] Borrar `android/google-services.json` (copia vieja en la raíz, superada por `android/app/google-services.json`).
 - [ ] Crear los tres proyectos Firebase (development, staging, production) descritos en `docs/Deployment.md`, cada uno con Auth, Firestore, Storage y Cloud Messaging habilitados.
 - [ ] Definir plantillas de variables de entorno sin secretos (`.env.example` por plataforma) según `docs/DevelopmentGuide.md`.
 

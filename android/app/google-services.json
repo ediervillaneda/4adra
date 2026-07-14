@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "996278378799",
+    "project_id": "adra-54655",
+    "storage_bucket": "adra-54655.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996278378799:android:59629a610414e6614901da",
+        "android_client_info": {
+          "package_name": "com.edier.adra.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBv1oqxk05X95WwWyZ2zE2aNvb90s5343Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
