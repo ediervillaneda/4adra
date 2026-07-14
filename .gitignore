@@ -37,3 +37,6 @@ out/
 
 # Logs
 *.log
+
+# Git worktrees (superpowers:using-git-worktrees)
+.worktrees/
