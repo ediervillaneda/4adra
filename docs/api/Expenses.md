@@ -77,7 +77,7 @@ POST /api/v1/groups/{groupId}/expenses/{expenseId}/attachments/upload-url
 DELETE /api/v1/groups/{groupId}/expenses/{expenseId}/attachments/{attachmentId}
 ```
 
-La primera ruta recibe nombre, tipo MIME y tamaño esperado; devuelve una URL firmada de duración corta y un identificador provisional. Tras cargar, el backend verifica metadatos y vincula el adjunto. Solo se permiten tipos, tamaño y cantidad definidos por política; los archivos se guardan en Storage, no Firestore.
+La primera ruta recibe nombre, tipo MIME y tamaño esperado; devuelve una URL firmada de 15 minutos de duración y un identificador provisional. Tras cargar, el backend verifica metadatos y vincula el adjunto. Límites por defecto (ADR-011): tipos `image/jpeg`, `image/png`, `image/webp` o `application/pdf`, máximo 10 MB por archivo y 5 adjuntos activos por gasto; los archivos se guardan en Storage, no Firestore.
 
 ## Errores
 

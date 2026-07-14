@@ -5,7 +5,7 @@
 
 ## Project Status
 
-This project is in **Phase 0 (Foundation)**. There is no source code yet — only comprehensive documentation in `docs/`. Before writing any code, read `docs/AGENTS.md` for the full project rules (in Spanish).
+This project is in **Phase 0 (Foundation)**. There is no application source code yet. What exists today: comprehensive documentation in `docs/` (including a machine-readable contract at `docs/api/openapi.yaml` and per-phase checklists in `docs/checklists/`), real Firebase platform configuration at the repo root (`firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `.firebaserc.example`), and placeholder `README.md` files in `backend/`, `web/`, `android/` describing their intended structure — no `package.json`, no Gradle project, no Angular project yet. See `docs/checklists/Fase0-FundacionTecnica.md` for the actionable list of what's left. Before writing any code, read `docs/AGENTS.md` for the full project rules (in Spanish).
 
 ## Tech Stack
 
@@ -19,6 +19,8 @@ This project is in **Phase 0 (Foundation)**. There is no source code yet — onl
 ---
 
 ## Planned Build / Lint / Test Commands
+
+None of these exist yet except the Firebase ones, which now have real config to point at (`firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json` at the repo root) but still need a real Firebase project (copy `.firebaserc.example` to `.firebaserc` with real project IDs first). The Backend/Android/Web commands below require the scaffolding in `docs/checklists/Fase0-FundacionTecnica.md` to exist first — do not run them against this repo as-is.
 
 ### Backend (TypeScript/Node.js)
 

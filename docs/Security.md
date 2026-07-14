@@ -45,13 +45,16 @@ Nunca permitir que un grupo quede sin Owner. Firestore y Storage deben denegar p
 
 Validar esquema JSON, tipos, límites, campos permitidos, monedas ISO-4217, importes decimales positivos, participantes, estados, porcentajes, tasas y versiones. Usar `Idempotency-Key` en mutaciones e `If-Match`/transacciones Firestore para concurrencia. Limitar tamaños de texto, archivos y participantes.
 
+Límites por defecto (ADR-011, ajustables vía `appSettings` sin cambio de código): adjuntos en `image/jpeg`, `image/png`, `image/webp` o `application/pdf`, máximo 10 MB por archivo y 5 adjuntos activos por gasto. Rate limiting por defecto: 60 solicitudes/minuto por usuario autenticado en mutaciones, 300/minuto en lecturas, y 20/minuto por IP en rutas no autenticadas; exceder el límite responde `429 RATE_LIMITED`.
+
 ## Protección de datos
 
 - TLS obligatorio; no permitir HTTP.
 - Cifrado administrado en reposo de Firebase/Google Cloud.
 - Adjuntos en Storage con rutas no adivinables y URLs firmadas de corta duración.
 - Recopilar solo datos necesarios; no guardar tarjetas, cuentas bancarias, contraseñas ni tokens de pago.
-- Definir retención y eliminación de datos personales según jurisdicción; conservar auditoría financiera durante el periodo aprobado.
+- Retención por defecto (ADR-011, `Proposed` — pendiente de validación legal por jurisdicción de operación): los datos personales (nombre, correo, foto) se conservan mientras la cuenta esté activa; tras una solicitud de eliminación de cuenta, se anonimizan en un plazo máximo de 30 días. La auditoría financiera (montos, fechas, IDs opacos) se conserva de forma indefinida o según la normativa fiscal aplicable, incluso después de anonimizar al actor.
+- URLs firmadas de adjuntos y de descarga de reportes: 15 minutos de duración por defecto (ADR-011).
 
 ## Secretos, auditoría y monitoreo
 

@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// 4adra — Reglas de seguridad de Firebase Storage.
+//
+// Misma decisión que firestore.rules (ver docs/Decisions.md, ADR-009):
+// los adjuntos de gastos se suben y descargan exclusivamente mediante URLs
+// firmadas de corta duración generadas por Cloud Functions
+// (POST /groups/{groupId}/expenses/{expenseId}/attachments/upload-url y el
+// endpoint de descarga de reportes). Una URL firmada del Admin SDK es válida
+// independientemente de estas reglas, así que denegar todo acceso directo
+// del SDK cliente es la postura correcta y no bloquea ese flujo.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

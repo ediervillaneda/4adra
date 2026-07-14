@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "development": "4adra-dev",
+    "staging": "4adra-staging",
+    "production": "4adra-prod"
+  }
+}

@@ -103,6 +103,73 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 
 **Consecuencias:** Se almacena estado de idempotencia durante un periodo definido y se mantiene compatibilidad al agregar campos opcionales. Cambios incompatibles exigen versión mayor y deprecación.
 
+## ADR-008 — Stack y estructura técnica de Fase 0
+
+**Fecha:** 2026-07-13
+**Estado:** Proposed
+
+**Contexto:** `Roadmap.md` Fase 0 exige una base repetible (repositorio, entornos, CI) pero ningún documento fijaba versiones ni herramientas concretas, bloqueando el primer commit de código.
+
+**Decisión:** Un solo repositorio con tres directorios de nivel superior e independientes (`backend/`, `web/`, `android/`), cada uno con su propio gestor de dependencias y lockfile — no se fuerza una herramienta de monorepo (Nx/Turborepo) porque Gradle (Android) y npm (backend/web) no comparten orquestación real y añadirla hoy sería complejidad sin beneficio, conforme a la preferencia de `AGENTS.md` por la alternativa más simple. Versiones de referencia: Node.js LTS activa vigente al iniciar Fase 0 (fijada en `backend/.nvmrc` y `web/.nvmrc` al crearlos), npm con lockfile (`package-lock.json`) como gestor por defecto, TypeScript estricto (`strict: true`), Angular en su versión LTS vigente, Kotlin/Gradle con el Android Gradle Plugin estable más reciente al iniciar el cliente Android. CI: GitHub Actions, con un workflow por directorio (`backend`, `web`, `android`) que ejecuta el pipeline descrito en `Deployment.md`.
+
+**Consecuencias:** Cada plataforma puede evolucionar su toolchain de forma independiente sin coordinarse con una herramienta de monorepo. Las versiones exactas deben confirmarse y fijarse en los archivos reales (`package.json`, `.nvmrc`, Gradle Wrapper) en cuanto se cree cada directorio; este ADR fija el criterio, no el número exacto, para no quedar obsoleto. Estado `Proposed` porque son valores por defecto razonables, no una decisión de negocio confirmada explícitamente.
+
+---
+
+## ADR-009 — Firestore y Storage sin acceso directo de clientes
+
+**Fecha:** 2026-07-13
+**Estado:** Accepted
+
+**Contexto:** `Architecture.md` describe el flujo de clientes como `View -> ViewModel -> API client -> Cloud Functions`, sin mencionar Firestore ni Storage. `Security.md` exige denegar por defecto y que las operaciones críticas pasen por Cloud Functions. Mantener reglas de Firestore/Storage parcialmente abiertas (por ejemplo, lecturas directas por membresía) contradice ese flujo y duplicaría en reglas una autorización que ya vive en el backend.
+
+**Decisión:** Android y Web nunca usan el SDK cliente de Firestore ni de Storage. Toda lectura y escritura pasa por la API HTTPS (Cloud Functions), que sí usa el Admin SDK (el cual ignora las reglas de seguridad). En consecuencia, `firestore.rules` y `storage.rules` deniegan el 100 % del acceso de clientes (`allow read, write: if false`), como defensa en profundidad ante un cliente que intente saltarse la API.
+
+**Consecuencias:** No hay listeners en tiempo real de Firestore en los clientes; cualquier necesidad de actualización en vivo se resuelve con notificaciones push (FCM) que disparan un refetch por API, no con `onSnapshot`. Las reglas quedan simples y auditables. Si en el futuro se decide exponer lecturas directas de Firestore a los clientes (para aprovechar tiempo real), esto exige un ADR nuevo que reabra esta decisión y diseñe reglas de autorización por documento.
+
+---
+
+## ADR-010 — IDs deterministas para `groupMembers`
+
+**Fecha:** 2026-07-13
+**Estado:** Accepted
+
+**Contexto:** `DatabaseSchema.md` no fijaba cómo se genera `membershipId`. Buscar "la membresía de este usuario en este grupo" con un ID aleatorio exige una consulta indexada en cada operación de autorización, lo cual es más lento y más código que una lectura directa por clave.
+
+**Decisión:** El ID de `groupMembers/{membershipId}` es determinista: `{groupId}_{userId}`. Un usuario tiene como máximo una membresía vigente por grupo (invariante ya definida en `domain/Member.md`), por lo que la clave compuesta no pierde información y permite `get()` directo en vez de `query()` tanto en casos de uso del backend como en cualquier verificación futura de reglas.
+
+**Consecuencias:** `DatabaseSchema.md` y `domain/Member.md` deben reflejar la convención. No afecta a los índices ya recomendados (`groupId + userId`), que siguen siendo útiles para listar miembros de un grupo.
+
+---
+
+## ADR-011 — Límites operativos y ventanas de expiración por defecto
+
+**Fecha:** 2026-07-13
+**Estado:** Proposed
+
+**Contexto:** Varios documentos (`Security.md`, `api/Expenses.md`, `api/Members.md`, `api/Reports.md`, `ApiSpecification.md`) referenciaban límites como "política del grupo" o "configuración del sistema" sin un valor concreto, bloqueando la implementación de validaciones.
+
+**Decisión:** Se fijan valores por defecto, ajustables a futuro vía `appSettings/{id}` sin requerir cambio de código:
+
+| Límite | Valor por defecto |
+|---|---|
+| Tipos de adjunto permitidos | `image/jpeg`, `image/png`, `image/webp`, `application/pdf` |
+| Tamaño máximo por adjunto | 10 MB |
+| Adjuntos activos por gasto | 5 |
+| Rate limit mutaciones autenticadas | 60 solicitudes/minuto por usuario |
+| Rate limit lecturas autenticadas | 300 solicitudes/minuto por usuario |
+| Rate limit no autenticado (por IP) | 20 solicitudes/minuto |
+| Expiración de invitación | 7 días desde su creación |
+| Expiración de reporte generado | 24 horas desde su creación |
+| Duración de URL firmada (adjuntos y descargas de reporte) | 15 minutos |
+| Ventana mínima de deprecación de API | 90 días entre anuncio y retiro de la versión anterior |
+| Retención de auditoría financiera | Indefinida mientras la cuenta/grupo exista; sujeta a normativa fiscal aplicable en la jurisdicción de operación |
+| Anonimización tras solicitud de eliminación de cuenta | Máximo 30 días para datos personales (nombre, correo, foto); la auditoría financiera con IDs opacos se conserva |
+
+**Consecuencias:** Estos valores quedan reflejados en `Security.md`, `api/Expenses.md`, `api/Members.md`, `api/Reports.md` y `ApiSpecification.md`. Estado `Proposed` para los valores sin base legal confirmada (retención y anonimización), que deben validarse con asesoría legal antes de lanzamiento a producción; el resto (`Accepted` en la práctica) son parámetros técnicos de bajo riesgo y fácilmente ajustables.
+
+---
+
 ## Cómo añadir una decisión
 
 Copiar el formato ADR, usar el siguiente identificador, enlazar documentos afectados y describir riesgos/alternativas consideradas. No usar este registro para tareas pequeñas de implementación ni para notas temporales.

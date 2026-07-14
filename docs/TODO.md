@@ -1,7 +1,7 @@
 # TODO.md — Estado de documentación
 
 > **Proyecto:** 4adra  
-> **Última actualización:** 2026-07-13
+> **Última actualización:** 2026-07-13 (ADR-008 a ADR-011, checklists de fases y especificación técnica ejecutable)
 
 ## Propósito
 
@@ -60,6 +60,26 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `examples/Group.json`
 - [x] `examples/Settlement.json`
 - [x] `examples/FirestoreStructure.json`
+
+## Checklists de fases (`checklists/`)
+
+- [x] `checklists/README.md` — índice y cómo mantenerlos.
+- [x] `checklists/Fase0-FundacionTecnica.md`
+- [x] `checklists/Fase1-MVP.md`
+- [x] `checklists/Fase2-MotorConfigurable.md`
+- [x] `checklists/Fase3-ColaboracionExperiencia.md`
+- [x] `checklists/Fase4-ReportesAdministracion.md`
+- [x] `checklists/Fase5-CapacidadesAvanzadas.md`
+
+## Especificación técnica ejecutable (raíz del repositorio)
+
+- [x] `firebase.json` — configuración de proyecto Firebase (Firestore, Storage, Functions, Hosting, Emulators).
+- [x] `firestore.rules` — deniega el 100 % del acceso directo de clientes (ADR-009).
+- [x] `storage.rules` — ídem para Storage.
+- [x] `firestore.indexes.json` — índices compuestos de `DatabaseSchema.md`.
+- [x] `.firebaserc.example` — plantilla de alias de proyecto por entorno (copiar a `.firebaserc`, ignorado por git).
+- [x] `docs/api/openapi.yaml` — contrato HTTP machine-readable, espejo de `ApiSpecification.md`/`api/*.md`.
+- [ ] `backend/README.md`, `web/README.md`, `android/README.md` — placeholders de estructura; pendiente el scaffolding real (Fase 0).
 
 ## Regla de mantenimiento
 

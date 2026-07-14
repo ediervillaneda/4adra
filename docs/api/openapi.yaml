@@ -1,0 +1,1286 @@
+openapi: 3.0.3
+info:
+  title: 4adra API
+  description: >
+    Contrato HTTP de 4adra (Cuentas claras, gastos compartidos). Espejo
+    machine-readable de docs/ApiSpecification.md y docs/api/*.md — esos
+    documentos en prosa siguen siendo la fuente autorizada de detalle y
+    reglas de negocio; este archivo existe para generar tipos/clientes y
+    correr pruebas de contrato (ver docs/TestingGuide.md).
+  version: "1.0.0"
+servers:
+  - url: https://{region}-{project}.cloudfunctions.net/api/v1
+    variables:
+      region:
+        default: us-central1
+      project:
+        default: 4adra-dev
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID Token
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+      description: resourceVersion actual del recurso, para control de concurrencia optimista.
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+    PageToken:
+      name: pageToken
+      in: query
+      schema:
+        type: string
+
+  schemas:
+    Money:
+      type: string
+      description: Importe decimal exacto, nunca número de punto flotante.
+      pattern: '^-?\d+\.\d+$'
+      example: "125.50"
+
+    CurrencyCode:
+      type: string
+      description: Código ISO-4217.
+      example: "USD"
+
+    Meta:
+      type: object
+      properties:
+        requestId:
+          type: string
+        nextPageToken:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        photoUrl:
+          type: string
+          nullable: true
+        preferredCurrency:
+          $ref: '#/components/schemas/CurrencyCode'
+        language:
+          type: string
+        timeZone:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        image:
+          type: string
+          nullable: true
+        defaultCurrency:
+          $ref: '#/components/schemas/CurrencyCode'
+        role:
+          type: string
+          enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
+        status:
+          type: string
+          enum: [ACTIVE, ARCHIVED, DELETED]
+        calculationProfileId:
+          type: string
+        calculationProfileVersion:
+          type: integer
+        resourceVersion:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Membership:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        photoUrl:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
+        status:
+          type: string
+          enum: [ACTIVE, REMOVED, INVITED]
+        joinedAt:
+          type: string
+          format: date-time
+
+    Invitation:
+      type: object
+      properties:
+        invitationId:
+          type: string
+        groupId:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [ADMINISTRATOR, MEMBER, READ_ONLY]
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, DECLINED, EXPIRED, REVOKED]
+        expiresAt:
+          type: string
+          format: date-time
+
+    SplitParticipant:
+      type: object
+      properties:
+        userId:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        percentage:
+          type: string
+        shares:
+          type: integer
+        convertedAmount:
+          $ref: '#/components/schemas/Money'
+
+    Split:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [EQUAL, EXACT_AMOUNT, PERCENTAGE, SHARES, CUSTOM]
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SplitParticipant'
+
+    Expense:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: string
+        paidBy:
+          type: string
+        originalAmount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        exchangeRate:
+          type: string
+        convertedAmount:
+          $ref: '#/components/schemas/Money'
+        calculationProfileVersion:
+          type: integer
+        expenseDate:
+          type: string
+          format: date-time
+        split:
+          $ref: '#/components/schemas/Split'
+        status:
+          type: string
+          enum: [ACTIVE, DELETED]
+        resourceVersion:
+          type: integer
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BalanceMember:
+      type: object
+      properties:
+        userId:
+          type: string
+        paid:
+          $ref: '#/components/schemas/Money'
+        consumed:
+          $ref: '#/components/schemas/Money'
+        balance:
+          $ref: '#/components/schemas/Money'
+
+    Balances:
+      type: object
+      properties:
+        groupId:
+          type: string
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        calculatedAt:
+          type: string
+          format: date-time
+        isDirty:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/BalanceMember'
+
+    SettlementSuggestion:
+      type: object
+      properties:
+        fromUser:
+          type: string
+        toUser:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+
+    Settlement:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        fromUser:
+          type: string
+        toUser:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+        method:
+          type: string
+        note:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, REJECTED, CANCELLED]
+        resourceVersion:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CalculationProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+        splitStrategy:
+          type: string
+        balanceStrategy:
+          type: string
+        settlementStrategy:
+          type: string
+        currencyStrategy:
+          type: string
+        roundingStrategy:
+          type: string
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        icon:
+          type: string
+        order:
+          type: integer
+
+    Report:
+      type: object
+      properties:
+        reportId:
+          type: string
+        status:
+          type: string
+          enum: [QUEUED, PROCESSING, COMPLETED, FAILED, EXPIRED]
+        format:
+          type: string
+          enum: [CSV, XLSX, PDF, JSON]
+        reportType:
+          type: string
+          enum: [EXPENSES, BALANCES, SETTLEMENTS, AUDIT_TRAIL, GROUP_SUMMARY]
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+  responses:
+    Error:
+      description: Error de negocio o validación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  /me:
+    get:
+      summary: Obtiene el perfil autenticado actual
+      responses:
+        '200':
+          description: Perfil actual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Actualiza campos permitidos del perfil actual
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                photoUrl:
+                  type: string
+                  nullable: true
+                preferredCurrency:
+                  $ref: '#/components/schemas/CurrencyCode'
+                language:
+                  type: string
+                timeZone:
+                  type: string
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups:
+    post:
+      summary: Crea un grupo (el actor queda como Owner)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, defaultCurrency]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                defaultCurrency:
+                  $ref: '#/components/schemas/CurrencyCode'
+                calculationProfileId:
+                  type: string
+      responses:
+        '201':
+          description: Grupo creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      summary: Lista los grupos donde el actor tiene membresía activa
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Lista de grupos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Group'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      summary: Consulta un grupo
+      responses:
+        '200':
+          description: Grupo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Edita metadatos del grupo (Owner/Administrator)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                image:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Grupo actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/archive:
+    post:
+      summary: Archiva el grupo (solo Owner)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Grupo archivado
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/leave:
+    post:
+      summary: El actor abandona el grupo (si no es el último Owner y su balance es cero)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Membresía removida
+        '409':
+          description: OUTSTANDING_BALANCE o LAST_OWNER
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/members:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      summary: Lista miembros del grupo
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/PageToken'
+      responses:
+        '200':
+          description: Miembros
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Membership'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/members/invitations:
+    post:
+      summary: Invita a un miembro por correo (Owner/Administrator)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [ADMINISTRATOR, MEMBER, READ_ONLY]
+      responses:
+        '201':
+          description: Invitación creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Invitation'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      summary: Cambia rol o estado de un miembro (Owner)
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
+      responses:
+        '200':
+          description: Membresía actualizada
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Remueve una membresía (Owner/Administrator según política; no el último Owner ni con balance pendiente)
+      responses:
+        '200':
+          description: Membresía removida
+        '409':
+          description: OUTSTANDING_BALANCE o LAST_OWNER
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /invitations/{invitationId}/accept:
+    post:
+      summary: Acepta una invitación pendiente dirigida al actor
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Membresía creada o reactivada
+        default:
+          $ref: '#/components/responses/Error'
+
+  /invitations/{invitationId}/decline:
+    post:
+      summary: Rechaza una invitación pendiente dirigida al actor
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitación rechazada
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/calculation-profile:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      summary: Consulta el perfil de cálculo activo del grupo
+      responses:
+        '200':
+          description: Perfil activo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CalculationProfile'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      summary: Activa un perfil publicado para gastos futuros (Owner/Administrator)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [calculationProfileId]
+              properties:
+                calculationProfileId:
+                  type: string
+      responses:
+        '200':
+          description: Perfil activado
+        default:
+          $ref: '#/components/responses/Error'
+
+  /calculation-profiles:
+    get:
+      summary: Lista perfiles de cálculo publicados
+      responses:
+        '200':
+          description: Perfiles disponibles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CalculationProfile'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /categories:
+    get:
+      summary: Lista el catálogo global de categorías (solo lectura para clientes)
+      responses:
+        '200':
+          description: Categorías
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/expenses:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      summary: Registra un gasto y su reparto
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, paidBy, amount, currency, expenseDate, split]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                categoryId:
+                  type: string
+                paidBy:
+                  type: string
+                amount:
+                  $ref: '#/components/schemas/Money'
+                currency:
+                  $ref: '#/components/schemas/CurrencyCode'
+                exchangeRate:
+                  type: string
+                expenseDate:
+                  type: string
+                  format: date-time
+                split:
+                  $ref: '#/components/schemas/Split'
+      responses:
+        '201':
+          description: Gasto creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Expense'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      summary: Lista gastos del grupo con filtros
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/PageToken'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+        - name: paidBy
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Gastos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Expense'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/expenses/{expenseId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - name: expenseId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Consulta un gasto
+      responses:
+        '200':
+          description: Gasto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Expense'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Modifica un gasto activo
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Gasto actualizado
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      summary: Elimina (soft delete) un gasto
+      responses:
+        '200':
+          description: Gasto eliminado
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/expenses/{expenseId}/restore:
+    post:
+      summary: Restaura un gasto eliminado
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Gasto restaurado
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/expenses/{expenseId}/attachments/upload-url:
+    post:
+      summary: Crea una URL firmada de carga para un adjunto (15 minutos de vigencia)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, mimeType, sizeBytes]
+              properties:
+                fileName:
+                  type: string
+                mimeType:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp, application/pdf]
+                sizeBytes:
+                  type: integer
+                  maximum: 10485760
+      responses:
+        '201':
+          description: URL firmada de carga
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/balances:
+    get:
+      summary: Obtiene los balances materializados del grupo
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Balances
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Balances'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/balances/recalculate:
+    post:
+      summary: Recálculo administrativo de balances (Owner/Administrator)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Recálculo iniciado o completado
+        '409':
+          description: BALANCE_RECALCULATION_IN_PROGRESS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlement-suggestions:
+    get:
+      summary: Genera sugerencias de liquidación sin persistir pagos
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: profileId
+          in: query
+          schema:
+            type: string
+        - name: includeZeroBalances
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Sugerencias
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      groupId:
+                        type: string
+                      currency:
+                        $ref: '#/components/schemas/CurrencyCode'
+                      strategy:
+                        type: string
+                      basedOnCalculatedAt:
+                        type: string
+                        format: date-time
+                      suggestions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SettlementSuggestion'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlements:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      summary: Registra una liquidación pendiente
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fromUser, toUser, amount, currency]
+              properties:
+                fromUser:
+                  type: string
+                toUser:
+                  type: string
+                amount:
+                  $ref: '#/components/schemas/Money'
+                currency:
+                  $ref: '#/components/schemas/CurrencyCode'
+                method:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Liquidación pendiente creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Settlement'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      summary: Lista liquidaciones del grupo
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/PageToken'
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: fromUser
+          in: query
+          schema:
+            type: string
+        - name: toUser
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liquidaciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Settlement'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlements/{settlementId}:
+    get:
+      summary: Consulta una liquidación
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: settlementId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liquidación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Settlement'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlements/{settlementId}/confirm:
+    post:
+      summary: Confirma una liquidación pendiente (pagador, destinatario, Owner o Administrator)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: settlementId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Liquidación confirmada
+        '409':
+          description: SETTLEMENT_AMOUNT_EXCEEDS_DEBT o STALE_VERSION
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlements/{settlementId}/cancel:
+    post:
+      summary: Cancela una liquidación pendiente (creador)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: settlementId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Liquidación cancelada
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/settlements/{settlementId}/reject:
+    post:
+      summary: Rechaza una liquidación pendiente (destinatario, Owner o Administrator)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: settlementId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Liquidación rechazada
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/reports:
+    post:
+      summary: Solicita una exportación asíncrona
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format, reportType]
+              properties:
+                format:
+                  type: string
+                  enum: [CSV, XLSX, PDF, JSON]
+                reportType:
+                  type: string
+                  enum: [EXPENSES, BALANCES, SETTLEMENTS, AUDIT_TRAIL, GROUP_SUMMARY]
+                filters:
+                  type: object
+                locale:
+                  type: string
+                timeZone:
+                  type: string
+      responses:
+        '202':
+          description: Reporte encolado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Report'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/reports/{reportId}:
+    get:
+      summary: Consulta el estado de un reporte
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reporte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Report'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/reports/{reportId}/download-url:
+    post:
+      summary: Genera una URL firmada de descarga (15 minutos de vigencia)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: URL firmada de descarga
+        default:
+          $ref: '#/components/responses/Error'

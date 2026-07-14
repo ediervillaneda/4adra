@@ -47,7 +47,7 @@ Respuesta `202`:
 }
 ```
 
-Las exportaciones grandes se procesan asíncronamente. La misma clave de idempotencia devuelve el mismo `reportId` mientras su solicitud esté vigente.
+Las exportaciones grandes se procesan asíncronamente. La misma clave de idempotencia devuelve el mismo `reportId` mientras su solicitud esté vigente. Por defecto (ADR-011) un reporte generado expira 24 horas después de crearse, y cada `download-url` firmada es válida 15 minutos desde que se solicita.
 
 ## Consultar y descargar
 

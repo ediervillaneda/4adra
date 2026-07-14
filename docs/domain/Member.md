@@ -9,7 +9,7 @@
 
 ## Propiedades
 
-`groupId`, `userId`, `role`, `status`, `joinedAt`, `invitedAt`, `updatedAt` y, si aplica, referencias de invitación y auditoría.
+`groupId`, `userId`, `role`, `status`, `joinedAt`, `invitedAt`, `updatedAt` y, si aplica, referencias de invitación y auditoría. El identificador de la membresía es determinista (`{groupId}_{userId}`, ver ADR-010 en `Decisions.md`), no autogenerado, para permitir lectura directa sin consulta indexada.
 
 Roles: `OWNER`, `ADMINISTRATOR`, `MEMBER`, `READ_ONLY`. Estados: `INVITED`, `ACTIVE`, `REMOVED`.
 

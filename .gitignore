@@ -15,6 +15,14 @@ dist/
 .env
 .env.local
 
+# Firebase
+.firebaserc
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.emulator-data/
+
 # Android
 .gradle/
 local.properties

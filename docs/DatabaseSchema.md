@@ -37,6 +37,8 @@ auditLogs/            appSettings/
 {"groupId":"groupId","userId":"userId","role":"OWNER","status":"ACTIVE","invitedAt":"Timestamp","joinedAt":"Timestamp","updatedAt":"Timestamp"}
 ```
 
+`membershipId` es determinista: `{groupId}_{userId}` (ADR-010). Permite `get()` directo para verificar membresía/rol sin consulta indexada, tanto en casos de uso del backend como en reglas de seguridad. Un usuario tiene como máximo una membresía vigente por grupo, por lo que la clave compuesta no pierde información.
+
 ### `invitations/{invitationId}`
 
 ```json

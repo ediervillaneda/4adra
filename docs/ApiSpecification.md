@@ -171,4 +171,4 @@ Los perfiles publicados son inmutables. Solo Owner o Administrator pueden activa
 
 Las mutaciones emiten eventos internos: `ExpenseCreated`, `ExpenseUpdated`, `ExpenseDeleted`, `SettlementCreated`, `SettlementConfirmed`, `MemberInvited`, `GroupArchived` y `BalanceRecalculated`.
 
-La versión mayor está en la ruta (`v1`). Agregar campos opcionales es compatible; eliminar o cambiar semántica exige una nueva versión mayor y periodo de deprecación.
+La versión mayor está en la ruta (`v1`). Agregar campos opcionales es compatible; eliminar o cambiar semántica exige una nueva versión mayor y un periodo de deprecación de al menos 90 días entre el anuncio y el retiro de la versión anterior (ADR-011).

@@ -46,7 +46,7 @@ Idempotency-Key: e25d9c11-271c-48f5-95e2-79e5a7903c51
 
 Owner y Administrator pueden invitar. Roles asignables al invitar: `ADMINISTRATOR`, `MEMBER` y `READ_ONLY`; `OWNER` solo puede asignarse mediante transferencia de propiedad autorizada.
 
-La invitación se asocia al correo normalizado, expira según configuración del sistema y es de un solo uso. Si el usuario ya es miembro activo, la solicitud debe ser idempotente o retornar `409 MEMBER_ALREADY_ACTIVE` sin crear una segunda membresía.
+La invitación se asocia al correo normalizado, expira 7 días después de creada por defecto (`expiresAt = createdAt + 7 días`, ajustable vía `appSettings` según ADR-011) y es de un solo uso. Si el usuario ya es miembro activo, la solicitud debe ser idempotente o retornar `409 MEMBER_ALREADY_ACTIVE` sin crear una segunda membresía.
 
 Respuesta `201`:
 
