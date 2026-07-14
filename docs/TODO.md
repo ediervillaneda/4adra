@@ -48,18 +48,18 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 
 ## Diagramas (`diagrams/`)
 
-- [ ] `diagrams/Architecture.drawio`
-- [ ] `diagrams/Database.drawio`
-- [ ] `diagrams/SequenceExpense.drawio`
-- [ ] `diagrams/SequenceSettlement.drawio`
-- [ ] `diagrams/ClassDiagram.drawio`
+- [x] `diagrams/Architecture.drawio`
+- [x] `diagrams/Database.drawio`
+- [x] `diagrams/SequenceExpense.drawio`
+- [x] `diagrams/SequenceSettlement.drawio`
+- [x] `diagrams/ClassDiagram.drawio`
 
 ## Ejemplos (`examples/`)
 
-- [ ] `examples/Expense.json`
-- [ ] `examples/Group.json`
-- [ ] `examples/Settlement.json`
-- [ ] `examples/FirestoreStructure.json`
+- [x] `examples/Expense.json`
+- [x] `examples/Group.json`
+- [x] `examples/Settlement.json`
+- [x] `examples/FirestoreStructure.json`
 
 ## Regla de mantenimiento
 

@@ -1,0 +1,99 @@
+{
+  "users": {
+    "{userId}": {
+      "displayName": "Ana Pérez",
+      "email": "ana@example.com",
+      "preferredCurrency": "COP",
+      "language": "es",
+      "timeZone": "America/Bogota",
+      "status": "ACTIVE",
+      "createdAt": "Timestamp",
+      "updatedAt": "Timestamp"
+    }
+  },
+  "groups": {
+    "{groupId}": {
+      "name": "Viaje Guatemala 2027",
+      "defaultCurrency": "USD",
+      "ownerId": "{userId}",
+      "calculationProfileId": "default-v1",
+      "calculationProfileVersion": 1,
+      "status": "ACTIVE",
+      "createdAt": "Timestamp",
+      "updatedAt": "Timestamp"
+    }
+  },
+  "groupMembers": {
+    "{membershipId}": {
+      "groupId": "{groupId}",
+      "userId": "{userId}",
+      "role": "OWNER",
+      "status": "ACTIVE",
+      "joinedAt": "Timestamp"
+    }
+  },
+  "expenses": {
+    "{expenseId}": {
+      "groupId": "{groupId}",
+      "paidBy": "{userId}",
+      "originalAmount": "500.00",
+      "currency": "USD",
+      "exchangeRate": "1.000000",
+      "convertedAmount": "500.00",
+      "calculationProfileVersion": 1,
+      "status": "ACTIVE"
+    }
+  },
+  "expenseSplits": {
+    "{splitId}": {
+      "expenseId": "{expenseId}",
+      "groupId": "{groupId}",
+      "userId": "{userId}",
+      "splitType": "EQUAL",
+      "amount": "250.00"
+    }
+  },
+  "settlements": {
+    "{settlementId}": {
+      "groupId": "{groupId}",
+      "fromUser": "{userId}",
+      "toUser": "{userId}",
+      "amount": "250.00",
+      "currency": "USD",
+      "status": "CONFIRMED",
+      "createdAt": "Timestamp",
+      "confirmedAt": "Timestamp"
+    }
+  },
+  "balances": {
+    "{balanceId}": {
+      "groupId": "{groupId}",
+      "userId": "{userId}",
+      "paid": "500.00",
+      "consumed": "250.00",
+      "balance": "250.00",
+      "updatedAt": "Timestamp"
+    }
+  },
+  "calculationProfiles": {
+    "{profileId}" : {
+      "name": "Default v1",
+      "version": 1,
+      "splitStrategy": "EQUAL",
+      "balanceStrategy": "CLASSIC",
+      "settlementStrategy": "MINIMUM_TRANSACTIONS",
+      "currencyStrategy": "HISTORIC_RATE",
+      "roundingStrategy": "HALF_EVEN",
+      "status": "PUBLISHED"
+    }
+  },
+  "auditLogs": {
+    "{auditId}": {
+      "entity": "Expense",
+      "entityId": "{expenseId}",
+      "operation": "CREATE",
+      "userId": "{userId}",
+      "timestamp": "Timestamp"
+    }
+  }
+}

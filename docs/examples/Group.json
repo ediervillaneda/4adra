@@ -1,0 +1,38 @@
+{
+  "id": "grp_01J2X3A7HJ2R5X6V8N9P0Q1S2T",
+  "name": "Viaje Guatemala 2027",
+  "description": "Gastos compartidos de vacaciones",
+  "image": null,
+  "defaultCurrency": "USD",
+  "createdBy": "usr_ana",
+  "status": "ACTIVE",
+  "calculationProfile": {
+    "id": "default-v1",
+    "version": 1,
+    "activatedAt": "2027-06-01T12:00:00Z",
+    "splitStrategy": "EQUAL",
+    "balanceStrategy": "CLASSIC",
+    "settlementStrategy": "MINIMUM_TRANSACTIONS",
+    "currencyStrategy": "HISTORIC_RATE",
+    "roundingStrategy": "HALF_EVEN"
+  },
+  "members": [
+    {
+      "userId": "usr_ana",
+      "displayName": "Ana Pérez",
+      "role": "OWNER",
+      "status": "ACTIVE",
+      "joinedAt": "2027-06-01T12:00:00Z"
+    },
+    {
+      "userId": "usr_juan",
+      "displayName": "Juan Gómez",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joinedAt": "2027-06-02T09:00:00Z"
+    }
+  ],
+  "createdAt": "2027-06-01T12:00:00Z",
+  "updatedAt": "2027-06-14T14:05:00Z",
+  "resourceVersion": 4
+}

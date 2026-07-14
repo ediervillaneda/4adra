@@ -1,0 +1,56 @@
+{
+  "id": "exp_01J2X4Z8KJ3S6Y7W9P0Q1R2T3U",
+  "groupId": "grp_01J2X3A7HJ2R5X6V8N9P0Q1S2T",
+  "title": "Hotel",
+  "description": "Primera noche en Antigua Guatemala",
+  "categoryId": "lodging",
+  "paidBy": "usr_ana",
+  "originalAmount": "500.00",
+  "currency": "USD",
+  "exchangeRate": {
+    "fromCurrency": "USD",
+    "toCurrency": "USD",
+    "rate": "1.000000",
+    "capturedAt": "2027-06-14T14:00:00Z",
+    "provider": "MANUAL"
+  },
+  "convertedAmount": "500.00",
+  "baseCurrency": "USD",
+  "expenseDate": "2027-06-14T00:00:00Z",
+  "calculationProfile": {
+    "id": "default-v1",
+    "version": 1,
+    "splitStrategy": "PERCENTAGE",
+    "roundingStrategy": "HALF_EVEN"
+  },
+  "split": {
+    "type": "PERCENTAGE",
+    "participants": [
+      {
+        "userId": "usr_ana",
+        "percentage": "50",
+        "convertedAmount": "250.00"
+      },
+      {
+        "userId": "usr_juan",
+        "percentage": "50",
+        "convertedAmount": "250.00"
+      }
+    ]
+  },
+  "attachments": [
+    {
+      "id": "att_01J2X6B9MN4T7Z8X0Q1R2S3U4V",
+      "fileName": "hotel-receipt.pdf",
+      "mimeType": "application/pdf",
+      "storagePath": "groups/grp_01J2X3A7HJ2R5X6V8N9P0Q1S2T/expenses/exp_01J2X4Z8KJ3S6Y7W9P0Q1R2T3U/hotel-receipt.pdf",
+      "uploadedBy": "usr_ana",
+      "uploadedAt": "2027-06-14T14:05:00Z"
+    }
+  ],
+  "status": "ACTIVE",
+  "createdBy": "usr_ana",
+  "createdAt": "2027-06-14T14:01:00Z",
+  "updatedAt": "2027-06-14T14:05:00Z",
+  "resourceVersion": 1
+}

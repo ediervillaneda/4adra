@@ -1,0 +1,17 @@
+{
+  "id": "set_01J2X9D2PQ5V8A9Y1R2S3T4U5V",
+  "groupId": "grp_01J2X3A7HJ2R5X6V8N9P0Q1S2T",
+  "fromUser": "usr_juan",
+  "toUser": "usr_ana",
+  "amount": "250.00",
+  "currency": "USD",
+  "method": "BANK_TRANSFER",
+  "note": "Mitad del hotel",
+  "status": "CONFIRMED",
+  "createdBy": "usr_juan",
+  "createdAt": "2027-06-14T16:00:00Z",
+  "confirmedAt": "2027-06-14T16:05:00Z",
+  "confirmedBy": "usr_ana",
+  "resourceVersion": 2,
+  "auditReference": "aud_01J2XAB3RS6W9B0Z2T3U4V5W6X"
+}
