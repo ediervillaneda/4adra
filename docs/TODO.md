@@ -1,6 +1,6 @@
 # TODO.md — Estado de documentación
 
-> **Proyecto:** Expense Sharing Platform  
+> **Proyecto:** 4adra  
 > **Última actualización:** 2026-07-13
 
 ## Propósito
@@ -30,10 +30,10 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `api/Auth.md` — Autenticación, perfil y sesión.
 - [x] `api/Groups.md` — Grupos, miembros y perfiles de cálculo.
 - [x] `api/Expenses.md` — Gastos, repartos y adjuntos.
-- [ ] `api/Members.md` — Operaciones detalladas de membresías, roles e invitaciones.
-- [ ] `api/Balances.md` — Balances, recálculo y sugerencias de liquidación.
-- [ ] `api/Settlements.md` — Liquidaciones, confirmación y cancelación.
-- [ ] `api/Reports.md` — Exportaciones y reportes.
+- [x] `api/Members.md` — Operaciones detalladas de membresías, roles e invitaciones.
+- [x] `api/Balances.md` — Balances, recálculo y sugerencias de liquidación.
+- [x] `api/Settlements.md` — Liquidaciones, confirmación y cancelación.
+- [x] `api/Reports.md` — Exportaciones y reportes.
 
 ## Documentación de dominio (`domain/`)
 

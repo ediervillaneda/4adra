@@ -1,13 +1,16 @@
 # AGENTS.md
 
-> **Proyecto:** Expense Sharing Platform  
+> **Proyecto:** 4adra  
 > **Versión:** 1.0  
 > **Estado:** Draft  
 > **Arquitectura:** Clean Architecture + DDD Lite + MVVM + Firebase Backend + Event Driven
 
+> **Marca:** 4adra  
+> **Tagline:** Cuentas claras, gastos compartidos.
+
 ## Objetivo del proyecto
 
-Desarrollar una plataforma moderna para administrar gastos compartidos entre personas, inspirada en Settle Up y Splitwise. Permitirá registrar gastos, administrar grupos, calcular balances, optimizar liquidaciones, manejar múltiples monedas y sincronizar información entre Android y Web mediante una API única.
+Desarrollar **4adra**, una plataforma moderna para administrar gastos compartidos entre personas, inspirada en Settle Up y Splitwise. Permitirá registrar gastos, administrar grupos, calcular balances, optimizar liquidaciones, manejar múltiples monedas y sincronizar información entre Android y Web mediante una API única.
 
 ## Objetivo de este documento
 

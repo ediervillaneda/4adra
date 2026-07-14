@@ -1,6 +1,6 @@
 # Decisions.md
 
-> **Proyecto:** Expense Sharing Platform  
+> **Proyecto:** 4adra  
 > **Versión:** 1.0  
 > **Estado:** Active
 
