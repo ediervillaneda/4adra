@@ -48,8 +48,20 @@ jobs:
           echo "ref_name=$ref_name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Verificar que hay commits nuevos vs main
+        id: guard
+        run: |
+          git fetch origin main
+          ahead=$(git rev-list --count origin/main..HEAD)
+          if [ "$ahead" -eq 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ steps.version.outputs.ref_name }} no tiene commits nuevos respecto a main todavía (recién cortada). Se omite la publicación hasta que reciba el merge de develop."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Abrir y mergear PR hacia main
-        id: pr_main
+        if: steps.guard.outputs.ready == 'true'
         run: |
           existing=$(gh pr list --base main --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
           if [ -z "$existing" ]; then
@@ -60,6 +72,7 @@ jobs:
           gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
 
       - name: Taguear main
+        if: steps.guard.outputs.ready == 'true'
         run: |
           git fetch origin main
           git tag -a "v${{ steps.version.outputs.version }}" origin/main \
@@ -67,6 +80,7 @@ jobs:
           git push origin "v${{ steps.version.outputs.version }}"
 
       - name: Abrir y mergear PR de sincronización hacia develop
+        if: steps.guard.outputs.ready == 'true'
         run: |
           existing=$(gh pr list --base develop --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
           if [ -z "$existing" ]; then
@@ -77,6 +91,7 @@ jobs:
           gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
 
       - name: Crear GitHub Release
+        if: steps.guard.outputs.ready == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
