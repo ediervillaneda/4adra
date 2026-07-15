@@ -53,6 +53,8 @@ describe('errorHandlerMiddleware', () => {
 
     errorHandlerMiddleware(new Error('boom'), req, res, jest.fn());
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ meta: { requestId: 'unknown' } }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ meta: { requestId: 'unknown' } }),
+    );
   });
 });

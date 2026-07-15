@@ -51,7 +51,10 @@ describe('GetCurrentUserProfileUseCase', () => {
     });
     repository.seed(existing);
     const saveSpy = jest.spyOn(repository, 'save');
-    const useCase = new GetCurrentUserProfileUseCase(repository, () => new Date('2026-07-13T00:00:00Z'));
+    const useCase = new GetCurrentUserProfileUseCase(
+      repository,
+      () => new Date('2026-07-13T00:00:00Z'),
+    );
 
     const result = await useCase.execute({ actor: anActor() });
 
@@ -85,7 +88,10 @@ describe('GetCurrentUserProfileUseCase', () => {
 
   it('shouldFallBackToEmailAsDisplayNameWhenActorHasNone', async () => {
     const repository = new InMemoryUserRepository();
-    const useCase = new GetCurrentUserProfileUseCase(repository, () => new Date('2026-07-13T00:00:00Z'));
+    const useCase = new GetCurrentUserProfileUseCase(
+      repository,
+      () => new Date('2026-07-13T00:00:00Z'),
+    );
 
     const result = await useCase.execute({ actor: anActor({ displayName: null }) });
 

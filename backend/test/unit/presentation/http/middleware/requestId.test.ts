@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
-import { requestIdMiddleware, RequestWithId } from '../../../../../src/presentation/http/middleware/requestId';
+import {
+  requestIdMiddleware,
+  RequestWithId,
+} from '../../../../../src/presentation/http/middleware/requestId';
 
 describe('requestIdMiddleware', () => {
   it('shouldAssignAUuidRequestIdAndCallNext', () => {

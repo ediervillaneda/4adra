@@ -18,6 +18,8 @@ describe('FirestoreAuditLogWriter', () => {
     await writer.write(entry);
 
     expect(collection).toHaveBeenCalledWith('auditLogs');
-    expect(add).toHaveBeenCalledWith(expect.objectContaining({ actorId: 'usr_ana', operation: 'POST' }));
+    expect(add).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 'usr_ana', operation: 'POST' }),
+    );
   });
 });

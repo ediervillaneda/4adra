@@ -30,7 +30,10 @@ interface MeContractBody {
 describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
   it('shouldMatchTheUserSchemaDefinedInOpenapi', async () => {
     const openapiPath = path.resolve(__dirname, '../../../docs/api/openapi.yaml');
-    const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8')) as Record<string, unknown>;
+    const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8')) as Record<
+      string,
+      unknown
+    >;
 
     const ajv = new Ajv({ strict: false });
     ajv.addSchema(openapiDocument, 'openapi.yaml');
@@ -64,7 +67,9 @@ describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
 
     const isValid = validateUser(body.data);
     if (!isValid) {
-      throw new Error(`Respuesta no cumple el esquema User: ${JSON.stringify(validateUser.errors)}`);
+      throw new Error(
+        `Respuesta no cumple el esquema User: ${JSON.stringify(validateUser.errors)}`,
+      );
     }
     expect(isValid).toBe(true);
   });

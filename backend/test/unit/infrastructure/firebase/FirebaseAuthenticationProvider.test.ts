@@ -44,6 +44,8 @@ describe('FirebaseAuthenticationProvider', () => {
     const verifyIdToken = jest.fn().mockResolvedValue({ uid: 'usr_ana' });
     const provider = new FirebaseAuthenticationProvider(authStub(verifyIdToken));
 
-    await expect(provider.verifyIdToken('no-email-token')).rejects.toThrow(UnauthenticatedException);
+    await expect(provider.verifyIdToken('no-email-token')).rejects.toThrow(
+      UnauthenticatedException,
+    );
   });
 });
