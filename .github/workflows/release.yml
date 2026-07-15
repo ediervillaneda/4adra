@@ -1,32 +1,48 @@
 name: Release
 
-# Git Flow (ADR-013, docs/Decisions.md): un push a release/* o hotfix/* corre
-# toda la batería de tests y, si pasan, publica automáticamente a main
-# (vía Pull Request real, nunca push directo — main y develop tienen branch
-# protection) y sincroniza develop. Se taguea y se crea un GitHub Release.
+# Git Flow (ADR-013, docs/Decisions.md), ciclo de vida completo de release/hotfix:
+#
+# 1. Push a release/**|hotfix/** -> corre CI completo (backend/web/android) y,
+#    si pasa y hay commits nuevos vs main, publica automáticamente a main
+#    (vía Pull Request real, nunca push directo) y sincroniza develop. Taguea
+#    v<version> y crea el GitHub Release.
+# 2. PR mergeado hacia release/** (fixes de estabilización) -> taguea
+#    v<version>-rc y crea un GitHub Release (prerelease). No repite tests,
+#    ya corrieron como parte del PR.
+#
+# Un solo entorno de Firebase: el deploy real solo ocurre con push a main
+# (deploy-firebase.yml), nunca desde release/*, hotfix/* ni develop.
 
 on:
   push:
     branches:
       - 'release/**'
       - 'hotfix/**'
+  pull_request:
+    types: [closed]
+    branches:
+      - 'release/**'
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event.pull_request.base.ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   test-backend:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/backend.yml
 
   test-web:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/web.yml
 
   test-android:
+    if: github.event_name == 'push'
     uses: ./.github/workflows/android.yml
 
   publish:
     name: Publicar a main y develop
+    if: github.event_name == 'push'
     needs: [test-backend, test-web, test-android]
     runs-on: ubuntu-latest
     permissions:
@@ -74,6 +90,8 @@ jobs:
       - name: Taguear main
         if: steps.guard.outputs.ready == 'true'
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git tag -a "v${{ steps.version.outputs.version }}" origin/main \
             -m "Release ${{ steps.version.outputs.version }}"
@@ -97,3 +115,39 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
+
+  tag-candidate:
+    name: Crear tag de release candidate
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Derivar versión desde la rama release/*
+        id: version
+        run: |
+          version="${{ github.event.pull_request.base.ref }}"
+          version="${version#release/}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Crear y pushear tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.version }}-rc" \
+            -m "Release candidate ${{ steps.version.outputs.version }} (${{ github.event.pull_request.base.ref }})"
+          git push origin "v${{ steps.version.outputs.version }}-rc"
+
+      - name: Crear GitHub Release (prerelease)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}-rc
+          name: v${{ steps.version.outputs.version }}-rc
+          prerelease: true
+          generate_release_notes: true
+          target_commitish: ${{ github.event.pull_request.base.ref }}
