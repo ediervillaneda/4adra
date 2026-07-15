@@ -1,11 +1,11 @@
-name: Release Branch (tag + deploy Staging)
+name: Release Branch (tag)
 
 # Git Flow (ADR-013, docs/Decisions.md): cuando un PR se mergea hacia una
-# rama release/*, se taguea esa versión y se despliega a Staging. La
-# batería de tests ya corrió como parte del PR (backend.yml/web.yml/android.yml
-# se disparan en cualquier pull_request); este workflow no repite tests,
-# solo publica. El deploy a producción real ocurre aparte, solo con push a
-# main (deploy-firebase.yml), cuando la release finalmente se mergea ahí.
+# rama release/*, se taguea esa versión como release candidate. Un solo
+# entorno de Firebase: el deploy real solo ocurre con push a main
+# (deploy-firebase.yml), nunca desde release/* ni develop. Este workflow
+# no repite tests: ya corrieron como parte del PR (backend.yml/web.yml/
+# android.yml se disparan en cualquier pull_request).
 
 on:
   pull_request:
@@ -24,8 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,62 +49,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}-rc
-          name: v${{ steps.version.outputs.version }}-rc (staging)
+          name: v${{ steps.version.outputs.version }}-rc
           prerelease: true
           generate_release_notes: true
           target_commitish: ${{ github.event.pull_request.base.ref }}
-
-  deploy-staging:
-    name: Deploy Firebase (Staging)
-    needs: tag
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-
-      - name: Verificar secrets y scaffolding requeridos
-        id: guard
-        run: |
-          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}" ] || [ -z "${{ secrets.FIREBASE_PROJECT_ID_STAGING }}" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Faltan los secrets FIREBASE_SERVICE_ACCOUNT_STAGING/FIREBASE_PROJECT_ID_STAGING (proyecto Firebase staging aún no creado). Se omite el deploy."
-          elif [ ! -f backend/package.json ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía. Se omite el deploy."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Configurar Node.js
-        if: steps.guard.outputs.ready == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias y build
-        if: steps.guard.outputs.ready == 'true'
-        working-directory: backend
-        run: |
-          npm ci
-          npm run build
-
-      - name: Autenticar con Google Cloud
-        if: steps.guard.outputs.ready == 'true'
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}
-
-      - name: Instalar Firebase CLI
-        if: steps.guard.outputs.ready == 'true'
-        run: npm install -g firebase-tools
-
-      - name: Deploy (Cloud Functions, Firestore rules/indexes, Storage rules)
-        if: steps.guard.outputs.ready == 'true'
-        run: |
-          firebase deploy \
-            --only functions,firestore:rules,firestore:indexes,storage \
-            --project "${{ secrets.FIREBASE_PROJECT_ID_STAGING }}" \
-            --non-interactive
