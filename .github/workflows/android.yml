@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'android/**'
       - '.github/workflows/android.yml'
@@ -10,6 +10,7 @@ on:
     paths:
       - 'android/**'
       - '.github/workflows/android.yml'
+  workflow_call: {}
 
 concurrency:
   group: android-${{ github.ref }}

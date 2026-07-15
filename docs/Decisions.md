@@ -181,6 +181,28 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 
 **Consecuencias:** El `applicationId` de Gradle debe ser exactamente `com.edier.adra.app` cuando se cree el proyecto real. El registro anterior (`com.edier.cuadra.app`) sigue existiendo en Firebase Console como app duplicada — eliminarlo ahí es opcional/limpieza, no bloqueante. Queda pendiente restringir la API key de este `google-services.json` en Google Cloud Console (`com.edier.adra.app` + SHA-1 del certificado de firma) antes de publicar.
 
+---
+
+## ADR-013 — Modelo de ramas Git Flow y publicación automatizada
+
+**Fecha:** 2026-07-14
+**Estado:** Accepted
+
+**Contexto:** Hasta ahora el trabajo de Fase 0 se hizo en ramas `fase_#/task_#_<slug>` encadenadas directamente sobre `main`, sin rama de integración intermedia ni protección de rama (el repositorio era privado, y la API de GitHub para branch protection clásica devuelve 403 en repos privados del plan free — requiere GitHub Pro o repo público). El responsable del proyecto pidió explícitamente: nunca mergear directo a `main`, adoptar Git Flow, automatizar tests + publicación de release a `main` y `develop`, y disparar el deploy a Firebase solo al publicar a `main`.
+
+**Decisión:**
+- Repositorio pasado a **público** para habilitar branch protection clásica en `main` y `develop` (bloquea push directo, exige Pull Request).
+- Modelo de ramas Git Flow estándar:
+  - `main`: código en producción. Solo recibe merges desde `release/*` o `hotfix/*`, nunca commits directos.
+  - `develop`: integración continua. Recibe merges desde `feature/*` vía PR.
+  - `feature/<slug>`: una rama por funcionalidad/tarea, nace de `develop`, PR de vuelta a `develop`. Reemplaza la convención anterior `fase_#/task_#_<slug>`.
+  - `release/<version>`: se corta de `develop` cuando un conjunto de features está listo para publicar. Al hacer push a `release/*`, el workflow `release.yml` corre la batería completa de tests (backend/web/android) y, si pasan, mergea automáticamente la rama a `main` (con tag `v<version>` y GitHub Release) y de vuelta a `develop`, manteniendo ambas ramas sincronizadas.
+  - `hotfix/<slug>`: corrección urgente sobre `main`, se mergea a `main` y a `develop` igual que una release.
+- El deploy a Firebase (`deploy-firebase.yml`) solo se dispara por push a `main` — es decir, únicamente después de que una release o hotfix se publicó ahí. Nunca se dispara desde `develop` ni desde ramas `feature/*`.
+- Los workflows de CI existentes (`backend.yml`, `web.yml`, `android.yml`) ahora también corren en push a `develop` (antes solo `main`) y se exponen como reusables (`workflow_call`) para que `release.yml` los invoque sin duplicar lógica.
+
+**Consecuencias:** El código de este repositorio (incluyendo `docs/`, reglas de negocio y especificación financiera) queda visible públicamente — decisión explícita del responsable del proyecto, aceptando ese trade-off a cambio de poder usar branch protection nativa de GitHub sin costo. Los proyectos Firebase `staging`/`production` y sus secretos (`FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_PROJECT_ID_PRODUCTION`) deben crearse y cargarse manualmente en GitHub Secrets antes de que `deploy-firebase.yml` pueda completar un despliegue real; hasta entonces el job se omite sin fallar, siguiendo el mismo patrón de guardas usado en los workflows existentes. Las ramas `fase_#/task_#_<slug>` ya creadas para Fase 0 se consolidan en una única `feature/backend-scaffold-fase0` para no abrir 17 PRs redundantes contra `develop`.
+
 ## Cómo añadir una decisión
 
 Copiar el formato ADR, usar el siguiente identificador, enlazar documentos afectados y describir riesgos/alternativas consideradas. No usar este registro para tareas pequeñas de implementación ni para notas temporales.

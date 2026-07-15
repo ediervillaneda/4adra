@@ -1,0 +1,84 @@
+name: Release
+
+# Git Flow (ADR-013, docs/Decisions.md): un push a release/* o hotfix/* corre
+# toda la batería de tests y, si pasan, publica automáticamente a main
+# (vía Pull Request real, nunca push directo — main y develop tienen branch
+# protection) y sincroniza develop. Se taguea y se crea un GitHub Release.
+
+on:
+  push:
+    branches:
+      - 'release/**'
+      - 'hotfix/**'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-backend:
+    uses: ./.github/workflows/backend.yml
+
+  test-web:
+    uses: ./.github/workflows/web.yml
+
+  test-android:
+    uses: ./.github/workflows/android.yml
+
+  publish:
+    name: Publicar a main y develop
+    needs: [test-backend, test-web, test-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derivar nombre de versión desde la rama
+        id: version
+        run: |
+          ref_name="${GITHUB_REF#refs/heads/}"
+          version="${ref_name#release/}"
+          version="${version#hotfix/}"
+          echo "ref_name=$ref_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Abrir y mergear PR hacia main
+        id: pr_main
+        run: |
+          existing=$(gh pr list --base main --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then
+            gh pr create --base main --head "${{ steps.version.outputs.ref_name }}" \
+              --title "release: ${{ steps.version.outputs.version }}" \
+              --body "Publicación automática de \`${{ steps.version.outputs.ref_name }}\` a \`main\` (ADR-013)."
+          fi
+          gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
+
+      - name: Taguear main
+        run: |
+          git fetch origin main
+          git tag -a "v${{ steps.version.outputs.version }}" origin/main \
+            -m "Release ${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Abrir y mergear PR de sincronización hacia develop
+        run: |
+          existing=$(gh pr list --base develop --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
+          if [ -z "$existing" ]; then
+            gh pr create --base develop --head "${{ steps.version.outputs.ref_name }}" \
+              --title "chore: sincronizar develop tras release ${{ steps.version.outputs.version }}" \
+              --body "Sincronización automática de \`${{ steps.version.outputs.ref_name }}\` a \`develop\` tras publicar a \`main\` (ADR-013)."
+          fi
+          gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
+
+      - name: Crear GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
