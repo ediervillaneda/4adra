@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-test-build:
-    name: Formato · Lint · Tipos · Pruebas · Build
+  ci:
+    name: Formato · Lint · Tipos · Pruebas · Integración · Contrato · Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +40,13 @@ jobs:
           node-version-file: backend/.nvmrc
           cache: npm
           cache-dependency-path: backend/package-lock.json
+
+      - name: Configurar JDK (requerido por Firebase Emulator Suite)
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Instalar dependencias (npm ci)
         if: steps.scaffold.outputs.exists == 'true'
@@ -66,6 +73,24 @@ jobs:
         working-directory: backend
         run: npm test -- --coverage
 
+      - name: Instalar Firebase CLI
+        if: steps.scaffold.outputs.exists == 'true'
+        run: npm install -g firebase-tools
+
+      - name: Pruebas de integración (Firebase Emulator Suite)
+        if: steps.scaffold.outputs.exists == 'true'
+        # Se ejecuta desde la raíz del repo porque firebase.json vive ahí.
+        run: |
+          firebase emulators:exec \
+            --project demo-4adra \
+            --only auth,firestore,storage \
+            "npm --prefix backend run test:integration"
+
+      - name: Pruebas de contrato (docs/api/openapi.yaml)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: backend
+        run: npm run test:contract
+
       - name: Análisis de dependencias (npm audit)
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
@@ -75,88 +100,3 @@ jobs:
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm run build
-
-  emulator-integration:
-    name: Pruebas de integración (Firebase Emulator)
-    runs-on: ubuntu-latest
-    needs: lint-test-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verificar scaffolding (backend/package.json)
-        id: scaffold
-        run: |
-          if [ -f backend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de integración."
-          fi
-
-      - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm ci
-
-      - name: Configurar JDK (requerido por Firebase Emulator Suite)
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Instalar Firebase CLI
-        if: steps.scaffold.outputs.exists == 'true'
-        run: npm install -g firebase-tools
-
-      - name: Ejecutar pruebas de integración dentro del Firebase Emulator Suite
-        if: steps.scaffold.outputs.exists == 'true'
-        # Se ejecuta desde la raíz del repo porque firebase.json vive ahí.
-        run: |
-          firebase emulators:exec \
-            --project demo-4adra \
-            --only auth,firestore,storage \
-            "npm --prefix backend run test:integration"
-
-  contract-tests:
-    name: Pruebas de contrato (docs/api/openapi.yaml)
-    runs-on: ubuntu-latest
-    needs: lint-test-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verificar scaffolding (backend/package.json)
-        id: scaffold
-        run: |
-          if [ -f backend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de contrato."
-          fi
-
-      - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm ci
-
-      - name: Ejecutar pruebas de contrato contra docs/api/openapi.yaml
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm run test:contract

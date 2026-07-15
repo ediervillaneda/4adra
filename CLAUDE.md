@@ -19,6 +19,7 @@ Mapa de la documentación:
 - `docs/CodingStandards.md`, `docs/TestingGuide.md`, `docs/DevelopmentGuide.md` — convenciones de código, estrategia de pruebas y guía de contribución.
 - `docs/Roadmap.md`, `docs/Decisions.md` (ADRs), `docs/Glossary.md` (lenguaje ubicuo) — evolución, decisiones y terminología.
 - `docs/UISpecification.md` — inventario de pantallas, navegación y reglas de presentación (Android y Web, todas las fases); precede a los wireframes visuales, que todavía no existen.
+- `docs/Workflows.md` — guía operativa de los workflows de GitHub Actions y del flujo de ramas Git Flow, con comandos de ejemplo por paso.
 - `docs/api/*.md` — contrato HTTP detallado por recurso (Auth, Groups, Expenses, Members, Balances, Settlements, Reports).
 - `docs/domain/*.md` — detalle de cada entidad/value object del dominio.
 - `docs/diagrams/*.drawio`, `docs/examples/*.json` — diagramas y payloads de ejemplo.
