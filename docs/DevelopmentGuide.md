@@ -85,6 +85,18 @@ Firestore no aplica esquema, por tanto todo campo nuevo debe tener valor por def
 
 Todo endpoint mutante necesita autenticación, autorización, validación, `Idempotency-Key`, auditoría y prueba de contrato. Las mutaciones concurrentes usan versión de recurso o transacción.
 
+## Modelo de ramas (Git Flow)
+
+Ver ADR-013 en `Decisions.md` para el contexto completo. Resumen operativo:
+
+- **`main`**: producción. Nunca recibe commits ni merges directos — solo merges automáticos desde `release/*` o `hotfix/*` vía `release.yml`. Protegida contra push directo.
+- **`develop`**: integración continua. Recibe merges desde `feature/*` vía Pull Request. Protegida contra push directo.
+- **`feature/<slug>`**: una rama por tarea/funcionalidad, creada desde `develop`. PR de vuelta a `develop` cuando esté lista, con CI en verde.
+- **`release/<version>`**: cortada de `develop` cuando un conjunto de features está listo para publicar. Un push a `release/*` dispara `release.yml`: corre toda la batería de tests (backend/web/android) y, si pasan, mergea automáticamente a `main` (tag `v<version>` + GitHub Release) y de vuelta a `develop`.
+- **`hotfix/<slug>`**: corrección urgente cortada de `main`, se publica igual que una release (merge a `main` y a `develop`).
+
+El deploy real a Firebase (`deploy-firebase.yml`) solo se dispara por push a `main` — nunca desde `develop` ni desde `feature/*`.
+
 ## Flujo de contribución
 
 - Mantener cambios pequeños y enfocados.

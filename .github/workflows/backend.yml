@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'backend/**'
       - '.github/workflows/backend.yml'
@@ -10,6 +10,7 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend.yml'
+  workflow_call: {}
 
 concurrency:
   group: backend-${{ github.ref }}
@@ -104,6 +105,13 @@ jobs:
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm ci
+
+      - name: Configurar JDK (requerido por Firebase Emulator Suite)
+        if: steps.scaffold.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Instalar Firebase CLI
         if: steps.scaffold.outputs.exists == 'true'
