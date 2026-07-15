@@ -90,6 +90,8 @@ jobs:
       - name: Taguear main
         if: steps.guard.outputs.ready == 'true'
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git tag -a "v${{ steps.version.outputs.version }}" origin/main \
             -m "Release ${{ steps.version.outputs.version }}"
