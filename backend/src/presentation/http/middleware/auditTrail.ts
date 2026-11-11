@@ -1,35 +1,37 @@
-import { NextFunction, Request, Response } from 'express';
+import { MiddlewareHandler } from 'hono';
+import { AppEnv } from '../AppEnv';
 import { AuditLogWriter } from '../../../domain/audit/AuditLogWriter';
-import { AuthenticatedRequest } from './authenticate';
-import { RequestWithId } from './requestId';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
+/**
+ * Registra en auditoría cada mutación exitosa sin retrasar la respuesta: la escritura se
+ * agenda con `waitUntil` y un fallo se registra en logs sin alterar lo que recibe el cliente.
+ */
 export function auditTrailMiddleware(
   writer: AuditLogWriter,
-): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    if (!MUTATING_METHODS.has(req.method)) {
-      next();
+  now: () => Date,
+): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    await next();
+
+    if (!MUTATING_METHODS.has(c.req.method) || c.res.status >= 400) {
       return;
     }
 
-    res.on('finish', () => {
-      if (res.statusCode >= 400) {
-        return;
-      }
-      const actor = (req as Partial<AuthenticatedRequest>).actor;
-      const requestId = (req as Partial<RequestWithId>).requestId ?? 'unknown';
-      void writer.write({
-        actorId: actor?.userId.toString() ?? 'unknown',
-        entity: req.path,
-        entityId: req.path,
-        operation: req.method,
+    const requestId = c.get('requestId') ?? 'unknown';
+    const write = writer
+      .write({
+        actorId: c.get('actor')?.userId.toString() ?? 'unknown',
+        entity: c.req.path,
+        entityId: c.req.path,
+        operation: c.req.method,
         requestId,
-        occurredAt: new Date(),
+        occurredAt: now(),
+      })
+      .catch((error: unknown) => {
+        console.error(`[audit] no se pudo registrar la auditoría (requestId=${requestId})`, error);
       });
-    });
-
-    next();
+    c.executionCtx.waitUntil(write);
   };
 }

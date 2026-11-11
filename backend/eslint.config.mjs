@@ -1,16 +1,16 @@
-const tseslint = require('typescript-eslint');
-const eslintConfigPrettier = require('eslint-config-prettier');
+import tseslint from 'typescript-eslint';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
-module.exports = tseslint.config(
+export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.wrangler/**', 'worker-configuration.d.ts'],
   },
   ...tseslint.configs.recommendedTypeChecked,
   {
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json',
-        tsconfigRootDir: __dirname,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {

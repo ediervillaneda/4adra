@@ -7,11 +7,8 @@ import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-plugin';
 export default defineConfig({
   plugins: [
     cloudflareTest(async () => ({
-      // TODO(Task 4): usar wrangler.configPath cuando src/index.ts sea el Worker.
+      wrangler: { configPath: './wrangler.jsonc' },
       miniflare: {
-        compatibilityDate: '2026-11-01',
-        compatibilityFlags: ['nodejs_compat'],
-        d1Databases: ['DB'],
         bindings: {
           TEST_MIGRATIONS: await readD1Migrations(path.resolve('migrations')),
           BETTER_AUTH_URL: 'http://localhost:8787',
