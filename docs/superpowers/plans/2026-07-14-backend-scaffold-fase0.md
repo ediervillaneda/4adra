@@ -1,3 +1,5 @@
+> **Obsoleto (2026-11-11):** plan histórico ya ejecutado sobre Firebase. Reemplazado por la migración a Cloudflare: `docs/superpowers/specs/2026-11-11-migracion-cloudflare-design.md` y `docs/superpowers/plans/2026-11-11-migracion-cloudflare.md`. Se conserva solo como registro.
+
 # Backend Scaffold (Fase 0) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
