@@ -15,8 +15,8 @@
     {
       "binding": "DB",
       "database_name": "4adra-db",
-      // Se reemplaza por el id real tras `wrangler d1 create 4adra-db` (Deployment.md).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Base creada con `wrangler d1 create 4adra-db` (2026-11-11, región ENAM).
+      "database_id": "2b53af62-df26-4dba-a3a8-3822e313dbc9",
       "migrations_dir": "migrations"
     }
   ],
