@@ -14,6 +14,8 @@ Todo ocurre en el mismo origen que la API (`https://4adra.edier.me`; en local `h
 1. **Iniciar sesión con Google:** `POST /api/auth/sign-in/social` con `{ "provider": "google", "callbackURL": "/" }`. La respuesta trae la URL de Google a la que el cliente redirige. El SDK cliente de Better Auth lo hace con `signIn.social({ provider: 'google' })`.
 2. **Callback:** Google redirige a `/api/auth/callback/google`. Better Auth crea o vincula la identidad (tablas `user` y `account`), abre una sesión (`session`) y emite la cookie.
 3. **Sesión actual:** `GET /api/auth/get-session`, que el cliente usa para saber si hay sesión.
+**Acceso solo por invitación (ADR-018):** si el correo de Google no está inscrito en la lista de acceso, no se crea la cuenta. Google redirige a `/api/auth/error?error=NOT_INVITED`, y la PWA debe mostrar "Necesitas una invitación para usar 4adra". Los usuarios ya registrados no se ven afectados.
+
 4. **Cerrar sesión:** `POST /api/auth/sign-out` invalida la sesión y borra la cookie.
 
 ## Autenticación de solicitudes

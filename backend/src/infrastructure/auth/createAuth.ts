@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { v7 as uuidv7 } from 'uuid';
 
 const MIN_SECRET_LENGTH = 32;
@@ -10,6 +11,11 @@ export interface AuthConfig {
   google?: { clientId: string; clientSecret: string };
   /** Solo para pruebas de integración: producción usa únicamente Google (ADR-016). */
   emailAndPasswordEnabled?: boolean;
+  /**
+   * Filtro de registro (ADR-018): si se define, solo se crean cuentas cuyo correo devuelva true.
+   * No afecta a usuarios que ya existen.
+   */
+  isSignUpAllowed?: (email: string) => Promise<boolean>;
 }
 
 /**
@@ -32,6 +38,7 @@ export function createAuth(config: AuthConfig) {
     baseURL: config.baseURL,
     emailAndPassword: { enabled: config.emailAndPasswordEnabled ?? false },
     ...(config.google ? { socialProviders: { google: config.google } } : {}),
+    ...(config.isSignUpAllowed ? { databaseHooks: signUpGate(config.isSignUpAllowed) } : {}),
     advanced: {
       database: { generateId: () => uuidv7() },
       useSecureCookies: config.baseURL.startsWith('https://'),
@@ -40,3 +47,25 @@ export function createAuth(config: AuthConfig) {
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+interface SignUpGateHooks {
+  user: { create: { before: (user: { email: string }) => Promise<void> } };
+}
+
+function signUpGate(isSignUpAllowed: (email: string) => Promise<boolean>): SignUpGateHooks {
+  return {
+    user: {
+      create: {
+        before: async (user: { email: string }): Promise<void> => {
+          if (!(await isSignUpAllowed(user.email))) {
+            // En el login con Google, Better Auth redirige a /api/auth/error?error=NOT_INVITED.
+            throw new APIError('FORBIDDEN', {
+              code: 'NOT_INVITED',
+              message: 'Este correo no tiene invitación para usar 4adra.',
+            });
+          }
+        },
+      },
+    },
+  };
+}

@@ -311,6 +311,31 @@ Los secrets `FIREBASE_SERVICE_ACCOUNT`/`FIREBASE_PROJECT_ID_PRODUCTION` ya exist
 - `UISpecification.md`, `CodingStandards.md`, `TestingGuide.md` y `Roadmap.md` dejan de describir Android.
 - Volver a una app nativa exigiría un ADR nuevo.
 
+## ADR-018 — Acceso a la plataforma solo por lista (inscripción manual)
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted
+
+**Contexto:** Con el login con Google abierto, cualquier cuenta de Google podría crear una cuenta en 4adra. El responsable del proyecto quiere que solo entren personas invitadas. Al inicio habrá dos usuarios en producción, así que no se justifica construir un flujo de invitaciones.
+
+Además, el "modo prueba" de Google no sirve como control de acceso:
+- obliga a gestionar usuarios en la consola de Google;
+- tiene un límite de 100 usuarios;
+- muestra una advertencia de app no verificada.
+
+**Decisión:**
+- **Tabla `allowed_emails`** (`0002_allowed_emails.sql`): correo en minúsculas, nota opcional, fecha de alta y `revoked_at`.
+- **Hook de registro:** `createAuth` recibe `isSignUpAllowed` y registra un hook `databaseHooks.user.create.before` de Better Auth. Si el correo no está vigente en la lista, rechaza la creación de la cuenta con `403 NOT_INVITED`. En el login con Google, eso redirige a `/api/auth/error?error=NOT_INVITED`.
+- **Puerto de dominio:** `AllowedEmailRepository`, implementado por `D1AllowedEmailRepository`.
+- **Usuarios existentes:** el filtro solo actúa al crear cuentas, así que los usuarios que ya existen siguen entrando.
+- **Inscripción y revocación:** son manuales, con `wrangler d1 execute --remote` (`docs/Deployment.md`). No hay endpoints, rol de administrador ni envío de correos.
+- **Privacidad:** los correos nunca se versionan, porque el repositorio es público.
+
+**Consecuencias:**
+- La app de Google puede publicarse para cualquier cuenta, ya que el filtro real vive en el Worker.
+- Revocar un correo impide registrarse, pero no expulsa a un usuario ya creado. Para bloquearlo se usa `users.status = 'DISABLED'`, que ya responde 403 `USER_DISABLED`.
+- **Evolución prevista:** invitaciones desde la app con un rol `PLATFORM_ADMIN` y, opcionalmente, correo de invitación. Se construirá sobre la misma tabla, en un ADR nuevo.
+
 ## Cómo añadir una decisión
 
 Copiar el formato ADR, usar el siguiente identificador, enlazar documentos afectados y describir riesgos/alternativas consideradas. No usar este registro para tareas pequeñas de implementación ni para notas temporales.
