@@ -6,14 +6,14 @@
 
 ## Objetivo
 
-Define el contrato HTTP público para Android y Web. Firebase Cloud Functions implementa la API y es la única vía para operaciones críticas; las reglas de negocio y autorización se ejecutan en el servidor.
+Define el contrato HTTP público para el cliente web (PWA). Un Cloudflare Worker (`4adra`, Hono) implementa la API y es la única vía para operaciones críticas; las reglas de negocio y autorización se ejecutan en el servidor.
 
 ## Convenciones generales
 
-- Base URL: `https://<region>-<project>.cloudfunctions.net/api/v1`.
-- HTTPS y JSON UTF-8 obligatorios.
-- Autenticación: `Authorization: Bearer <Firebase-ID-token>`.
-- Fechas: ISO 8601 en respuestas; `Timestamp` de Firestore en persistencia.
+- Base URL: `https://4adra.edier.me/api/v1` (local: `http://localhost:8787/api/v1`).
+- HTTPS y JSON UTF-8 obligatorios (en local, HTTP).
+- Autenticación: cookie de sesión `HttpOnly` de Better Auth, emitida tras "Continuar con Google" (ver `api/Auth.md`). Mismo origen que la PWA; sin CORS.
+- Fechas: ISO 8601 en respuestas; TEXT ISO-8601 UTC en D1.
 - Monedas: ISO-4217; importes como cadenas decimales (`"125.50"`), nunca punto flotante.
 - IDs opacos; el cliente no interpreta su estructura.
 - Toda mutación exige encabezado `Idempotency-Key` UUID. Repetir clave y carga devuelve el mismo resultado.
@@ -38,7 +38,7 @@ Define el contrato HTTP público para Android y Web. Firebase Cloud Functions im
 | HTTP | Código | Uso |
 |---|---|---|
 | 400 | `VALIDATION_ERROR`, `INVALID_SPLIT` | Solicitud inválida |
-| 401 | `UNAUTHENTICATED` | Token ausente o inválido |
+| 401 | `UNAUTHENTICATED` | Cookie de sesión ausente, alterada o expirada |
 | 403 | `PERMISSION_DENIED` | Permisos insuficientes |
 | 404 | `GROUP_NOT_FOUND` | Recurso inexistente o no visible |
 | 409 | `STALE_VERSION`, `CONFLICT` | Conflicto de concurrencia |
