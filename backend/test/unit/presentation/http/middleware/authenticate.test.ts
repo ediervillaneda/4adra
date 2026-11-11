@@ -7,6 +7,7 @@ import { AppEnv } from '../../../../../src/presentation/http/AppEnv';
 import { AuthenticationProvider } from '../../../../../src/domain/auth/AuthenticationProvider';
 import { AuthenticatedActor } from '../../../../../src/domain/auth/AuthenticatedActor';
 import { SessionCredential } from '../../../../../src/domain/auth/SessionCredential';
+import { SessionResolution } from '../../../../../src/domain/auth/SessionResolution';
 import { UnauthenticatedException } from '../../../../../src/domain/auth/errors';
 import { UserId } from '../../../../../src/domain/user/UserId';
 import { Email } from '../../../../../src/domain/user/Email';
@@ -50,8 +51,8 @@ describe('authenticateMiddleware', () => {
 
   it('shouldPassCookieHeaderAsSessionCredential', async () => {
     const resolveSession = vi
-      .fn<(credential: SessionCredential) => Promise<AuthenticatedActor>>()
-      .mockResolvedValue(actor);
+      .fn<(credential: SessionCredential) => Promise<SessionResolution>>()
+      .mockResolvedValue({ actor, renewedCredentials: [] });
 
     await appWith({ resolveSession }).request('/api/v1/me', {
       headers: { cookie: 'better-auth.session_token=abc' },
@@ -61,7 +62,9 @@ describe('authenticateMiddleware', () => {
   });
 
   it('shouldAttachActorAndCallNextWhenTokenIsValid', async () => {
-    const provider: AuthenticationProvider = { resolveSession: vi.fn().mockResolvedValue(actor) };
+    const provider: AuthenticationProvider = {
+      resolveSession: vi.fn().mockResolvedValue({ actor, renewedCredentials: [] }),
+    };
 
     const response = await appWith(provider).request('/api/v1/me', {
       headers: { cookie: 'better-auth.session_token=abc' },
@@ -70,5 +73,27 @@ describe('authenticateMiddleware', () => {
 
     expect(response.status).toBe(200);
     expect(body.userId).toBe('usr_ana');
+  });
+
+  it('shouldForwardRenewedSessionCookiesOnTheResponse', async () => {
+    const provider: AuthenticationProvider = {
+      resolveSession: vi.fn().mockResolvedValue({
+        actor,
+        renewedCredentials: [
+          'better-auth.session_token=renewed; Path=/; HttpOnly',
+          'better-auth.session_data=x; Path=/; HttpOnly',
+        ],
+      }),
+    };
+
+    const response = await appWith(provider).request('/api/v1/me', {
+      headers: { cookie: 'better-auth.session_token=abc' },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.getSetCookie()).toEqual([
+      'better-auth.session_token=renewed; Path=/; HttpOnly',
+      'better-auth.session_data=x; Path=/; HttpOnly',
+    ]);
   });
 });

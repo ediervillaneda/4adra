@@ -3,6 +3,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { createApp } from './http/createApp';
 import { AppEnv } from './http/AppEnv';
 import { createAuth } from '../infrastructure/auth/createAuth';
+import { betterAuthSessionLookup } from '../infrastructure/auth/betterAuthSessionLookup';
 import { BetterAuthAuthenticationProvider } from '../infrastructure/auth/BetterAuthAuthenticationProvider';
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
 import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
@@ -24,9 +25,7 @@ export function composeApp(env: Env): Hono<AppEnv> {
   });
 
   return createApp({
-    authenticationProvider: new BetterAuthAuthenticationProvider((headers) =>
-      auth.api.getSession({ headers }),
-    ),
+    authenticationProvider: new BetterAuthAuthenticationProvider(betterAuthSessionLookup(auth)),
     auditLogWriter: new D1AuditLogWriter(env.DB, () => uuidv7()),
     getCurrentUserProfileUseCase: new GetCurrentUserProfileUseCase(
       userRepository,

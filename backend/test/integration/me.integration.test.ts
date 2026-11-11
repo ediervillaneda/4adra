@@ -53,3 +53,14 @@ describe('GET /api/v1/me de punta a punta (Worker + D1 + Better Auth)', () => {
     expect(body.error.code).toBe('UNAUTHENTICATED');
   });
 });
+
+describe('Rutas /api desconocidas vía el Worker', () => {
+  it('shouldReturnJson404InsteadOfTheSpaForUnknownApiRoute', async () => {
+    const response = await SELF.fetch('http://localhost:8787/api/nope');
+    const body: ErrorBody = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(body.error.code).toBe('NOT_FOUND');
+  });
+});

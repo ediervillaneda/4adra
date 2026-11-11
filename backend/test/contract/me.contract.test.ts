@@ -46,10 +46,13 @@ describe('Contrato GET /api/v1/me contra docs/api/openapi.yaml', () => {
     const authenticationProvider: AuthenticationProvider = {
       resolveSession: () =>
         Promise.resolve({
-          userId: UserId.fromString('usr_ana'),
-          email: Email.fromString('ana@example.com'),
-          displayName: 'Ana Pérez',
-          photoUrl: null,
+          actor: {
+            userId: UserId.fromString('usr_ana'),
+            email: Email.fromString('ana@example.com'),
+            displayName: 'Ana Pérez',
+            photoUrl: null,
+          },
+          renewedCredentials: [],
         }),
     };
     const auditLogWriter: AuditLogWriter = { write: () => Promise.resolve() };

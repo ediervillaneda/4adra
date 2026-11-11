@@ -33,10 +33,13 @@ function buildApp(overrides: Partial<AppDependencies> = {}): Hono<AppEnv> {
         return Promise.reject(new UnauthenticatedException('sesión inválida.'));
       }
       return Promise.resolve({
-        userId: UserId.fromString('usr_ana'),
-        email: Email.fromString('ana@example.com'),
-        displayName: 'Ana Pérez',
-        photoUrl: null,
+        actor: {
+          userId: UserId.fromString('usr_ana'),
+          email: Email.fromString('ana@example.com'),
+          displayName: 'Ana Pérez',
+          photoUrl: null,
+        },
+        renewedCredentials: [],
       });
     }),
   };

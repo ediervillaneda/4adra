@@ -30,10 +30,13 @@ describe('Contrato PATCH /api/v1/me contra docs/api/openapi.yaml', () => {
       authenticationProvider: {
         resolveSession: () =>
           Promise.resolve({
-            userId: UserId.fromString('usr_ana'),
-            email: Email.fromString('ana@example.com'),
-            displayName: 'Ana Pérez',
-            photoUrl: null,
+            actor: {
+              userId: UserId.fromString('usr_ana'),
+              email: Email.fromString('ana@example.com'),
+              displayName: 'Ana Pérez',
+              photoUrl: null,
+            },
+            renewedCredentials: [],
           }),
       },
       auditLogWriter: { write: () => Promise.resolve() },
