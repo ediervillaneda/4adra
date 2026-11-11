@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { v7 as uuidv7 } from 'uuid';
 
+const MIN_SECRET_LENGTH = 32;
+
 export interface AuthConfig {
   database: D1Database;
   secret: string;
@@ -16,6 +18,13 @@ export interface AuthConfig {
  */
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- el tipo de Better Auth depende de las opciones y debe inferirse.
 export function createAuth(config: AuthConfig) {
+  // Sin secreto propio Better Auth caería en uno por defecto público y las cookies serían falsificables.
+  if (config.secret.length < MIN_SECRET_LENGTH) {
+    throw new Error(
+      `BETTER_AUTH_SECRET falta o tiene menos de ${MIN_SECRET_LENGTH} caracteres (ver docs/Deployment.md).`,
+    );
+  }
+
   return betterAuth({
     database: config.database,
     basePath: '/api/auth',

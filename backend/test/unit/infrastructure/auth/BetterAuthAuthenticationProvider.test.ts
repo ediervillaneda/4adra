@@ -27,15 +27,15 @@ describe('BetterAuthAuthenticationProvider', () => {
     await expect(provider.resolveSession(cookie)).rejects.toBeInstanceOf(UnauthenticatedException);
   });
 
-  it('shouldRejectWhenLookupThrows', async () => {
+  it('shouldPropagateInfrastructureFailureInsteadOfReportingUnauthenticated', async () => {
+    const outage = new Error('D1_ERROR: database unavailable');
     const provider = new BetterAuthAuthenticationProvider(
-      vi.fn<SessionLookup>().mockRejectedValue(new Error('boom')),
+      vi.fn<SessionLookup>().mockRejectedValue(outage),
     );
 
     const failure = provider.resolveSession(cookie);
 
-    await expect(failure).rejects.toBeInstanceOf(UnauthenticatedException);
-    await expect(failure).rejects.not.toThrow(/boom/);
+    await expect(failure).rejects.toBe(outage);
   });
 
   it('shouldPassCookieHeaderToLookup', async () => {

@@ -26,12 +26,9 @@ export class BetterAuthAuthenticationProvider implements AuthenticationProvider 
       throw new UnauthenticatedException('falta la cookie de sesión.');
     }
 
-    let session: { user: SessionUser } | null;
-    try {
-      session = await this.lookupSession(new Headers({ cookie: credential.toString() }));
-    } catch {
-      throw new UnauthenticatedException('no se pudo validar la sesión.');
-    }
+    // Cookie ausente, falsificada o vencida → Better Auth devuelve null (401).
+    // Un fallo de D1/Better Auth se propaga: es un 500 con requestId, no "sin sesión".
+    const session = await this.lookupSession(new Headers({ cookie: credential.toString() }));
 
     if (session === null) {
       throw new UnauthenticatedException('sesión inválida o expirada.');

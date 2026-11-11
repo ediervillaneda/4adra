@@ -107,6 +107,26 @@ describe('createApp', () => {
     expect(body.meta.requestId).toBe('req_1');
   });
 
+  it('shouldRespond500WhenSessionLookupFailsUnexpectedly', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const response = await buildApp({
+      authenticationProvider: {
+        resolveSession: vi.fn().mockRejectedValue(new Error('D1_ERROR: database unavailable')),
+      },
+    }).request('/api/v1/me', { headers: { cookie: VALID_COOKIE } }, {}, executionContextFake());
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(JSON.parse(text)).toMatchObject({
+      error: { code: 'INTERNAL_ERROR' },
+      meta: { requestId: 'req_1' },
+    });
+    expect(text).not.toContain('D1_ERROR');
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it('shouldDelegateAuthRoutesToAuthHandler', async () => {
     const authHandler = vi
       .fn<(request: Request) => Promise<Response>>()
