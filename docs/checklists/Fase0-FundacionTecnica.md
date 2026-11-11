@@ -30,13 +30,13 @@ Disponer de una base segura y repetible para desarrollo:
 
 ### Cloudflare (acciones manuales, `docs/Deployment.md` § "Configuración inicial")
 
-- [ ] `npx wrangler login` y verificar con `npx wrangler whoami`.
-- [ ] Confirmar que la zona `edier.me` está en la cuenta de Cloudflare.
-- [ ] `npx wrangler d1 create 4adra-db`, copiar el `database_id` a `backend/wrangler.jsonc` y ejecutar `npm run db:migrate:remote`.
-- [ ] Cliente OAuth de Google (orígenes `https://4adra.edier.me` y `http://localhost:8787`; callback `/api/auth/callback/google`).
-- [ ] `wrangler secret put` de `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-- [ ] API token de Cloudflare (Workers + D1 Edit, alcance mínimo) y secrets de GitHub `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`.
-- [ ] Borrar los secrets de GitHub heredados `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_PROJECT_ID_PRODUCTION` (y los `_STAGING`, si existen).
+- [x] `npx wrangler login` y verificar con `npx wrangler whoami`.
+- [x] Confirmar que la zona `edier.me` está en la cuenta de Cloudflare.
+- [x] `npx wrangler d1 create 4adra-db`, copiar el `database_id` a `backend/wrangler.jsonc` y ejecutar `npm run db:migrate:remote`.
+- [x] Cliente OAuth de Google en el proyecto de Google Cloud `4adra-app` (ID `adra-app`), app en modo prueba con usuarios de prueba (orígenes `https://4adra.edier.me` y `http://localhost:8787`; callback `/api/auth/callback/google`).
+- [x] `wrangler secret put` de `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+- [x] API token de Cloudflare (Workers + D1 Edit, alcance mínimo) y secrets de GitHub `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`.
+- [x] Secrets de GitHub heredados de Firebase: verificado el 2026-11-11 que el repositorio ya no tiene ninguno.
 - [ ] Eliminar el proyecto Firebase `adra-54655` (y `-staging`/`-prod`, si existen). Sus claves de cliente siguen en el historial de git.
 
 ### Backend (`backend/`)
@@ -68,13 +68,14 @@ Disponer de una base segura y repetible para desarrollo:
 - [x] `backend.yml`: formato, lint, tipos, unitarias + cobertura, migraciones D1 en limpio, integración, contrato, `npm audit` y build (`wrangler deploy --dry-run`).
 - [x] `deploy-cloudflare.yml`: migraciones D1 remotas + `wrangler deploy` con push a `main`; se omite si faltan los secrets.
 - [x] `release.yml` sin Android; `openapi-lint.yml` vigente.
-- [ ] Primer deploy real a `https://4adra.edier.me` y su prueba de humo (`docs/Deployment.md`).
+- [x] Primer deploy real a `https://4adra.edier.me` (2026-11-11, manual con `wrangler deploy`, versión `a40dfda1`). Prueba de humo: `/` 200, `/api/v1/me` 401 JSON, `/api/nope` 404 JSON, `sign-in/social` devuelve la URL de Google.
 
 ### Documentación
 
 - [x] ADR-014..017 registrados; ADR-002, 003, 008 (parcial), 009, 010 y 012 marcados como reemplazados.
 - [x] `CLAUDE.md`, `AGENTS.md` y `README.md` con los comandos reales.
-- [ ] Actualizar este checklist con las decisiones que surjan durante el aprovisionamiento (por ejemplo, el nombre final del Worker si Cloudflare rechaza `4adra`).
+- [x] Decisiones del aprovisionamiento: Cloudflare aceptó el nombre `4adra`; el proyecto de Google Cloud se llama `4adra-app` para no confundirlo con el proyecto Firebase `adra-54655` (que se llama "4adra" en la consola).
+- [ ] Pasar la app de Google de "Prueba" a "En producción" cuando se quiera abrir a cualquier cuenta de Google.
 
 ## Criterios de salida
 
