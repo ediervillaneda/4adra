@@ -1,7 +1,7 @@
 import { ValidationException, ValidationIssue } from '../errors/ValidationException';
 
-export const SUPPORTED_CURRENCIES = ['COP', 'USD', 'EUR', 'MXN', 'GTQ'] as const;
-export const SUPPORTED_LANGUAGES = ['es', 'en'] as const;
+const SUPPORTED_CURRENCIES = ['COP', 'USD', 'EUR', 'MXN', 'GTQ'] as const;
+const SUPPORTED_LANGUAGES = ['es', 'en'] as const;
 
 const ALLOWED_FIELDS = new Set([
   'displayName',

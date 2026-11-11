@@ -4,7 +4,7 @@ import { UserStatus } from './UserStatus';
 import { UserDisabledException } from './errors';
 import { ProfileChanges } from './ProfileChanges';
 
-export interface UserProps {
+interface UserProps {
   id: UserId;
   displayName: string;
   email: Email;

@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 const MIN_SECRET_LENGTH = 32;
 
-export interface AuthConfig {
+interface AuthConfig {
   database: D1Database;
   secret: string;
   baseURL: string;
