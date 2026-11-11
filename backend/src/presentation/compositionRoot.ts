@@ -9,10 +9,12 @@ import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
 import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRepository';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
+import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
   const allowedEmails = new D1AllowedEmailRepository(env.DB);
+  const userRepository = new D1UserRepository(env.DB);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -27,7 +29,11 @@ export function composeApp(env: Env): Hono<AppEnv> {
     ),
     auditLogWriter: new D1AuditLogWriter(env.DB, () => uuidv7()),
     getCurrentUserProfileUseCase: new GetCurrentUserProfileUseCase(
-      new D1UserRepository(env.DB),
+      userRepository,
+      () => new Date(),
+    ),
+    updateCurrentUserProfileUseCase: new UpdateCurrentUserProfileUseCase(
+      userRepository,
       () => new Date(),
     ),
     authHandler: (request) => auth.handler(request),

@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { AppEnv } from '../AppEnv';
 import { DomainError } from '../../../domain/errors/DomainError';
+import { ValidationException } from '../../../domain/errors/ValidationException';
 import { errorEnvelope } from '../responseEnvelope';
 
 const STATUS_BY_CODE: Record<string, ContentfulStatusCode> = {
@@ -17,7 +18,8 @@ export function handleError(error: unknown, c: Context<AppEnv>): Response {
 
   if (error instanceof DomainError) {
     const status = STATUS_BY_CODE[error.code] ?? 400;
-    return c.json(errorEnvelope(error.code, error.message, requestId), status);
+    const details = error instanceof ValidationException ? [...error.details] : undefined;
+    return c.json(errorEnvelope(error.code, error.message, requestId, details), status);
   }
 
   console.error(`[error] error inesperado (requestId=${requestId})`, error);

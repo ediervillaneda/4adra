@@ -9,6 +9,7 @@ import { AuditLogWriter } from '../../src/domain/audit/AuditLogWriter';
 import { UserRepository } from '../../src/domain/user/UserRepository';
 import { User } from '../../src/domain/user/User';
 import { GetCurrentUserProfileUseCase } from '../../src/application/user/GetCurrentUserProfileUseCase';
+import { UpdateCurrentUserProfileUseCase } from '../../src/application/user/UpdateCurrentUserProfileUseCase';
 import { UserId } from '../../src/domain/user/UserId';
 import { Email } from '../../src/domain/user/Email';
 
@@ -60,6 +61,10 @@ describe('Contrato GET /api/v1/me contra docs/api/openapi.yaml', () => {
       authenticationProvider,
       auditLogWriter,
       getCurrentUserProfileUseCase,
+      updateCurrentUserProfileUseCase: new UpdateCurrentUserProfileUseCase(
+        new InMemoryUserRepository(),
+        () => new Date('2026-07-13T12:00:00Z'),
+      ),
       authHandler: () => Promise.resolve(new Response(null, { status: 404 })),
       generateRequestId: () => crypto.randomUUID(),
     });
