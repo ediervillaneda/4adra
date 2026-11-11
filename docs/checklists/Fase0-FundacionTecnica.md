@@ -79,7 +79,8 @@ Disponer de una base segura y repetible para desarrollo:
 
 ## Criterios de salida
 
-- [ ] Backend y PWA pueden autenticarse con Google en local y en producción.
+- [x] Backend: login con Google verificado en producción el 2026-11-11 (Google → Better Auth → sesión en D1 → `GET /api/v1/me` 200 con perfil creado, id UUID v7).
+- [ ] PWA: login con Google desde la interfaz (subproyecto 2).
 - [x] El pipeline de CI ejecuta formato, tipos, pruebas, migraciones e integración en verde para `backend/`.
 - [x] D1 solo es accesible vía el binding del Worker (no existe acceso directo desde clientes).
 - [x] Existe al menos un caso de uso de punta a punta funcionando (`GET /api/v1/me`) como prueba de arquitectura.
