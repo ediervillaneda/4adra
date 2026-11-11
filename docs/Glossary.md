@@ -10,7 +10,7 @@ Establece el lenguaje ubicuo del producto. Los nombres de UI, API, modelo de dom
 
 | Término | Definición |
 |---|---|
-| Adjunto (`Attachment`) | Archivo asociado a un gasto, almacenado en Firebase Storage. |
+| Adjunto (`Attachment`) | Archivo asociado a un gasto, almacenado en Cloudflare R2 (solo accesible vía el Worker). |
 | Agregado | Conjunto de entidades y reglas con una raíz de consistencia. En este dominio, `Group` es el agregado principal. |
 | Auditoría (`AuditLog`) | Registro inmutable de quién hizo una operación, cuándo y qué cambió. |
 | Balance | Posición calculada de un miembro: total pagado menos total consumido, considerando liquidaciones confirmadas. |
@@ -18,7 +18,7 @@ Establece el lenguaje ubicuo del producto. Los nombres de UI, API, modelo de dom
 | Calculation Engine | Servicio de dominio que selecciona y ejecuta estrategias de cálculo. |
 | Calculation Profile | Configuración versionada de estrategias de reparto, balance, moneda, redondeo, validación y liquidación para un grupo. |
 | Categoría | Clasificación configurable de un gasto, por ejemplo Hotel o Transporte. |
-| Cliente | Aplicación Android o Web que consume la API; no es autoridad de reglas financieras. |
+| Cliente | La PWA (PC y celular) que consume la API; no es autoridad de reglas financieras. |
 | Deudor | Miembro con balance negativo que debe aportar dinero. |
 | Domain Event | Hecho relevante de negocio ocurrido, por ejemplo `ExpenseCreated`. |
 | Gasto (`Expense`) | Registro de un pago con un único pagador, importe, moneda, fecha y distribución. |
