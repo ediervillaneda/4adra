@@ -1,107 +1,91 @@
 # DatabaseSchema.md
 
 > **Proyecto:** 4adra  
-> **Versión:** 1.0  
-> **Base de datos:** Firebase Firestore  
+> **Versión:** 2.0  
+> **Base de datos:** Cloudflare D1 (SQLite), ADR-015  
 > **Estado:** Draft
 
 ## Objetivo y principios
 
-Define el esquema lógico de Firestore. Evitar duplicación innecesaria, optimizar lecturas frecuentes, usar índices, evitar documentos mayores de 1 MB, minimizar escrituras y preservar consistencia eventual. Cambios deben documentarse aquí.
+Define el esquema relacional de D1. Principios:
 
-## Colecciones
+- Llaves foráneas reales y restricciones `CHECK`/`UNIQUE` como primera línea de integridad.
+- Índices para las consultas frecuentes.
+- Escrituras atómicas con `db.batch([...])`.
+- Ningún dato financiero duplicado como fuente de verdad.
 
-```text
-users/                groups/               groupMembers/
-invitations/          expenses/             expenseSplits/
-settlements/          balances/             categories/
-exchangeRates/        calculationProfiles/  notifications/
-auditLogs/            appSettings/
-```
+Todo cambio de esquema se hace con una **migración nueva** y se documenta aquí.
 
-### `users/{userId}`
-
-```json
-{"displayName":"Juan Pérez","email":"juan@example.com","photoUrl":"","preferredCurrency":"USD","language":"es","timeZone":"America/Bogota","createdAt":"Timestamp","updatedAt":"Timestamp","status":"ACTIVE"}
-```
-
-### `groups/{groupId}`
-
-```json
-{"name":"Viaje Guatemala","description":"Vacaciones 2027","image":"","defaultCurrency":"USD","ownerId":"userId","calculationProfileId":"profileId","calculationProfileVersion":1,"createdAt":"Timestamp","updatedAt":"Timestamp","status":"ACTIVE"}
-```
-
-### `groupMembers/{membershipId}`
-
-```json
-{"groupId":"groupId","userId":"userId","role":"OWNER","status":"ACTIVE","invitedAt":"Timestamp","joinedAt":"Timestamp","updatedAt":"Timestamp"}
-```
-
-`membershipId` es determinista: `{groupId}_{userId}` (ADR-010). Permite `get()` directo para verificar membresía/rol sin consulta indexada, tanto en casos de uso del backend como en reglas de seguridad. Un usuario tiene como máximo una membresía vigente por grupo, por lo que la clave compuesta no pierde información.
-
-### `invitations/{invitationId}`
-
-```json
-{"groupId":"groupId","email":"juan@example.com","role":"MEMBER","status":"PENDING","createdBy":"userId","createdAt":"Timestamp","expiresAt":"Timestamp"}
-```
-
-Colección a nivel raíz porque `POST /invitations/{invitationId}/accept|decline` se resuelve por identidad global, no anidada bajo el grupo. Una invitación aceptada o rechazada no se borra; conserva su estado final para auditoría.
-
-### `expenses/{expenseId}`
-
-```json
-{"groupId":"groupId","title":"Hotel","description":"","categoryId":"categoryId","paidBy":"userId","currency":"USD","exchangeRate":"1.000000","originalAmount":"500.00","convertedAmount":"500.00","calculationProfileVersion":1,"expenseDate":"Timestamp","createdBy":"userId","createdAt":"Timestamp","updatedAt":"Timestamp","status":"ACTIVE"}
-```
-
-### `expenseSplits/{splitId}`
-
-```json
-{"expenseId":"expenseId","groupId":"groupId","userId":"userId","splitType":"EQUAL","amount":"125.00","percentage":"25","shares":1}
-```
-
-### `settlements/{settlementId}`
-
-```json
-{"groupId":"groupId","fromUser":"userId","toUser":"userId","currency":"USD","amount":"50.00","status":"PENDING","createdAt":"Timestamp","confirmedAt":null}
-```
-
-### `balances/{balanceId}`
-
-```json
-{"groupId":"groupId","userId":"userId","paid":"850.00","consumed":"600.00","balance":"250.00","updatedAt":"Timestamp"}
-```
-
-Todo campo monetario (`amount`, `originalAmount`, `convertedAmount`, `exchangeRate`, `paid`, `consumed`, `balance`) se persiste como cadena decimal, nunca como número nativo de Firestore, para evitar la representación en punto flotante (`double`) que usa internamente ese tipo. `percentage` sigue la misma regla por su sensibilidad decimal; `shares` es un entero de ponderación y puede persistirse como número.
-
-Balances son materializados y regenerables; no se editan manualmente.
-
-### Catálogos y soporte
-
-- `categories/{id}`: nombre, icono, color y orden. Catálogo global gestionado por la plataforma, compartido por todos los grupos; no hay colección ni gestión por grupo.
-- `exchangeRates/{id}`: `from`, `to`, `rate`, proveedor y captura; una tasa usada no cambia.
-- `calculationProfiles/{id}`: nombre, versión y nombres de estrategias (`split`, `settlement`, `rounding`, `currency`, `balance`). Las versiones son inmutables.
-- `notifications/{id}`: usuario, título, mensaje, lectura y fecha.
-- `auditLogs/{id}`: entidad, entidad ID, operación, usuario, valor anterior/nuevo, fecha.
-- `appSettings/{id}`: monedas, regionalización, límites y versiones mínimas.
-
-## Índices recomendados
-
-- `expenses`: `groupId + expenseDate`, `groupId + categoryId`, `groupId + paidBy`, `groupId + status`.
-- `settlements`: `groupId + status`, `fromUser + status`, `toUser + status`.
-- `balances`: `groupId + userId`.
-- `groupMembers`: `groupId + userId`, `userId + status`.
-- `invitations`: `groupId + status`, `email + status`.
+El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](examples/D1Schema.sql). Las tablas que existen hoy están en [`backend/migrations/`](../backend/migrations/).
 
 ## Convenciones
 
-- IDs UUID v7 o automáticos de Firestore; nunca incrementales.
-- Fechas como `Timestamp`, nunca texto.
-- Monedas ISO-4217: `USD`, `COP`, `EUR`, `MXN`, `GTQ`.
-- Soft delete con estados `ACTIVE`, `ARCHIVED`, `DELETED`.
-- Auditoría, liquidaciones confirmadas y tasas históricas no se eliminan.
+- **Nombres:** tablas y columnas en `snake_case`. Las tablas de Better Auth (`user`, `session`, `account`, `verification`) conservan los nombres camelCase que exige la librería.
+- **IDs:** `TEXT PRIMARY KEY` con UUID v7 generado en el backend; nunca incrementales. El `UserId` del dominio es el `user.id` de Better Auth.
+- **Fechas de dominio:** `TEXT` ISO-8601 UTC con milisegundos (`2026-11-11T15:04:05.000Z`). Ordenan y comparan correctamente como texto.
+- **Dinero:** `amount`, `original_amount`, `converted_amount`, `exchange_rate`, `paid`, `consumed`, `balance` y `percentage` se guardan como `TEXT` decimal exacto (`"500.00"`), **nunca `REAL`**. Los valida el value object `Money` con `Decimal.js`. `shares` es `INTEGER`.
+- **Monedas:** ISO-4217 (`USD`, `COP`, `EUR`, `MXN`, `GTQ`).
+- **Soft delete:** `status` con `CHECK (status IN ('ACTIVE','ARCHIVED','DELETED'))`. Nunca se borran físicamente la auditoría, las liquidaciones confirmadas ni las tasas históricas.
+- **Integridad referencial:** `PRAGMA foreign_keys` está activo en D1.
 
-## Denormalización y migraciones
+## Tablas existentes (`0001_init.sql`)
 
-Solo denormalizar para reducir lecturas de manera significativa y con sincronización clara (por ejemplo, nombre de grupo en una notificación). Los datos financieros no se duplican como fuente de verdad.
+| Tabla | Dueño | Propósito |
+|---|---|---|
+| `user`, `session`, `account`, `verification` | Better Auth (ADR-016) | Identidad de Google, sesiones (cookie) y cuentas vinculadas |
+| `users` | Dominio | Perfil: nombre visible, correo, foto, moneda preferida, idioma, zona horaria, estado (`ACTIVE`/`DISABLED`). `id` → `user(id)` con `ON DELETE RESTRICT` |
+| `audit_logs` | Dominio | Auditoría de solo inserción: `actor_id`, `entity`, `entity_id`, `operation`, `request_id`, `occurred_at`, `created_at` |
 
-Toda migración mantiene compatibilidad cuando sea posible, se registra en `Decisions.md`, incluye scripts si afecta datos y actualiza este documento.
+`audit_logs` tiene los triggers `audit_logs_no_update` y `audit_logs_no_delete` (`RAISE(ABORT, 'audit_logs es inmutable')`). Así la base misma impide alterar la auditoría (ADR-006).
+
+## Tablas previstas (se crean en la fase que las implemente)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `calculation_profiles` | PK `(id, version)` | Versiones publicadas inmutables (trigger), ADR-005 |
+| `groups` | FK `owner_id` → `users`; FK `(calculation_profile_id, calculation_profile_version)` | Moneda por defecto; estado soft delete |
+| `group_members` | `UNIQUE (group_id, user_id)` | Reemplaza el ID determinista de ADR-010; rol `OWNER`/`ADMINISTRATOR`/`MEMBER`/`READ_ONLY` |
+| `invitations` | FK `group_id`; índices `(group_id, status)`, `(email, status)` | Una invitación aceptada o rechazada no se borra: conserva su estado final |
+| `categories` | — | Catálogo global gestionado por la plataforma |
+| `exchange_rates` | Índice `(from_currency, to_currency, captured_at)` | Una tasa usada no cambia (triggers) |
+| `expenses` | FK `group_id`, `paid_by`, `category_id`, `created_by` | Exactamente un pagador; tasa y versión de perfil congeladas al crear |
+| `expense_splits` | `UNIQUE (expense_id, user_id)` | Se escriben en el mismo `batch` que el gasto |
+| `settlements` | `CHECK (from_user <> to_user)` | Estados `PENDING`/`CONFIRMED`/`REJECTED`/`CANCELLED` |
+| `balances` | PK `(group_id, user_id)` | Proyección regenerable; nunca se edita manualmente |
+| `notifications` | Índice `(user_id, created_at)` | Usuario, título, mensaje, lectura y fecha |
+| `app_settings` | — | JSON de monedas, regionalización, límites (ADR-011) y versiones mínimas |
+
+## Índices
+
+**Existentes:**
+- `session_userId_idx`, `account_userId_idx`, `verification_identifier_idx`
+- `idx_audit_logs_entity (entity, entity_id)`
+
+**Previstos:**
+
+| Tabla | Índices |
+|---|---|
+| `expenses` | `(group_id, expense_date)`, `(group_id, category_id)`, `(group_id, paid_by)`, `(group_id, status)` |
+| `settlements` | `(group_id, status)`, `(from_user, status)`, `(to_user, status)` |
+| `group_members` | `(user_id, status)` (el `UNIQUE (group_id, user_id)` ya indexa la otra consulta) |
+| `invitations` | `(group_id, status)`, `(email, status)` |
+
+## Atomicidad
+
+D1 no ofrece transacciones interactivas: no se puede leer y luego escribir dentro de una misma transacción. Las operaciones de varias filas se envían como un único `db.batch([...])`, que es atómico; un ejemplo es un gasto junto con sus splits.
+
+Las validaciones que necesitan leer antes de escribir se hacen en el caso de uso y se protegen con restricciones de la base. Por ejemplo, `UNIQUE` evita una membresía duplicada aunque haya dos solicitudes concurrentes.
+
+## Migraciones
+
+- **Ubicación:** `backend/migrations/NNNN_descripcion.sql`, numeradas y aplicadas en orden por Wrangler (tabla interna `d1_migrations`).
+- **Comandos:**
+  - Local: `npm run db:migrate:local`.
+  - Producción: `npm run db:migrate:remote`, que CI ejecuta antes de `wrangler deploy` en `main`.
+- **Inmutabilidad:** una migración aplicada **nunca se edita**. Para corregirla se crea otra.
+- **Compatibilidad:** se mantiene cuando sea posible (agregar columnas con default, evitar renombrados destructivos). Una migración con impacto en datos se registra en `Decisions.md`.
+- **Pruebas:** las de integración aplican todas las migraciones sobre una D1 local antes de cada archivo (`test/integration/applyMigrations.ts`).
+
+## Denormalización
+
+Solo se denormaliza cuando reduce lecturas de forma significativa y la sincronización está clara; por ejemplo, el nombre del grupo en una notificación. Los datos financieros no se duplican como fuente de verdad.
