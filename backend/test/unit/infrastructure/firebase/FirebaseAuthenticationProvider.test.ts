@@ -1,13 +1,14 @@
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import { FirebaseAuthenticationProvider } from '../../../../src/infrastructure/firebase/FirebaseAuthenticationProvider';
 import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
 
-function authStub(verifyIdToken: jest.Mock): never {
+function authStub(verifyIdToken: Mock): never {
   return { verifyIdToken } as never;
 }
 
 describe('FirebaseAuthenticationProvider', () => {
   it('shouldReturnActorFromValidToken', async () => {
-    const verifyIdToken = jest.fn().mockResolvedValue({
+    const verifyIdToken = vi.fn().mockResolvedValue({
       uid: 'usr_ana',
       email: 'Ana@Example.com',
       name: 'Ana Pérez',
@@ -24,7 +25,7 @@ describe('FirebaseAuthenticationProvider', () => {
   });
 
   it('shouldDefaultDisplayNameAndPhotoToNullWhenAbsent', async () => {
-    const verifyIdToken = jest.fn().mockResolvedValue({ uid: 'usr_ana', email: 'ana@example.com' });
+    const verifyIdToken = vi.fn().mockResolvedValue({ uid: 'usr_ana', email: 'ana@example.com' });
     const provider = new FirebaseAuthenticationProvider(authStub(verifyIdToken));
 
     const actor = await provider.verifyIdToken('a-valid-token');
@@ -34,14 +35,14 @@ describe('FirebaseAuthenticationProvider', () => {
   });
 
   it('shouldThrowUnauthenticatedWhenTokenVerificationFails', async () => {
-    const verifyIdToken = jest.fn().mockRejectedValue(new Error('expired'));
+    const verifyIdToken = vi.fn().mockRejectedValue(new Error('expired'));
     const provider = new FirebaseAuthenticationProvider(authStub(verifyIdToken));
 
     await expect(provider.verifyIdToken('expired-token')).rejects.toThrow(UnauthenticatedException);
   });
 
   it('shouldThrowUnauthenticatedWhenTokenHasNoEmail', async () => {
-    const verifyIdToken = jest.fn().mockResolvedValue({ uid: 'usr_ana' });
+    const verifyIdToken = vi.fn().mockResolvedValue({ uid: 'usr_ana' });
     const provider = new FirebaseAuthenticationProvider(authStub(verifyIdToken));
 
     await expect(provider.verifyIdToken('no-email-token')).rejects.toThrow(

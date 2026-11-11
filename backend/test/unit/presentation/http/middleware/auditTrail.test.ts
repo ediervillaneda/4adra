@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { auditTrailMiddleware } from '../../../../../src/presentation/http/middleware/auditTrail';
@@ -16,7 +17,7 @@ function appWithFakeWriter(writer: AuditLogWriter): Express {
 
 describe('auditTrailMiddleware', () => {
   it('shouldNotWriteAuditLogForReadRequests', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
+    const write = vi.fn().mockResolvedValue(undefined);
     const app = appWithFakeWriter({ write });
 
     await request(app).get('/v1/ping').expect(200);
@@ -26,7 +27,7 @@ describe('auditTrailMiddleware', () => {
   });
 
   it('shouldWriteAuditLogForSuccessfulMutation', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
+    const write = vi.fn().mockResolvedValue(undefined);
     const app = appWithFakeWriter({ write });
 
     await request(app).post('/v1/groups').expect(201);
@@ -39,7 +40,7 @@ describe('auditTrailMiddleware', () => {
   });
 
   it('shouldNotWriteAuditLogForFailedMutation', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
+    const write = vi.fn().mockResolvedValue(undefined);
     const app = appWithFakeWriter({ write });
 
     await request(app).post('/v1/fails').expect(400);

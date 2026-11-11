@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { Request, Response } from 'express';
 import {
   authenticateMiddleware,
@@ -14,9 +15,9 @@ function requestWithHeader(value: string | undefined): Request {
 
 describe('authenticateMiddleware', () => {
   it('shouldCallNextWithUnauthenticatedWhenHeaderIsMissing', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn() };
+    const provider: AuthenticationProvider = { verifyIdToken: vi.fn() };
     const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
+    const next = vi.fn();
 
     await middleware(requestWithHeader(undefined), {} as Response, next);
 
@@ -24,9 +25,9 @@ describe('authenticateMiddleware', () => {
   });
 
   it('shouldCallNextWithUnauthenticatedWhenHeaderIsNotBearer', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn() };
+    const provider: AuthenticationProvider = { verifyIdToken: vi.fn() };
     const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
+    const next = vi.fn();
 
     await middleware(requestWithHeader('Basic abc'), {} as Response, next);
 
@@ -40,10 +41,10 @@ describe('authenticateMiddleware', () => {
       displayName: 'Ana Pérez',
       photoUrl: null,
     };
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn().mockResolvedValue(actor) };
+    const provider: AuthenticationProvider = { verifyIdToken: vi.fn().mockResolvedValue(actor) };
     const middleware = authenticateMiddleware(provider);
     const req = requestWithHeader('Bearer a-valid-token');
-    const next = jest.fn();
+    const next = vi.fn();
 
     await middleware(req, {} as Response, next);
 
@@ -53,10 +54,10 @@ describe('authenticateMiddleware', () => {
 
   it('shouldCallNextWithErrorWhenProviderRejects', async () => {
     const provider: AuthenticationProvider = {
-      verifyIdToken: jest.fn().mockRejectedValue(new UnauthenticatedException('expirado')),
+      verifyIdToken: vi.fn().mockRejectedValue(new UnauthenticatedException('expirado')),
     };
     const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
+    const next = vi.fn();
 
     await middleware(requestWithHeader('Bearer expired-token'), {} as Response, next);
 

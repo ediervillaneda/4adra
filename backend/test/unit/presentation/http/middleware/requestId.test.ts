@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { Request, Response } from 'express';
 import {
   requestIdMiddleware,
@@ -8,7 +9,7 @@ describe('requestIdMiddleware', () => {
   it('shouldAssignAUuidRequestIdAndCallNext', () => {
     const req = {} as Request;
     const res = {} as Response;
-    const next = jest.fn();
+    const next = vi.fn();
 
     requestIdMiddleware(req, res, next);
 
@@ -21,7 +22,7 @@ describe('requestIdMiddleware', () => {
     const req1 = {} as Request;
     const req2 = {} as Request;
     const res = {} as Response;
-    const next = jest.fn();
+    const next = vi.fn();
 
     requestIdMiddleware(req1, res, next);
     requestIdMiddleware(req2, res, next);

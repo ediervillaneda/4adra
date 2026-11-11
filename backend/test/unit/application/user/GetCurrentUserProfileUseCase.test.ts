@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { GetCurrentUserProfileUseCase } from '../../../../src/application/user/GetCurrentUserProfileUseCase';
 import { UserRepository } from '../../../../src/domain/user/UserRepository';
 import { User } from '../../../../src/domain/user/User';
@@ -50,7 +51,7 @@ describe('GetCurrentUserProfileUseCase', () => {
       updatedAt: timestamp,
     });
     repository.seed(existing);
-    const saveSpy = jest.spyOn(repository, 'save');
+    const saveSpy = vi.spyOn(repository, 'save');
     const useCase = new GetCurrentUserProfileUseCase(
       repository,
       () => new Date('2026-07-13T00:00:00Z'),

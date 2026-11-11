@@ -1,14 +1,15 @@
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import { Request, Response } from 'express';
 import { errorHandlerMiddleware } from '../../../../../src/presentation/http/middleware/errorHandler';
 import { UnauthenticatedException } from '../../../../../src/domain/auth/errors';
 import { UserDisabledException } from '../../../../../src/domain/user/errors';
 
-function responseSpy(): Response & { status: jest.Mock; json: jest.Mock } {
+function responseSpy(): Response & { status: Mock; json: Mock } {
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
   };
-  return res as unknown as Response & { status: jest.Mock; json: jest.Mock };
+  return res as unknown as Response & { status: Mock; json: Mock };
 }
 
 describe('errorHandlerMiddleware', () => {
@@ -16,7 +17,7 @@ describe('errorHandlerMiddleware', () => {
     const req = { requestId: 'req_123' } as unknown as Request;
     const res = responseSpy();
 
-    errorHandlerMiddleware(new UnauthenticatedException('falta token.'), req, res, jest.fn());
+    errorHandlerMiddleware(new UnauthenticatedException('falta token.'), req, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({
@@ -29,7 +30,7 @@ describe('errorHandlerMiddleware', () => {
     const req = { requestId: 'req_123' } as unknown as Request;
     const res = responseSpy();
 
-    errorHandlerMiddleware(new UserDisabledException('usr_ana'), req, res, jest.fn());
+    errorHandlerMiddleware(new UserDisabledException('usr_ana'), req, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(403);
   });
@@ -38,7 +39,7 @@ describe('errorHandlerMiddleware', () => {
     const req = { requestId: 'req_123' } as unknown as Request;
     const res = responseSpy();
 
-    errorHandlerMiddleware(new Error('boom'), req, res, jest.fn());
+    errorHandlerMiddleware(new Error('boom'), req, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
@@ -51,7 +52,7 @@ describe('errorHandlerMiddleware', () => {
     const req = {} as Request;
     const res = responseSpy();
 
-    errorHandlerMiddleware(new Error('boom'), req, res, jest.fn());
+    errorHandlerMiddleware(new Error('boom'), req, res, vi.fn());
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ meta: { requestId: 'unknown' } }),

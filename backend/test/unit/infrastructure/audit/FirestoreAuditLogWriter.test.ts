@@ -1,9 +1,10 @@
+import { describe, it, expect, vi } from 'vitest';
 import { FirestoreAuditLogWriter } from '../../../../src/infrastructure/audit/FirestoreAuditLogWriter';
 
 describe('FirestoreAuditLogWriter', () => {
   it('shouldAddADocumentToTheAuditLogsCollection', async () => {
-    const add = jest.fn().mockResolvedValue({ id: 'log_1' });
-    const collection = jest.fn().mockReturnValue({ add });
+    const add = vi.fn().mockResolvedValue({ id: 'log_1' });
+    const collection = vi.fn().mockReturnValue({ add });
     const firestore = { collection } as never;
     const writer = new FirestoreAuditLogWriter(firestore);
     const entry = {

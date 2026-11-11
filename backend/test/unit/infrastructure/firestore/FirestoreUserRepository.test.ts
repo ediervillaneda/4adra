@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
   FirestoreUserRepository,
@@ -39,9 +40,9 @@ describe('toFirestoreDocument / fromFirestoreDocument', () => {
 });
 
 describe('FirestoreUserRepository', () => {
-  function firestoreStub(): { firestore: never; doc: { get: jest.Mock; set: jest.Mock } } {
-    const doc = { get: jest.fn(), set: jest.fn() };
-    const collection = jest.fn().mockReturnValue({ doc: jest.fn().mockReturnValue(doc) });
+  function firestoreStub(): { firestore: never; doc: { get: Mock; set: Mock } } {
+    const doc = { get: vi.fn(), set: vi.fn() };
+    const collection = vi.fn().mockReturnValue({ doc: vi.fn().mockReturnValue(doc) });
     return { firestore: { collection } as never, doc };
   }
 

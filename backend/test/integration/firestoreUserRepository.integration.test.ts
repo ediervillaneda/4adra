@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, beforeAll, afterAll } from 'vitest';
 import { initializeApp, getApps, deleteApp, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { FirestoreUserRepository } from '../../src/infrastructure/firestore/FirestoreUserRepository';

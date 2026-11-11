@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { Express } from 'express';
 import request from 'supertest';
 import { createApp } from '../../../../src/presentation/http/createApp';
@@ -22,7 +23,7 @@ class InMemoryUserRepository implements UserRepository {
 
 function buildApp(): Express {
   const authenticationProvider: AuthenticationProvider = {
-    verifyIdToken: jest.fn().mockImplementation((token: string) => {
+    verifyIdToken: vi.fn().mockImplementation((token: string) => {
       if (token !== 'valid-token') {
         return Promise.reject(new UnauthenticatedException('token inválido.'));
       }
@@ -34,7 +35,7 @@ function buildApp(): Express {
       });
     }),
   };
-  const auditLogWriter: AuditLogWriter = { write: jest.fn().mockResolvedValue(undefined) };
+  const auditLogWriter: AuditLogWriter = { write: vi.fn().mockResolvedValue(undefined) };
   const getCurrentUserProfileUseCase = new GetCurrentUserProfileUseCase(
     new InMemoryUserRepository(),
     () => new Date('2026-07-13T12:00:00Z'),
