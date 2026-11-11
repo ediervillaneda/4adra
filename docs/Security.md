@@ -23,6 +23,7 @@ Better Auth dentro del Worker es el proveedor oficial (ADR-016), con Google como
 - **Cookie:** `HttpOnly; Secure; SameSite=Lax`, del mismo origen que la PWA. JavaScript no puede leerla y no viaja a otros sitios. En local se omite `Secure` porque `localhost` es HTTP.
 - **Validación de la sesión:** en cada solicitud se valida la firma (con `BETTER_AUTH_SECRET`), la existencia en D1 y la expiración. Una cookie ausente, alterada o vencida produce un `401 UNAUTHENTICATED` sin detalles.
 - **Identidad:** no se aceptan `userId`, roles ni pertenencia enviados por el cliente como autoridad. El actor sale únicamente de la sesión validada.
+- **Acceso solo por lista (ADR-018):** solo puede crear una cuenta un correo vigente en `allowed_emails`. Cualquier otro recibe `NOT_INVITED` y no se crea ningún registro. La inscripción y la revocación son manuales (`Deployment.md`). Para bloquear a un usuario ya registrado se usa `users.status = 'DISABLED'`.
 - **Cierre de sesión:** `POST /api/auth/sign-out` invalida la sesión en D1, no solo en el navegador.
 - **Cuentas administrativas:** usar MFA de Google en las cuentas que administren Cloudflare, GitHub y Google Cloud Console.
 

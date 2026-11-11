@@ -28,13 +28,14 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 - **Soft delete:** `status` con `CHECK (status IN ('ACTIVE','ARCHIVED','DELETED'))`. Nunca se borran físicamente la auditoría, las liquidaciones confirmadas ni las tasas históricas.
 - **Integridad referencial:** `PRAGMA foreign_keys` está activo en D1.
 
-## Tablas existentes (`0001_init.sql`)
+## Tablas existentes (`0001_init.sql`, `0002_allowed_emails.sql`)
 
 | Tabla | Dueño | Propósito |
 |---|---|---|
 | `user`, `session`, `account`, `verification` | Better Auth (ADR-016) | Identidad de Google, sesiones (cookie) y cuentas vinculadas |
 | `users` | Dominio | Perfil: nombre visible, correo, foto, moneda preferida, idioma, zona horaria, estado (`ACTIVE`/`DISABLED`). `id` → `user(id)` con `ON DELETE RESTRICT` |
 | `audit_logs` | Dominio | Auditoría de solo inserción: `actor_id`, `entity`, `entity_id`, `operation`, `request_id`, `occurred_at`, `created_at` |
+| `allowed_emails` (`0002`) | Dominio | Lista de acceso (ADR-018): `email` en minúsculas (`CHECK`), `note`, `created_at`, `revoked_at`. Solo los correos vigentes pueden registrar una cuenta nueva |
 
 `audit_logs` tiene los triggers `audit_logs_no_update` y `audit_logs_no_delete` (`RAISE(ABORT, 'audit_logs es inmutable')`). Así la base misma impide alterar la auditoría (ADR-006).
 

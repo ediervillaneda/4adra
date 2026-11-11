@@ -51,6 +51,24 @@ Hay un solo entorno remoto (producción), por decisión del responsable del proy
    - Eliminar el proyecto `adra-54655` (y los `-staging`/`-prod`, si existen) en console.firebase.google.com. Sus claves de cliente siguen en el historial de git, y eliminar el proyecto las inutiliza.
    - Es una acción manual del responsable del proyecto.
 
+## Lista de acceso (ADR-018)
+
+Solo los correos inscritos pueden crear una cuenta. Para inscribir, revocar o consultar, se ejecuta desde `backend/` contra producción. No hace falta redeploy y los correos no van al repositorio:
+
+```bash
+# Inscribir (el correo SIEMPRE en minúsculas)
+npx wrangler d1 execute 4adra-db --remote --command "INSERT INTO allowed_emails (email, note, created_at) VALUES ('persona@gmail.com', 'Nombre', strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+
+# Revocar (impide registrarse; no expulsa a un usuario ya creado)
+npx wrangler d1 execute 4adra-db --remote --command "UPDATE allowed_emails SET revoked_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE email = 'persona@gmail.com'"
+
+# Bloquear a un usuario ya registrado
+npx wrangler d1 execute 4adra-db --remote --command "UPDATE users SET status = 'DISABLED' WHERE email = 'persona@gmail.com'"
+
+# Consultar
+npx wrangler d1 execute 4adra-db --remote --command "SELECT email, note, created_at, revoked_at FROM allowed_emails"
+```
+
 ## Requisitos previos de cada despliegue
 
 - **Control de cambios:** versión identificable, cambios revisados por PR y CI en verde (formato, lint, tipos, unitarias, migraciones en limpio, integración, contrato, `npm audit` y build).
