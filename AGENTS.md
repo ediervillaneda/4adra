@@ -1,66 +1,52 @@
 # AGENTS.md — 4adra
 
 > Expense-sharing platform inspired by Splitwise/Settle Up.
-> **Architecture:** Clean Architecture + DDD Lite + MVVM + Firebase Backend + Event Driven
+> **Architecture:** Clean Architecture + DDD Lite + MVVM + Cloudflare Workers backend + Event Driven
 
 ## Project Status
 
-This project is in **Phase 0 (Foundation)**. There is no application source code yet. What exists today: comprehensive documentation in `docs/` (including a machine-readable contract at `docs/api/openapi.yaml` and per-phase checklists in `docs/checklists/`), real Firebase platform configuration at the repo root (`firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `.firebaserc.example`), and placeholder `README.md` files in `backend/`, `web/`, `android/` describing their intended structure — no `package.json`, no Gradle project, no Angular project yet. See `docs/checklists/Fase0-FundacionTecnica.md` for the actionable list of what's left. Before writing any code, read `docs/AGENTS.md` for the full project rules (in Spanish).
+**Phase 0 (Foundation)**, platform migrated from Firebase to Cloudflare (ADR-014..017). What exists today:
+
+- `backend/`: real Cloudflare Worker (`4adra`) — Hono + D1 + Better Auth (Google). `GET /api/v1/me` works end to end; unit, integration (Workers runtime + local D1) and contract (OpenAPI) tests.
+- `web/`: still only a `README.md`. The PWA (Angular) is the next sub-project and gets its own spec.
+- No Android app (discarded, ADR-017): a single responsive PWA serves PC and mobile.
+- `docs/`: full documentation, contract at `docs/api/openapi.yaml`, per-phase checklists in `docs/checklists/`.
+
+Production URL: `https://4adra.edier.me` (app and `/api` on the same origin). Local: `http://localhost:8787`. Before writing any code, read `docs/AGENTS.md` for the full project rules (in Spanish).
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | TypeScript, Node.js, Firebase Cloud Functions, Firestore, Auth, Storage |
-| Android | Kotlin, Jetpack Compose, MVVM, Hilt, Coroutines, Flow |
-| Web | Angular, TypeScript, Angular Material, RxJS |
-| Testing | Jest, JUnit, MockK, Firebase Emulator |
+| Backend | TypeScript (strict), Cloudflare Workers, Hono, Cloudflare D1 (SQLite), Better Auth (Google OAuth), Wrangler |
+| Web (PWA) | Angular, TypeScript, Angular Material, RxJS — served as Workers Static Assets (planned) |
+| Testing | Vitest, `@cloudflare/vitest-plugin` (Workers runtime + local D1), ajv contract tests |
 
 ---
 
-## Planned Build / Lint / Test Commands
+## Build / Lint / Test Commands (backend, real)
 
-None of these exist yet except the Firebase ones, which now have real config to point at (`firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json` at the repo root) but still need a real Firebase project (copy `.firebaserc.example` to `.firebaserc` with real project IDs first). The Backend/Android/Web commands below require the scaffolding in `docs/checklists/Fase0-FundacionTecnica.md` to exist first — do not run them against this repo as-is.
-
-### Backend (TypeScript/Node.js)
+Run from `backend/` (Node 24, npm):
 
 ```bash
-npm run build               # compile TypeScript
+npm ci
+npm run dev                 # wrangler dev → http://localhost:8787 (needs .dev.vars, see .dev.vars.example)
+npm run db:migrate:local    # apply backend/migrations to local D1
+npm test                    # unit tests + coverage thresholds (Vitest)
+npx vitest run test/unit/domain           # tests in a directory
+npx vitest run -t "shouldRejectForgedCookie"  # single test by name
+npm run test:integration    # Workers runtime + local D1 (Better Auth, repositories, /api/v1/me e2e)
+npm run test:contract       # responses vs docs/api/openapi.yaml
 npm run lint                # ESLint strict
-npm run lint:fix            # auto-fix
-npm run format              # Prettier
-npm run format:check        # CI check
-npm run typecheck           # type-check (no emit)
-npm test                    # all tests (Jest)
-npm test -- -t "test name"  # single test by name
-npm test -- src/domain/     # tests in a directory
-npm test -- --coverage      # with coverage report
+npm run format              # Prettier (format:check in CI)
+npm run typecheck           # tsc --noEmit
+npm run build               # wrangler deploy --dry-run --outdir dist
+npm run cf-typegen          # regenerate worker-configuration.d.ts after editing wrangler.jsonc
+npm run db:migrate:remote   # apply migrations to production D1 (CI does this on main)
+npm run deploy              # wrangler deploy (CI does this on main)
 ```
 
-### Firebase
-
-```bash
-npx firebase emulators:start --only firestore,auth  # start emulators
-npx firebase deploy --only functions                 # deploy functions
-npx firebase deploy --only firestore:rules firestore:indexes
-```
-
-### Android
-
-```bash
-./gradlew build                  # build
-./gradlew test                   # unit tests (JUnit)
-./gradlew connectedAndroidTest   # instrumented tests
-./gradlew lint                   # lint (detekt/ktlint)
-```
-
-### Web (Angular)
-
-```bash
-ng build    # build
-ng test     # unit tests
-ng lint     # lint
-```
+Web (Angular) commands do not exist yet — do not invent them.
 
 ---
 
@@ -70,23 +56,17 @@ ng lint     # lint
 
 - `strict: true` in tsconfig — never use `any`, use `unknown` + runtime validation
 - `const` by default; never mutate function arguments
-- Use `decimal.js` for monetary values — never `float` or `double`
-- Prefer named exports over default exports
-- Async/await over raw Promises; never fire-and-forget in handlers
+- Use `decimal.js` for monetary values — never `float` or `double`; D1 stores money as `TEXT`, never `REAL`
+- Prefer named exports over default exports (the Worker entry `src/index.ts` is the only default export)
+- Async/await over raw Promises; background work only through `ctx.waitUntil`
 - Handlers only convert transport, extract identity, call a use case, map response
 
-### Kotlin (Android)
-
-- `val` by default; explicit nullability
-- Jetpack Compose with immutable state and explicit events
-- Coroutines + structured concurrency; never `GlobalScope`
-- Model screen states as sealed classes: `Loading`, `Content`, `Empty`, `Error`
-
-### Angular (Web)
+### Angular (Web PWA)
 
 - TypeScript strict mode; services encapsulate HTTP; components never build URLs
 - RxJS with proper subscription cleanup
 - Sanitize external content; no untrusted `innerHTML`
+- Responsive first: the same app serves PC and mobile
 
 ---
 
@@ -99,7 +79,7 @@ ng lint     # lint
 | Constants | UPPER_SNAKE_CASE | `MAX_PARTICIPANTS` |
 | Use cases | `VerbNounUseCase` | `CreateExpenseUseCase` |
 | Repositories | `EntityRepository` | `ExpenseRepository` |
-| Firebase repos | `FirestoreEntityRepository` | `FirestoreExpenseRepository` |
+| D1 repos | `D1EntityRepository` | `D1ExpenseRepository` |
 | Strategies | `TypeStrategy` | `EqualSplitStrategy` |
 | Events | `EntityEvent` | `ExpenseCreated` |
 | DTOs | `EntityDto` | `ExpenseDto` |
@@ -109,24 +89,27 @@ ng lint     # lint
 
 ---
 
-## Directory Structure (Planned)
+## Directory Structure
 
 ```
-backend/src/
-├── domain/          # entities, value objects, interfaces, strategies
-├── application/     # use cases, commands, DTOs
-├── infrastructure/  # Firestore, Auth, Storage, providers
-└── presentation/    # Cloud Functions, HTTP handlers, transport mapping
-
-android/             # Kotlin, Jetpack Compose, MVVM
-web/                 # Angular, TypeScript, Angular Material
+backend/
+├── src/
+│   ├── domain/          # entities, value objects, ports, strategies (no frameworks)
+│   ├── application/     # use cases, commands, DTOs
+│   ├── infrastructure/  # d1/ (D1*Repository), auth/ (Better Auth)
+│   ├── presentation/    # Hono app, middlewares, controllers, compositionRoot
+│   └── index.ts         # Worker entry (export default { fetch })
+├── migrations/          # D1 SQL migrations (NNNN_description.sql)
+├── public/              # static assets (PWA build later)
+└── wrangler.jsonc       # Worker, D1 binding, assets, route 4adra.edier.me
+web/                     # Angular PWA (planned)
 ```
 
 | Layer | May Depend On | Never Depends On |
 |---|---|---|
 | Presentation | Application, external adapters | Domain directly, Infrastructure |
-| Application | Domain | Firebase SDK, Infrastructure |
-| Domain | Nothing external | Any framework, HTTP, Firebase |
+| Application | Domain | Hono, D1, Better Auth, Infrastructure |
+| Domain | Nothing external | Any framework, HTTP, D1, Better Auth |
 | Infrastructure | Domain interfaces | Application layer |
 
 ---
@@ -156,14 +139,14 @@ web/                 # Angular, TypeScript, Angular Material
 
 | Layer | Coverage | Framework |
 |---|---|---|
-| Domain | 100% | Jest / JUnit + MockK |
-| Application | 95% | Jest / JUnit |
-| Infrastructure | 80% | Jest + Firebase Emulator |
-| Presentation | 70% | Compose UI Test / Angular TestBed |
+| Domain | 100% | Vitest |
+| Application | 95% | Vitest |
+| Infrastructure | 80% | Vitest + `@cloudflare/vitest-plugin` (local D1) |
+| Presentation | 70% | Vitest (`app.request`) / Angular TestBed |
 
 - Every bug fix must include a regression test
 - Financial tests use exact decimals, never approximate comparisons
-- Use `Firebase Emulator` for integration tests — never hit production
+- Integration tests run against local D1 in the Workers runtime — never hit production
 - Name tests by behavior: `shouldRejectSplitWhenAmountsDoNotMatchExpenseTotal`
 
 ---
@@ -182,13 +165,13 @@ When changing code, update the corresponding docs in `docs/`:
 
 - `Architecture.md` — layer changes
 - `DomainModel.md` — entity/aggregate changes
-- `DatabaseSchema.md` — Firestore schema changes
+- `DatabaseSchema.md` — D1 schema changes (plus a new migration in `backend/migrations/`)
 - `ApiSpecification.md` — endpoint changes
 - `BusinessRules.md` — rule changes
 - `Algorithms.md` — algorithm changes
 - `Security.md` — security changes
 - `Roadmap.md` — milestone changes
-- `UISpecification.md` — new/changed screens, navigation, or presentation rules (Android/Web)
+- `UISpecification.md` — new/changed screens, navigation, or presentation rules (PWA)
 
 ---
 
@@ -199,6 +182,6 @@ When changing code, update the corresponding docs in `docs/`:
 3. Splits must total the expense amount exactly
 4. Settlements cannot exceed debt
 5. No circular settlements when simplification is possible
-6. Audit logs are never deleted
+6. Audit logs are never deleted (enforced by D1 triggers)
 7. Exchange rates are immutable once used
 8. Groups must always have at least one Owner
