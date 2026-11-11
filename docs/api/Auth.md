@@ -32,6 +32,8 @@ El Worker valida la firma, la existencia y la expiración de la sesión en D1, y
 
 El cliente nunca lee ni guarda el token (es `HttpOnly`): solo usa las rutas `/api/auth/*`.
 
+**Renovación:** cuando una solicitud a `/api/v1/*` extiende la sesión, la respuesta trae el `Set-Cookie` renovado. Así la sesión sigue activa mientras se use la API, sin tener que llamar a `/api/auth/get-session`.
+
 ## Obtener perfil actual
 
 ```http
@@ -58,7 +60,7 @@ Respuesta `200`:
 }
 ```
 
-Si el perfil (tabla `users`) aún no existe, el backend lo crea de forma idempotente a partir de los datos de la sesión (correo, nombre y foto de Google) y aplica los valores por defecto aprobados. El `id` es el mismo identificador (UUID v7) de la identidad de Better Auth.
+Si el perfil (tabla `users`) aún no existe, el backend lo crea de forma idempotente a partir de los datos de la sesión (correo, nombre y foto de Google) y aplica los valores por defecto: `preferredCurrency: "COP"`, `language: "es"`, `timeZone: "America/Bogota"`. El usuario los cambia con `PATCH /api/v1/me`. El `id` es el mismo identificador (UUID v7) de la identidad de Better Auth.
 
 ## Actualizar perfil
 
@@ -79,13 +81,32 @@ Content-Type: application/json
 
 Campos permitidos: `displayName`, `photoUrl`, `preferredCurrency`, `language` y `timeZone`. `email`, `id`, `status`, roles y fechas no se actualizan por este endpoint. La respuesta es `200` con el perfil actualizado.
 
-Validaciones:
+Validaciones (cada falla aparece en `error.details` como `{ field, reason }`):
 
-- `displayName`: 1 a 100 caracteres después de normalización.
-- `photoUrl`: URL HTTPS permitida o `null`; el producto puede sustituirla por una referencia a R2.
-- `preferredCurrency`: código ISO-4217 soportado.
-- `language`: etiqueta BCP 47 admitida.
-- `timeZone`: zona IANA válida.
+| Campo | Regla | `reason` si falla |
+|---|---|---|
+| (cuerpo) | Objeto JSON válido | `invalid_json`, `must_be_object` |
+| cualquier otro campo | No permitido | `not_allowed` |
+| `displayName` | Texto de 1 a 100 caracteres sin espacios al inicio ni al final | `must_be_string`, `length_1_to_100` |
+| `photoUrl` | URL `https://` o `null` (el producto puede sustituirla por una referencia a R2) | `must_be_https_url` |
+| `preferredCurrency` | `COP`, `USD`, `EUR`, `MXN` o `GTQ` | `unsupported_currency` |
+| `language` | `es` o `en` | `unsupported_language` |
+| `timeZone` | Zona IANA válida (por ejemplo, `America/Bogota`) | `invalid_time_zone` |
+
+Ejemplo de respuesta `400`:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "La solicitud contiene valores inválidos.",
+    "details": [{ "field": "language", "reason": "unsupported_language" }]
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+Un cuerpo vacío (`{}`) es válido y devuelve el perfil sin cambios.
 
 ## Estados y errores
 
