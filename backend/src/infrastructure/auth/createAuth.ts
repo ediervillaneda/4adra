@@ -37,6 +37,8 @@ export function createAuth(config: AuthConfig) {
     secret: config.secret,
     baseURL: config.baseURL,
     emailAndPassword: { enabled: config.emailAndPasswordEnabled ?? false },
+    // Los tokens de Google se cifran en D1 (XChaCha20-Poly1305 con BETTER_AUTH_SECRET).
+    account: { encryptOAuthTokens: true },
     ...(config.google ? { socialProviders: { google: config.google } } : {}),
     ...(config.isSignUpAllowed ? { databaseHooks: signUpGate(config.isSignUpAllowed) } : {}),
     advanced: {

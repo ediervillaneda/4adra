@@ -24,7 +24,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Verificar secrets requeridos
         id: guard
@@ -38,7 +38,7 @@ jobs:
 
       - name: Configurar Node.js
         if: steps.guard.outputs.ready == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: backend/.nvmrc
           cache: npm
@@ -48,6 +48,11 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         working-directory: backend
         run: npm ci
+
+      - name: Build (wrangler deploy --dry-run)
+        if: steps.guard.outputs.ready == 'true'
+        working-directory: backend
+        run: npm run build
 
       - name: Aplicar migraciones D1 (remoto)
         if: steps.guard.outputs.ready == 'true'

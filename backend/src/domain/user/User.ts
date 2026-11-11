@@ -2,6 +2,7 @@ import { UserId } from './UserId';
 import { Email } from './Email';
 import { UserStatus } from './UserStatus';
 import { UserDisabledException } from './errors';
+import { ProfileChanges } from './ProfileChanges';
 
 export interface UserProps {
   id: UserId;
@@ -64,6 +65,11 @@ export class User {
 
   get updatedAt(): Date {
     return this.props.updatedAt;
+  }
+
+  /** Devuelve un User nuevo con los cambios ya validados (validateProfileChanges) aplicados. */
+  updateProfile(changes: ProfileChanges, now: Date): User {
+    return User.create({ ...this.props, ...changes, updatedAt: now });
   }
 
   assertActive(): void {

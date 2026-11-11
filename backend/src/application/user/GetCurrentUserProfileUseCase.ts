@@ -1,9 +1,8 @@
 import { UserRepository } from '../../domain/user/UserRepository';
-import { User } from '../../domain/user/User';
 import { GetCurrentUserProfileCommand } from './GetCurrentUserProfileCommand';
 import { UserProfileView } from './UserProfileView';
 import { toUserProfileView } from './toUserProfileView';
-import { DEFAULT_PROFILE_SETTINGS } from './defaultProfileSettings';
+import { createUserFromActor } from './createUserFromActor';
 
 export class GetCurrentUserProfileUseCase {
   constructor(
@@ -20,20 +19,7 @@ export class GetCurrentUserProfileUseCase {
       return toUserProfileView(existing);
     }
 
-    const timestamp = this.now();
-    const created = User.create({
-      id: actor.userId,
-      displayName: actor.displayName ?? actor.email.toString(),
-      email: actor.email,
-      photoUrl: actor.photoUrl,
-      preferredCurrency: DEFAULT_PROFILE_SETTINGS.preferredCurrency,
-      language: DEFAULT_PROFILE_SETTINGS.language,
-      timeZone: DEFAULT_PROFILE_SETTINGS.timeZone,
-      status: 'ACTIVE',
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    });
-
+    const created = createUserFromActor(actor, this.now());
     await this.userRepository.save(created);
     return toUserProfileView(created);
   }

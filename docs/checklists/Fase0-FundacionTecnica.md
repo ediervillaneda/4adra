@@ -37,7 +37,7 @@ Disponer de una base segura y repetible para desarrollo:
 - [x] `wrangler secret put` de `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
 - [x] API token de Cloudflare (Workers + D1 Edit, alcance mínimo) y secrets de GitHub `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`.
 - [x] Secrets de GitHub heredados de Firebase: verificado el 2026-11-11 que el repositorio ya no tiene ninguno.
-- [ ] Eliminar el proyecto Firebase `adra-54655` (y `-staging`/`-prod`, si existen). Sus claves de cliente siguen en el historial de git.
+- [x] Proyecto Firebase `adra-54655` eliminado por el responsable del proyecto (2026-11-11). Las claves que siguen en el historial de git quedan inutilizadas.
 
 ### Backend (`backend/`)
 

@@ -5,6 +5,7 @@ import { requestIdMiddleware } from '../../../../../src/presentation/http/middle
 import { AppEnv } from '../../../../../src/presentation/http/AppEnv';
 import { UnauthenticatedException } from '../../../../../src/domain/auth/errors';
 import { UserDisabledException } from '../../../../../src/domain/user/errors';
+import { ValidationException } from '../../../../../src/domain/errors/ValidationException';
 
 function appThrowing(error: unknown, withRequestId = true): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
@@ -68,6 +69,22 @@ describe('handleError', () => {
     expect(text).not.toContain('SQLITE');
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('shouldIncludeValidationDetailsIn400Envelope', async () => {
+    const response = await appThrowing(
+      new ValidationException([{ field: 'timeZone', reason: 'invalid_time_zone' }]),
+    ).request('/boom');
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'La solicitud contiene valores inválidos.',
+        details: [{ field: 'timeZone', reason: 'invalid_time_zone' }],
+      },
+      meta: { requestId: 'req_123' },
+    });
   });
 
   it('shouldFallBackToUnknownRequestIdWhenMissing', async () => {
