@@ -1,9 +1,9 @@
 import { Express } from 'express';
 import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { createApp } from './http/createApp';
-import { FirebaseAuthenticationProvider } from '../infrastructure/firebase/FirebaseAuthenticationProvider';
+import { AuthenticationProvider } from '../domain/auth/AuthenticationProvider';
+import { UnauthenticatedException } from '../domain/auth/errors';
 import { FirestoreUserRepository } from '../infrastructure/firestore/FirestoreUserRepository';
 import { FirestoreAuditLogWriter } from '../infrastructure/audit/FirestoreAuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
@@ -13,7 +13,11 @@ export function composeApp(): Express {
     initializeApp();
   }
   const firestore = getFirestore();
-  const authenticationProvider = new FirebaseAuthenticationProvider(getAuth());
+  // Transitorio (Task 3 → Task 4): el Worker con Better Auth reemplaza esta composición.
+  const authenticationProvider: AuthenticationProvider = {
+    resolveSession: () =>
+      Promise.reject(new UnauthenticatedException('autenticación no configurada.')),
+  };
   const auditLogWriter = new FirestoreAuditLogWriter(firestore);
   const userRepository = new FirestoreUserRepository(firestore);
   const getCurrentUserProfileUseCase = new GetCurrentUserProfileUseCase(

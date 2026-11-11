@@ -1,5 +1,6 @@
 import { AuthenticatedActor } from './AuthenticatedActor';
+import { SessionCredential } from './SessionCredential';
 
 export interface AuthenticationProvider {
-  verifyIdToken(idToken: string): Promise<AuthenticatedActor>;
+  resolveSession(credential: SessionCredential): Promise<AuthenticatedActor>;
 }

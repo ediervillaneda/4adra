@@ -21,6 +21,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply 4adra-db --remote"
   },
   "dependencies": {
+    "better-auth": "^1.7.20",
     "express": "^4.21.1",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.1.0",

@@ -8,6 +8,7 @@ import { UserRepository } from '../../../../src/domain/user/UserRepository';
 import { User } from '../../../../src/domain/user/User';
 import { UserId } from '../../../../src/domain/user/UserId';
 import { GetCurrentUserProfileUseCase } from '../../../../src/application/user/GetCurrentUserProfileUseCase';
+import { SessionCredential } from '../../../../src/domain/auth/SessionCredential';
 import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
 import { Email } from '../../../../src/domain/user/Email';
 
@@ -23,8 +24,8 @@ class InMemoryUserRepository implements UserRepository {
 
 function buildApp(): Express {
   const authenticationProvider: AuthenticationProvider = {
-    verifyIdToken: vi.fn().mockImplementation((token: string) => {
-      if (token !== 'valid-token') {
+    resolveSession: vi.fn().mockImplementation((credential: SessionCredential) => {
+      if (credential.toString() !== 'better-auth.session_token=valid') {
         return Promise.reject(new UnauthenticatedException('token inválido.'));
       }
       return Promise.resolve({
@@ -54,7 +55,7 @@ interface MeErrorBody {
 }
 
 describe('GET /v1/me', () => {
-  it('shouldReturn401WhenAuthorizationHeaderIsMissing', async () => {
+  it('shouldReturn401WhenSessionCookieIsMissing', async () => {
     const app = buildApp();
 
     const response = await request(app).get('/v1/me');
@@ -67,7 +68,9 @@ describe('GET /v1/me', () => {
   it('shouldReturn200WithCreatedProfileWhenTokenIsValid', async () => {
     const app = buildApp();
 
-    const response = await request(app).get('/v1/me').set('Authorization', 'Bearer valid-token');
+    const response = await request(app)
+      .get('/v1/me')
+      .set('Cookie', 'better-auth.session_token=valid');
     const body = response.body as MeSuccessBody;
 
     expect(response.status).toBe(200);

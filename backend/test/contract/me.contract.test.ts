@@ -44,7 +44,7 @@ describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
     }
 
     const authenticationProvider: AuthenticationProvider = {
-      verifyIdToken: () =>
+      resolveSession: () =>
         Promise.resolve({
           userId: UserId.fromString('usr_ana'),
           email: Email.fromString('ana@example.com'),
@@ -59,7 +59,9 @@ describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
     );
     const app = createApp({ authenticationProvider, auditLogWriter, getCurrentUserProfileUseCase });
 
-    const response = await request(app).get('/v1/me').set('Authorization', 'Bearer valid-token');
+    const response = await request(app)
+      .get('/v1/me')
+      .set('Cookie', 'better-auth.session_token=valid');
     const body = response.body as MeContractBody;
 
     expect(response.status).toBe(200);

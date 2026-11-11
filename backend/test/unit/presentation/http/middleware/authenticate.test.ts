@@ -14,8 +14,12 @@ function requestWithHeader(value: string | undefined): Request {
 }
 
 describe('authenticateMiddleware', () => {
-  it('shouldCallNextWithUnauthenticatedWhenHeaderIsMissing', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: vi.fn() };
+  it('shouldCallNextWithUnauthenticatedWhenCookieIsMissing', async () => {
+    const provider: AuthenticationProvider = {
+      resolveSession: vi
+        .fn()
+        .mockRejectedValue(new UnauthenticatedException('falta la cookie de sesión.')),
+    };
     const middleware = authenticateMiddleware(provider);
     const next = vi.fn();
 
@@ -24,12 +28,16 @@ describe('authenticateMiddleware', () => {
     expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
   });
 
-  it('shouldCallNextWithUnauthenticatedWhenHeaderIsNotBearer', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: vi.fn() };
+  it('shouldCallNextWithUnauthenticatedWhenCookieIsBlank', async () => {
+    const provider: AuthenticationProvider = {
+      resolveSession: vi
+        .fn()
+        .mockRejectedValue(new UnauthenticatedException('falta la cookie de sesión.')),
+    };
     const middleware = authenticateMiddleware(provider);
     const next = vi.fn();
 
-    await middleware(requestWithHeader('Basic abc'), {} as Response, next);
+    await middleware(requestWithHeader('   '), {} as Response, next);
 
     expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
   });
@@ -41,9 +49,9 @@ describe('authenticateMiddleware', () => {
       displayName: 'Ana Pérez',
       photoUrl: null,
     };
-    const provider: AuthenticationProvider = { verifyIdToken: vi.fn().mockResolvedValue(actor) };
+    const provider: AuthenticationProvider = { resolveSession: vi.fn().mockResolvedValue(actor) };
     const middleware = authenticateMiddleware(provider);
-    const req = requestWithHeader('Bearer a-valid-token');
+    const req = requestWithHeader('better-auth.session_token=abc');
     const next = vi.fn();
 
     await middleware(req, {} as Response, next);
@@ -54,12 +62,12 @@ describe('authenticateMiddleware', () => {
 
   it('shouldCallNextWithErrorWhenProviderRejects', async () => {
     const provider: AuthenticationProvider = {
-      verifyIdToken: vi.fn().mockRejectedValue(new UnauthenticatedException('expirado')),
+      resolveSession: vi.fn().mockRejectedValue(new UnauthenticatedException('expirado')),
     };
     const middleware = authenticateMiddleware(provider);
     const next = vi.fn();
 
-    await middleware(requestWithHeader('Bearer expired-token'), {} as Response, next);
+    await middleware(requestWithHeader('better-auth.session_token=expired'), {} as Response, next);
 
     expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
   });
