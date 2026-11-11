@@ -29,3 +29,6 @@ out/
 # Cloudflare Wrangler
 .wrangler/
 backend/.dev.vars
+
+# Credenciales OAuth descargadas de Google Cloud Console (nunca versionar)
+client_secret_*.json
