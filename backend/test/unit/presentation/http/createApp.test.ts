@@ -1,14 +1,17 @@
-import { Express } from 'express';
-import request from 'supertest';
-import { createApp } from '../../../../src/presentation/http/createApp';
+import { describe, it, expect, vi } from 'vitest';
+import { Hono } from 'hono';
+import { createApp, AppDependencies } from '../../../../src/presentation/http/createApp';
+import { AppEnv } from '../../../../src/presentation/http/AppEnv';
 import { AuthenticationProvider } from '../../../../src/domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../../../src/domain/audit/AuditLogWriter';
 import { UserRepository } from '../../../../src/domain/user/UserRepository';
 import { User } from '../../../../src/domain/user/User';
-import { UserId } from '../../../../src/domain/user/UserId';
 import { GetCurrentUserProfileUseCase } from '../../../../src/application/user/GetCurrentUserProfileUseCase';
-import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
+import { UserId } from '../../../../src/domain/user/UserId';
 import { Email } from '../../../../src/domain/user/Email';
+import { SessionCredential } from '../../../../src/domain/auth/SessionCredential';
+import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
+import { executionContextFake } from './executionContextFake';
 
 class InMemoryUserRepository implements UserRepository {
   findById(): Promise<User | null> {
@@ -20,11 +23,13 @@ class InMemoryUserRepository implements UserRepository {
   }
 }
 
-function buildApp(): Express {
+const VALID_COOKIE = 'better-auth.session_token=valid';
+
+function buildApp(overrides: Partial<AppDependencies> = {}): Hono<AppEnv> {
   const authenticationProvider: AuthenticationProvider = {
-    verifyIdToken: jest.fn().mockImplementation((token: string) => {
-      if (token !== 'valid-token') {
-        return Promise.reject(new UnauthenticatedException('token inválido.'));
+    resolveSession: vi.fn().mockImplementation((credential: SessionCredential) => {
+      if (credential.toString() !== VALID_COOKIE) {
+        return Promise.reject(new UnauthenticatedException('sesión inválida.'));
       }
       return Promise.resolve({
         userId: UserId.fromString('usr_ana'),
@@ -34,13 +39,20 @@ function buildApp(): Express {
       });
     }),
   };
-  const auditLogWriter: AuditLogWriter = { write: jest.fn().mockResolvedValue(undefined) };
+  const auditLogWriter: AuditLogWriter = { write: vi.fn().mockResolvedValue(undefined) };
   const getCurrentUserProfileUseCase = new GetCurrentUserProfileUseCase(
     new InMemoryUserRepository(),
     () => new Date('2026-07-13T12:00:00Z'),
   );
 
-  return createApp({ authenticationProvider, auditLogWriter, getCurrentUserProfileUseCase });
+  return createApp({
+    authenticationProvider,
+    auditLogWriter,
+    getCurrentUserProfileUseCase,
+    authHandler: () => Promise.resolve(new Response('auth', { status: 200 })),
+    generateRequestId: () => 'req_1',
+    ...overrides,
+  });
 }
 
 interface MeSuccessBody {
@@ -48,26 +60,28 @@ interface MeSuccessBody {
   meta: { requestId: string };
 }
 
-interface MeErrorBody {
+interface ErrorBody {
   error: { code: string };
+  meta: { requestId: string };
 }
 
-describe('GET /v1/me', () => {
-  it('shouldReturn401WhenAuthorizationHeaderIsMissing', async () => {
-    const app = buildApp();
-
-    const response = await request(app).get('/v1/me');
-    const body = response.body as MeErrorBody;
+describe('createApp', () => {
+  it('shouldReturn401WhenSessionCookieIsMissing', async () => {
+    const response = await buildApp().request('/api/v1/me', {}, {}, executionContextFake());
+    const body: ErrorBody = await response.json();
 
     expect(response.status).toBe(401);
     expect(body.error.code).toBe('UNAUTHENTICATED');
   });
 
   it('shouldReturn200WithCreatedProfileWhenTokenIsValid', async () => {
-    const app = buildApp();
-
-    const response = await request(app).get('/v1/me').set('Authorization', 'Bearer valid-token');
-    const body = response.body as MeSuccessBody;
+    const response = await buildApp().request(
+      '/api/v1/me',
+      { headers: { cookie: VALID_COOKIE } },
+      {},
+      executionContextFake(),
+    );
+    const body: MeSuccessBody = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.data).toMatchObject({
@@ -76,6 +90,68 @@ describe('GET /v1/me', () => {
       email: 'ana@example.com',
       status: 'ACTIVE',
     });
-    expect(body.meta.requestId).toEqual(expect.any(String));
+    expect(body.meta.requestId).toBe('req_1');
+  });
+
+  it('shouldReturnJson404ForUnknownApiRoute', async () => {
+    const response = await buildApp().request(
+      '/api/v1/nope',
+      { headers: { cookie: VALID_COOKIE } },
+      {},
+      executionContextFake(),
+    );
+    const body: ErrorBody = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body.error.code).toBe('NOT_FOUND');
+    expect(body.meta.requestId).toBe('req_1');
+  });
+
+  it('shouldRespond500WhenSessionLookupFailsUnexpectedly', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const response = await buildApp({
+      authenticationProvider: {
+        resolveSession: vi.fn().mockRejectedValue(new Error('D1_ERROR: database unavailable')),
+      },
+    }).request('/api/v1/me', { headers: { cookie: VALID_COOKIE } }, {}, executionContextFake());
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(JSON.parse(text)).toMatchObject({
+      error: { code: 'INTERNAL_ERROR' },
+      meta: { requestId: 'req_1' },
+    });
+    expect(text).not.toContain('D1_ERROR');
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('shouldDelegateAuthRoutesToAuthHandler', async () => {
+    const authHandler = vi
+      .fn<(request: Request) => Promise<Response>>()
+      .mockResolvedValue(new Response('ok', { status: 200 }));
+
+    const response = await buildApp({ authHandler }).request(
+      'http://localhost/api/auth/session',
+      {},
+      {},
+      executionContextFake(),
+    );
+
+    expect(response.status).toBe(200);
+    expect(authHandler).toHaveBeenCalledTimes(1);
+    expect(authHandler.mock.calls[0]?.[0].url).toMatch(/\/api\/auth\/session$/);
+  });
+
+  it('shouldNotRequireSessionForAuthRoutes', async () => {
+    const resolveSession = vi.fn();
+
+    const response = await buildApp({
+      authenticationProvider: { resolveSession },
+    }).request('/api/auth/sign-in/social', { method: 'POST' }, {}, executionContextFake());
+
+    expect(response.status).toBe(200);
+    expect(resolveSession).not.toHaveBeenCalled();
   });
 });

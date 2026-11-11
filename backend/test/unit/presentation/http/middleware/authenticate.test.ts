@@ -1,65 +1,74 @@
-import { Request, Response } from 'express';
-import {
-  authenticateMiddleware,
-  AuthenticatedRequest,
-} from '../../../../../src/presentation/http/middleware/authenticate';
+import { describe, it, expect, vi } from 'vitest';
+import { Hono } from 'hono';
+import { authenticateMiddleware } from '../../../../../src/presentation/http/middleware/authenticate';
+import { requestIdMiddleware } from '../../../../../src/presentation/http/middleware/requestId';
+import { handleError } from '../../../../../src/presentation/http/middleware/errorHandler';
+import { AppEnv } from '../../../../../src/presentation/http/AppEnv';
 import { AuthenticationProvider } from '../../../../../src/domain/auth/AuthenticationProvider';
+import { AuthenticatedActor } from '../../../../../src/domain/auth/AuthenticatedActor';
+import { SessionCredential } from '../../../../../src/domain/auth/SessionCredential';
 import { UnauthenticatedException } from '../../../../../src/domain/auth/errors';
 import { UserId } from '../../../../../src/domain/user/UserId';
 import { Email } from '../../../../../src/domain/user/Email';
 
-function requestWithHeader(value: string | undefined): Request {
-  return { header: () => value } as unknown as Request;
+const actor: AuthenticatedActor = {
+  userId: UserId.fromString('usr_ana'),
+  email: Email.fromString('ana@example.com'),
+  displayName: 'Ana Pérez',
+  photoUrl: null,
+};
+
+function appWith(provider: AuthenticationProvider): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
+  app.use(requestIdMiddleware(() => 'req_1'));
+  app.use(authenticateMiddleware(provider));
+  app.get('/api/v1/me', (c) => c.json({ userId: c.get('actor').userId.toString() }));
+  app.onError(handleError);
+  return app;
+}
+
+interface ErrorBody {
+  error: { code: string };
+  meta: { requestId: string };
 }
 
 describe('authenticateMiddleware', () => {
-  it('shouldCallNextWithUnauthenticatedWhenHeaderIsMissing', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn() };
-    const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
+  it('shouldRespond401EnvelopeWithoutCookie', async () => {
+    const provider: AuthenticationProvider = {
+      resolveSession: vi
+        .fn()
+        .mockRejectedValue(new UnauthenticatedException('falta la cookie de sesión.')),
+    };
 
-    await middleware(requestWithHeader(undefined), {} as Response, next);
+    const response = await appWith(provider).request('/api/v1/me');
+    const body: ErrorBody = await response.json();
 
-    expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe('UNAUTHENTICATED');
+    expect(body.meta.requestId).toBe('req_1');
   });
 
-  it('shouldCallNextWithUnauthenticatedWhenHeaderIsNotBearer', async () => {
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn() };
-    const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
+  it('shouldPassCookieHeaderAsSessionCredential', async () => {
+    const resolveSession = vi
+      .fn<(credential: SessionCredential) => Promise<AuthenticatedActor>>()
+      .mockResolvedValue(actor);
 
-    await middleware(requestWithHeader('Basic abc'), {} as Response, next);
+    await appWith({ resolveSession }).request('/api/v1/me', {
+      headers: { cookie: 'better-auth.session_token=abc' },
+    });
 
-    expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
+    expect(resolveSession.mock.calls[0]?.[0].toString()).toBe('better-auth.session_token=abc');
   });
 
   it('shouldAttachActorAndCallNextWhenTokenIsValid', async () => {
-    const actor = {
-      userId: UserId.fromString('usr_ana'),
-      email: Email.fromString('ana@example.com'),
-      displayName: 'Ana Pérez',
-      photoUrl: null,
-    };
-    const provider: AuthenticationProvider = { verifyIdToken: jest.fn().mockResolvedValue(actor) };
-    const middleware = authenticateMiddleware(provider);
-    const req = requestWithHeader('Bearer a-valid-token');
-    const next = jest.fn();
+    const provider: AuthenticationProvider = { resolveSession: vi.fn().mockResolvedValue(actor) };
 
-    await middleware(req, {} as Response, next);
+    const response = await appWith(provider).request('/api/v1/me', {
+      headers: { cookie: 'better-auth.session_token=abc' },
+    });
+    const body: { userId: string } = await response.json();
 
-    expect((req as AuthenticatedRequest).actor).toBe(actor);
-    expect(next).toHaveBeenCalledWith();
-  });
-
-  it('shouldCallNextWithErrorWhenProviderRejects', async () => {
-    const provider: AuthenticationProvider = {
-      verifyIdToken: jest.fn().mockRejectedValue(new UnauthenticatedException('expirado')),
-    };
-    const middleware = authenticateMiddleware(provider);
-    const next = jest.fn();
-
-    await middleware(requestWithHeader('Bearer expired-token'), {} as Response, next);
-
-    expect(next).toHaveBeenCalledWith(expect.any(UnauthenticatedException));
+    expect(response.status).toBe(200);
+    expect(body.userId).toBe('usr_ana');
   });
 });

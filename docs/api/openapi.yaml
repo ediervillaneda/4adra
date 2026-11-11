@@ -9,22 +9,24 @@ info:
     correr pruebas de contrato (ver docs/TestingGuide.md).
   version: "1.0.0"
 servers:
-  - url: https://{region}-{project}.cloudfunctions.net/api/v1
-    variables:
-      region:
-        default: us-central1
-      project:
-        default: 4adra-dev
+  - url: https://4adra.edier.me/api/v1
+    description: production (Cloudflare Worker `4adra`)
+  - url: http://localhost:8787/api/v1
+    description: local (`npm run dev` en backend/)
 
 security:
-  - bearerAuth: []
+  - cookieAuth: []
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: Firebase ID Token
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Secure-better-auth.session_token
+      description: >
+        Cookie de sesión HttpOnly emitida por Better Auth tras "Continuar con Google"
+        (`/api/auth/*`, ver docs/api/Auth.md). Mismo origen que la API. En local (HTTP)
+        la cookie se llama `better-auth.session_token`, sin el prefijo `__Secure-`.
 
   parameters:
     IdempotencyKey:

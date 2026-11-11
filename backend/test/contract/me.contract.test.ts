@@ -1,8 +1,8 @@
+import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import Ajv from 'ajv';
-import request from 'supertest';
 import { createApp } from '../../src/presentation/http/createApp';
 import { AuthenticationProvider } from '../../src/domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../src/domain/audit/AuditLogWriter';
@@ -27,7 +27,7 @@ interface MeContractBody {
   meta: { requestId: string };
 }
 
-describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
+describe('Contrato GET /api/v1/me contra docs/api/openapi.yaml', () => {
   it('shouldMatchTheUserSchemaDefinedInOpenapi', async () => {
     const openapiPath = path.resolve(__dirname, '../../../docs/api/openapi.yaml');
     const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8')) as Record<
@@ -43,7 +43,7 @@ describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
     }
 
     const authenticationProvider: AuthenticationProvider = {
-      verifyIdToken: () =>
+      resolveSession: () =>
         Promise.resolve({
           userId: UserId.fromString('usr_ana'),
           email: Email.fromString('ana@example.com'),
@@ -56,10 +56,21 @@ describe('Contrato GET /v1/me contra docs/api/openapi.yaml', () => {
       new InMemoryUserRepository(),
       () => new Date('2026-07-13T12:00:00Z'),
     );
-    const app = createApp({ authenticationProvider, auditLogWriter, getCurrentUserProfileUseCase });
+    const app = createApp({
+      authenticationProvider,
+      auditLogWriter,
+      getCurrentUserProfileUseCase,
+      authHandler: () => Promise.resolve(new Response(null, { status: 404 })),
+      generateRequestId: () => crypto.randomUUID(),
+    });
 
-    const response = await request(app).get('/v1/me').set('Authorization', 'Bearer valid-token');
-    const body = response.body as MeContractBody;
+    const response = await app.request(
+      '/api/v1/me',
+      { headers: { cookie: 'better-auth.session_token=valid' } },
+      {},
+      { waitUntil: () => undefined, passThroughOnException: () => undefined, props: {} },
+    );
+    const body: MeContractBody = await response.json();
 
     expect(response.status).toBe(200);
     expect(typeof body.meta.requestId).toBe('string');

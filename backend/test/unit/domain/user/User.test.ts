@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { User } from '../../../../src/domain/user/User';
 import { UserId } from '../../../../src/domain/user/UserId';
 import { Email } from '../../../../src/domain/user/Email';

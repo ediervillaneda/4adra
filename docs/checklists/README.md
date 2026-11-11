@@ -4,7 +4,7 @@ Checklists operativos y accionables de cada fase de `docs/Roadmap.md`. Cada arch
 
 | Fase | Archivo | Objetivo |
 |---|---|---|
-| 0 — Fundación técnica | [`Fase0-FundacionTecnica.md`](./Fase0-FundacionTecnica.md) | Base repetible: repos, entornos, CI, Firebase, arquitectura escaleteada. |
+| 0 — Fundación técnica | [`Fase0-FundacionTecnica.md`](./Fase0-FundacionTecnica.md) | Base repetible: repos, entornos, CI, Cloudflare (Worker + D1 + Better Auth), arquitectura escaleteada. |
 | 1 — MVP de gastos compartidos | [`Fase1-MVP.md`](./Fase1-MVP.md) | Flujo grupo → gasto → balance → liquidación con reparto Equal/ExactAmount/Percentage/Shares. |
 | 2 — Motor configurable | [`Fase2-MotorConfigurable.md`](./Fase2-MotorConfigurable.md) | `CalculationEngine` completo, perfiles versionados, reparto `Custom`, multi-moneda. |
 | 3 — Colaboración y experiencia | [`Fase3-ColaboracionExperiencia.md`](./Fase3-ColaboracionExperiencia.md) | Adjuntos, comentarios, notificaciones, dashboard, offline limitado. |

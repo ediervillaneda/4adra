@@ -1,28 +1,25 @@
-import { NextFunction, Request, Response } from 'express';
+import { Context } from 'hono';
+import { ContentfulStatusCode } from 'hono/utils/http-status';
+import { AppEnv } from '../AppEnv';
 import { DomainError } from '../../../domain/errors/DomainError';
-import { RequestWithId } from './requestId';
 import { errorEnvelope } from '../responseEnvelope';
 
-const STATUS_BY_CODE: Record<string, number> = {
+const STATUS_BY_CODE: Record<string, ContentfulStatusCode> = {
   UNAUTHENTICATED: 401,
   USER_DISABLED: 403,
+  NOT_FOUND: 404,
   VALIDATION_ERROR: 400,
 };
 
-export function errorHandlerMiddleware(
-  error: unknown,
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
-  void _next;
-  const requestId = (req as Partial<RequestWithId>).requestId ?? 'unknown';
+/** Traduce errores a HTTP con el sobre estándar; nunca filtra detalles internos. */
+export function handleError(error: unknown, c: Context<AppEnv>): Response {
+  const requestId = c.get('requestId') ?? 'unknown';
 
   if (error instanceof DomainError) {
     const status = STATUS_BY_CODE[error.code] ?? 400;
-    res.status(status).json(errorEnvelope(error.code, error.message, requestId));
-    return;
+    return c.json(errorEnvelope(error.code, error.message, requestId), status);
   }
 
-  res.status(500).json(errorEnvelope('INTERNAL_ERROR', 'Error interno inesperado.', requestId));
+  console.error(`[error] error inesperado (requestId=${requestId})`, error);
+  return c.json(errorEnvelope('INTERNAL_ERROR', 'Error interno inesperado.', requestId), 500);
 }

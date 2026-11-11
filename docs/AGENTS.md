@@ -3,14 +3,14 @@
 > **Proyecto:** 4adra  
 > **Versión:** 1.0  
 > **Estado:** Draft  
-> **Arquitectura:** Clean Architecture + DDD Lite + MVVM + Firebase Backend + Event Driven
+> **Arquitectura:** Clean Architecture + DDD Lite + MVVM + Cloudflare Workers Backend + Event Driven
 
 > **Marca:** 4adra  
 > **Tagline:** Cuentas claras, gastos compartidos.
 
 ## Objetivo del proyecto
 
-Desarrollar **4adra**, una plataforma moderna para administrar gastos compartidos entre personas, inspirada en Settle Up y Splitwise. Permitirá registrar gastos, administrar grupos, calcular balances, optimizar liquidaciones, manejar múltiples monedas y sincronizar información entre Android y Web mediante una API única.
+Desarrollar **4adra**, una plataforma moderna para administrar gastos compartidos entre personas, inspirada en Settle Up y Splitwise. Permitirá registrar gastos, administrar grupos, calcular balances, optimizar liquidaciones, manejar múltiples monedas y presentar la información en una PWA (PC y celular) mediante una API única.
 
 ## Objetivo de este documento
 
@@ -26,12 +26,12 @@ Este documento define las reglas oficiales del proyecto. Todo desarrollador o ag
 
 ### Una única fuente de verdad
 
-El backend calcula balances, liquidaciones, permisos, tasas y auditoría. Android y Web solo presentan y solicitan operaciones; no implementan cálculos financieros ni reglas de negocio.
+El backend calcula balances, liquidaciones, permisos, tasas y auditoría. La PWA solo presenta y solicita operaciones; no implementan cálculos financieros ni reglas de negocio.
 
 ## Arquitectura oficial
 
 ```text
-Presentation -> Application -> Domain <- Infrastructure -> Firebase
+Presentation -> Application -> Domain <- Infrastructure -> Cloudflare (D1, Better Auth, R2)
 ```
 
 Las dependencias apuntan hacia el dominio. Ninguna capa puede saltarse la jerarquía.
@@ -39,16 +39,15 @@ Las dependencias apuntan hacia el dominio. Ninguna capa puede saltarse la jerarq
 | Capa | Responsabilidad | Prohibido |
 |---|---|---|
 | Presentation | UI, navegación, estado visual y validaciones simples | Reglas de negocio y cálculos financieros |
-| Application | Casos de uso, transacciones, autorización y eventos | Acceso directo a Firebase |
-| Domain | Entidades, value objects, reglas y algoritmos | Frameworks, HTTP, JSON y Firebase |
+| Application | Casos de uso, transacciones, autorización y eventos | Acceso directo a D1, Better Auth u otros servicios |
+| Domain | Entidades, value objects, reglas y algoritmos | Frameworks, HTTP, JSON y Cloudflare |
 | Infrastructure | Repositorios y adaptadores concretos | Decisiones de negocio |
 
 ## Stack oficial
 
-- **Backend:** TypeScript, Node.js, Firebase Cloud Functions, Firestore, Auth, Storage, Cloud Messaging y Scheduler.
-- **Android:** Kotlin, Jetpack Compose, MVVM, Hilt, Coroutines y Flow.
-- **Web:** Angular, TypeScript, Angular Material y RxJS.
-- **Testing:** Jest, JUnit, MockK y Firebase Emulator.
+- **Backend:** TypeScript estricto sobre Cloudflare Workers (Wrangler) con Hono, Cloudflare D1 (SQLite), Better Auth (Google OAuth); R2, Web Push y Cron Triggers cuando una fase los necesite (ADR-014..016).
+- **Web (único cliente, PWA):** Angular, TypeScript, Angular Material y RxJS, servida como Static Assets del Worker (ADR-017). No hay app Android nativa.
+- **Testing:** Vitest y `@cloudflare/vitest-plugin` (runtime de Workers + D1 local).
 
 ## Patrones requeridos
 
@@ -57,7 +56,7 @@ Las dependencias apuntan hacia el dominio. Ninguna capa puede saltarse la jerarq
 - Factory para entidades complejas y Builder para objetos extensos.
 - Domain Events/Observer para auditoría, notificaciones y sincronización.
 
-Nunca instanciar dependencias concretas dentro de un caso de uso ni acceder a Firestore directamente desde la lógica de dominio.
+Nunca instanciar dependencias concretas dentro de un caso de uso ni acceder a D1 directamente desde la lógica de dominio. Las dependencias concretas solo se crean en `presentation/compositionRoot.ts`.
 
 ## Modelo oficial
 
@@ -76,9 +75,9 @@ Cada caso de uso hace una sola tarea. Ejemplos: `CreateGroup`, `ArchiveGroup`, `
 - Los métodos expresan acciones: `createExpense()`, `archiveGroup()`, `calculateBalances()`.
 - Preferir `amount`, `user`, `group`, `participant`; no abreviaturas como `amt`, `usr`, `grp`.
 
-## Firebase y seguridad
+## Plataforma y seguridad
 
-Firestore es persistencia, no lógica de negocio. Las operaciones críticas —crear o eliminar gastos, invitar usuarios, liquidar, cerrar grupos y recalcular balances— pasan por Cloud Functions.
+D1 es persistencia, no lógica de negocio: nada de reglas de negocio en triggers salvo la protección de inmutabilidad (auditoría, tasas, perfiles publicados). Las operaciones críticas —crear o eliminar gastos, invitar usuarios, liquidar, cerrar grupos y recalcular balances— pasan por la API del Worker; solo el Worker tiene acceso a D1/R2.
 
 Toda petición se autentica. Nunca confiar en datos de cliente; validar permisos, pertenencia al grupo, estados, monedas y participantes en el servidor.
 
@@ -107,4 +106,4 @@ Las funcionalidades deben actualizar, cuando aplique: `Architecture.md`, `Domain
 
 ## Objetivo final
 
-Construir una plataforma escalable de referencia para gastos compartidos, capaz de soportar miles de usuarios y clientes Android, Web y futuros sin comprometer calidad ni consistencia de las reglas de negocio.
+Construir una plataforma escalable de referencia para gastos compartidos, capaz de soportar miles de usuarios y la PWA y futuros clientes sin comprometer calidad ni consistencia de las reglas de negocio.

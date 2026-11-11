@@ -1,0 +1,6 @@
+# Copiar a .dev.vars (ignorado por git) para `npm run dev`. Nunca commitear valores reales.
+BETTER_AUTH_URL=http://localhost:8787
+# Valor aleatorio de al menos 32 caracteres (p. ej. `openssl rand -base64 32`).
+BETTER_AUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=

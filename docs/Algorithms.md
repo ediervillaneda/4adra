@@ -11,7 +11,7 @@ Especifica los algoritmos financieros oficiales. Una misma entrada debe dar exac
 ## Principios numéricos
 
 - Algoritmos determinísticos, reproducibles, auditables e independientes de la plataforma.
-- Nunca usar `float`/`double` para dinero. Usar `BigDecimal` (Kotlin/Java) y `Decimal.js` o equivalente en TypeScript.
+- Nunca usar `float`/`double` para dinero. Usar `Decimal.js` o equivalente de precisión arbitraria en TypeScript.
 - Mantener precisión máxima internamente. Solo redondear al presentar; si es inevitable, usar **Round Half Even**. Cada perfil puede declarar su estrategia de redondeo y su versión se guarda en el gasto.
 - La unidad mínima de redondeo y de residuo depende de `decimalPlaces` de la `Currency` usada (ver `docs/domain/Currency.md`); no asumir siempre dos decimales, ya que cada moneda soportada declara su propia precisión.
 

@@ -1,4 +1,8 @@
-import { onRequest } from 'firebase-functions/v2/https';
 import { composeApp } from './presentation/compositionRoot';
 
-export const api = onRequest(composeApp());
+// Static Assets atiende todo lo que no sea /api/* (run_worker_first en wrangler.jsonc).
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return Promise.resolve(composeApp(env).fetch(request, env, ctx));
+  },
+} satisfies ExportedHandler<Env>;

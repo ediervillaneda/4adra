@@ -62,7 +62,7 @@ Una liquidación no modifica gastos; solo reduce deuda. Estados: `Pending`, `Con
 
 ## Adjuntos, comentarios y categorías
 
-Las categorías son un catálogo global gestionado por la plataforma, común a todos los grupos (no configurable por grupo). Adjuntos (imágenes, PDF, facturas y comprobantes) se guardan en Firebase Storage, no Firestore. Los comentarios son una capacidad planificada para `Roadmap.md` Fase 3 (no forman parte del modelo de entidades ni del esquema actual): cuando se especifiquen, no deberán alterar gastos ni balances, y deberán formar parte del historial auditable.
+Las categorías son un catálogo global gestionado por la plataforma, común a todos los grupos (no configurable por grupo). Adjuntos (imágenes, PDF, facturas y comprobantes) se guardan en Cloudflare R2, no en D1. Los comentarios son una capacidad planificada para `Roadmap.md` Fase 3 (no forman parte del modelo de entidades ni del esquema actual): cuando se especifiquen, no deberán alterar gastos ni balances, y deberán formar parte del historial auditable.
 
 ## Eliminación, auditoría y notificaciones
 

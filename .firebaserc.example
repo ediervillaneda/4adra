@@ -1,7 +1,0 @@
-{
-  "projects": {
-    "development": "adra-54655",
-    "staging": "adra-54655-staging",
-    "production": "adra-54655-prod"
-  }
-}

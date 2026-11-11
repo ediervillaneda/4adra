@@ -5,10 +5,12 @@ on:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'docs/api/openapi.yaml'
       - '.github/workflows/backend.yml'
   pull_request:
     paths:
       - 'backend/**'
+      - 'docs/api/openapi.yaml'
       - '.github/workflows/backend.yml'
   workflow_call: {}
 
@@ -18,7 +20,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Formato · Lint · Tipos · Pruebas · Integración · Contrato · Build
+    name: Formato · Lint · Tipos · Pruebas · Migraciones · Integración · Contrato · Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +32,7 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
+            echo "::notice::backend/package.json no existe todavía. Este job no falla mientras el scaffolding real no exista."
           fi
 
       - name: Configurar Node.js
@@ -40,13 +42,6 @@ jobs:
           node-version-file: backend/.nvmrc
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
-      - name: Configurar JDK (requerido por Firebase Emulator Suite)
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
 
       - name: Instalar dependencias (npm ci)
         if: steps.scaffold.outputs.exists == 'true'
@@ -68,23 +63,20 @@ jobs:
         working-directory: backend
         run: npm run typecheck
 
-      - name: Pruebas unitarias con cobertura (Jest)
+      - name: Pruebas unitarias con cobertura (Vitest)
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
-        run: npm test -- --coverage
+        run: npm test
 
-      - name: Instalar Firebase CLI
+      - name: Migraciones D1 en limpio (local)
         if: steps.scaffold.outputs.exists == 'true'
-        run: npm install -g firebase-tools
+        working-directory: backend
+        run: npm run db:migrate:local
 
-      - name: Pruebas de integración (Firebase Emulator Suite)
+      - name: Pruebas de integración (runtime de Workers + D1 local)
         if: steps.scaffold.outputs.exists == 'true'
-        # Se ejecuta desde la raíz del repo porque firebase.json vive ahí.
-        run: |
-          firebase emulators:exec \
-            --project demo-4adra \
-            --only auth,firestore,storage \
-            "npm --prefix backend run test:integration"
+        working-directory: backend
+        run: npm run test:integration
 
       - name: Pruebas de contrato (docs/api/openapi.yaml)
         if: steps.scaffold.outputs.exists == 'true'
@@ -96,7 +88,7 @@ jobs:
         working-directory: backend
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Build
+      - name: Build (wrangler deploy --dry-run)
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm run build

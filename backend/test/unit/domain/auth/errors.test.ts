@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
 import { DomainError } from '../../../../src/domain/errors/DomainError';
 

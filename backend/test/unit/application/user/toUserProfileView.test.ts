@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { toUserProfileView } from '../../../../src/application/user/toUserProfileView';
 import { User } from '../../../../src/domain/user/User';
 import { UserId } from '../../../../src/domain/user/UserId';

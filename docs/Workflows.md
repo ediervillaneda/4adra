@@ -87,19 +87,12 @@ npm ci
 npm run format:check      # Prettier
 npm run lint               # ESLint estricto
 npm run typecheck          # tsc --noEmit
-npm test -- --coverage     # Jest unitarias, 100%/95% cobertura domain/application
-
-# Integración (requiere Firebase Emulator Suite + JDK 21+):
-cd ..
-firebase emulators:exec --project demo-4adra --only auth,firestore,storage \
-  "npm --prefix backend run test:integration"
-
-# Contrato contra docs/api/openapi.yaml:
-npm --prefix backend run test:contract
-
-cd backend
+npm test                   # Vitest unitarias + umbrales de cobertura (domain 100, application 95, presentation 70)
+npm run db:migrate:local   # migraciones D1 en limpio (D1 local de Wrangler)
+npm run test:integration   # runtime de Workers + D1 local (sin JDK ni emuladores)
+npm run test:contract      # contra docs/api/openapi.yaml
 npm audit --omit=dev --audit-level=high
-npm run build
+npm run build              # wrangler deploy --dry-run --outdir dist
 ```
 
 ### `web.yml` — Web CI
@@ -115,25 +108,11 @@ npm audit --omit=dev --audit-level=high
 npm run build -- --configuration=production
 ```
 
-### `android.yml` — Android CI
-
-Dispara igual, sobre `android/**`. Se omite mientras `android/gradlew` no exista. El job `instrumented-tests` (emulador Android) solo corre en push, no en cada PR (es lento).
-
-```bash
-cd android
-./gradlew lint ktlintCheck detekt
-./gradlew test
-./gradlew build
-
-# Instrumentadas (requiere emulador/dispositivo conectado, o CI con KVM):
-./gradlew connectedAndroidTest
-```
-
 ### `release.yml` — Release (ciclo de vida completo)
 
 Dos triggers en un solo archivo:
 
-1. **`push` a `release/**`/`hotfix/**`** → corre `backend.yml`/`web.yml`/`android.yml` como reusables. Si pasan y hay commits nuevos vs `main` (guard: rama recién cortada no dispara nada), abre y mergea PR real hacia `main` (nunca push directo), taguea `v<version>`, crea GitHub Release, y sincroniza `develop` con otro PR.
+1. **`push` a `release/**`/`hotfix/**`** → corre `backend.yml`/`web.yml` como reusables. Si pasan y hay commits nuevos vs `main` (guard: rama recién cortada no dispara nada), abre y mergea PR real hacia `main` (nunca push directo), taguea `v<version>`, crea GitHub Release, y sincroniza `develop` con otro PR.
 2. **`pull_request` cerrado/mergeado hacia `release/**`** (fixes de estabilización) → taguea `v<version>-rc` y crea GitHub Release marcado `prerelease`. No repite tests.
 
 Reproducir el guard de "commits nuevos" en local:
@@ -154,31 +133,19 @@ gh pr create --base develop --head release/1.2.0 --title "chore: sincronizar dev
 gh pr merge release/1.2.0 --merge
 ```
 
-### `deploy-firebase.yml` — Deploy Firebase (Production)
+### `deploy-cloudflare.yml` — Deploy Cloudflare (Production)
 
-Dispara únicamente con push a `main` (paths `backend/**`, `firebase.json`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`). Requiere los secrets `FIREBASE_SERVICE_ACCOUNT` y `FIREBASE_PROJECT_ID_PRODUCTION` — se omite sin fallar si no existen.
+Dispara únicamente con push a `main` (paths `backend/**` y el propio workflow). Requiere los secrets `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`; se omite sin fallar (`::notice::`) si no existen. Aplica las migraciones de D1 **antes** de publicar el código.
 
 ```bash
 cd backend
 npm ci
-npm run build
-npm install -g firebase-tools
-firebase deploy --only functions,firestore:rules,firestore:indexes,storage \
-  --project <FIREBASE_PROJECT_ID_PRODUCTION> --non-interactive
+export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...   # en CI vienen de los secrets
+npm run db:migrate:remote      # wrangler d1 migrations apply 4adra-db --remote
+npx wrangler deploy            # publica el Worker 4adra en https://4adra.edier.me
 ```
 
-### `firebase-config.yml` — Firebase Config Validation
-
-Valida `firebase.json`/`firestore.indexes.json` (JSON) y `firestore.rules`/`storage.rules` (arrancando el Emulator Suite). Corre siempre, no depende de scaffolding.
-
-```bash
-python3 -c "import json; json.load(open('firebase.json'))"
-python3 -c "import json; json.load(open('firestore.indexes.json'))"
-
-npm install -g firebase-tools
-firebase emulators:exec --project demo-4adra --only firestore,storage \
-  "echo ok"
-```
+Revertir: `npx wrangler rollback` (ver `docs/Deployment.md`).
 
 ### `openapi-lint.yml` — OpenAPI Contract Lint
 
@@ -192,10 +159,10 @@ npx --yes @redocly/cli@latest lint docs/api/openapi.yaml
 
 | Secret | Usado por | Estado |
 |---|---|---|
-| `FIREBASE_SERVICE_ACCOUNT` | `deploy-firebase.yml` | Configurado, apunta a `adra-54655` (un solo entorno, ver ADR-013) |
-| `FIREBASE_PROJECT_ID_PRODUCTION` | `deploy-firebase.yml` | Configurado, `adra-54655` |
+| `CLOUDFLARE_API_TOKEN` | `deploy-cloudflare.yml` | Pendiente. Token con plantilla "Edit Cloudflare Workers" + D1 Edit, limitado a la cuenta y a la zona `edier.me` (`docs/Deployment.md`) |
+| `CLOUDFLARE_ACCOUNT_ID` | `deploy-cloudflare.yml` | Pendiente |
 
-La cuenta de facturación de Google Cloud está cerrada — el deploy de Cloud Functions (plan Blaze) fallará hasta reactivarla; Firestore/Storage rules sí deberían poder desplegarse igual.
+Los secrets heredados `FIREBASE_SERVICE_ACCOUNT` y `FIREBASE_PROJECT_ID_PRODUCTION` ya no los usa ningún workflow y deben borrarse (`gh secret delete FIREBASE_SERVICE_ACCOUNT`, `gh secret delete FIREBASE_PROJECT_ID_PRODUCTION`).
 
 ## Permisos de repositorio requeridos
 

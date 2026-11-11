@@ -1,86 +1,119 @@
 # Deployment.md
 
 > **Proyecto:** 4adra  
-> **Versión:** 1.0  
+> **Versión:** 2.0  
 > **Estado:** Draft
 
 ## Objetivo
 
-Define el proceso seguro y repetible para desplegar backend Firebase, reglas, clientes Web y Android, con validación, reversión y monitoreo.
+Define el proceso seguro y repetible para desplegar el Worker `4adra` de Cloudflare (API, autenticación y PWA) y la base D1, con validación, reversión y monitoreo (ADR-014..017).
 
 ## Entornos
 
-| Entorno | Propósito | Datos | Acceso |
+| Entorno | Cómo corre | URL | Datos |
 |---|---|---|---|
-| Local | Desarrollo y pruebas rápidas | Emuladores, sintéticos | Desarrolladores |
-| Development | Integración continua | Sintéticos/anonimizados | Equipo técnico |
-| Staging | Validación previa a producción | Sintéticos representativos | Equipo autorizado |
-| Production | Usuarios reales | Datos reales | Mínimo privilegio |
+| Local | `npm run dev` (`wrangler dev`, D1 local en `.wrangler/`) | `http://localhost:8787` | Sintéticos |
+| Preview (opcional) | `wrangler versions upload` desde un PR | `*.workers.dev` | Sintéticos; nunca la D1 de producción |
+| Production | `wrangler deploy` desde CI con push a `main` | `https://4adra.edier.me` | Reales, con mínimo privilegio |
 
-Cada entorno usa proyecto Firebase, Storage, secretos, cuentas de servicio y configuración propios. Está prohibido reutilizar secretos o datos de producción en entornos inferiores.
+Hay un solo entorno remoto (producción), por decisión del responsable del proyecto. No existe staging. Está prohibido usar secretos o datos de producción en local.
 
 ## Artefactos desplegables
 
-- Cloud Functions/API y sus dependencias bloqueadas.
-- Reglas e índices de Firestore.
-- Reglas y configuración de Firebase Storage.
-- Configuración de Scheduler, mensajería y alertas.
-- Aplicación Web estática y configuración de entorno.
-- Aplicación Android firmada, distribuida en canal interno, beta o producción.
+- **Worker `4adra`:** código (empaquetado por Wrangler desde `backend/src/index.ts`) y configuración (`backend/wrangler.jsonc`).
+- **Static Assets:** `backend/public/`, que hoy es un placeholder y luego será el build de la PWA.
+- **Base D1:** migraciones de `4adra-db` (`backend/migrations/*.sql`).
+- **Secrets del Worker:** `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
 
-## Requisitos previos
+## Configuración inicial (una sola vez)
 
-Antes de cualquier despliegue: versión identificable, cambios revisados, CI en verde, pruebas con emuladores, análisis de seguridad, secretos configurados en el entorno destino, migración compatible preparada y plan de reversión documentado.
+1. **Wrangler login:** desde `backend/`, `npx wrangler login` (abre el navegador). Verificar con `npx wrangler whoami`.
+2. **Dominio:** la zona `edier.me` debe estar en la misma cuenta de Cloudflare, porque el custom domain `4adra.edier.me` se crea solo en el primer deploy.
+3. **Base de datos:**
+   - Ejecutar `npx wrangler d1 create 4adra-db`.
+   - Copiar el `database_id` que devuelve a `backend/wrangler.jsonc`, en lugar del placeholder `00000000-...`, y hacer commit.
+   - Aplicar el esquema con `npm run db:migrate:remote`.
+4. **Cliente OAuth de Google** (Google Cloud Console → APIs & Services → Credentials → OAuth client ID, tipo *Web application*):
+   - Orígenes autorizados: `https://4adra.edier.me` y `http://localhost:8787`.
+   - URIs de redirección: `https://4adra.edier.me/api/auth/callback/google` y `http://localhost:8787/api/auth/callback/google`.
+5. **Secrets del Worker** (cada comando pide el valor en la terminal; nunca pegarlo en chats ni archivos versionados):
+   ```bash
+   npx wrangler secret put BETTER_AUTH_SECRET     # aleatorio de 32 bytes o más (openssl rand -base64 32)
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   ```
+   Para local, los mismos nombres van en `backend/.dev.vars` (copiado de `.dev.vars.example`).
+6. **CI:**
+   - Crear un API token en Cloudflare con la plantilla "Edit Cloudflare Workers", más el permiso *D1: Edit*, limitado a la cuenta y a la zona `edier.me`.
+   - Cargarlo en GitHub con `gh secret set CLOUDFLARE_API_TOKEN` y `gh secret set CLOUDFLARE_ACCOUNT_ID`.
+   - Borrar los secrets heredados `FIREBASE_SERVICE_ACCOUNT` y `FIREBASE_PROJECT_ID_PRODUCTION`.
+7. **Retiro de Firebase:**
+   - Eliminar el proyecto `adra-54655` (y los `-staging`/`-prod`, si existen) en console.firebase.google.com. Sus claves de cliente siguen en el historial de git, y eliminar el proyecto las inutiliza.
+   - Es una acción manual del responsable del proyecto.
 
-Los cambios de API, perfil de cálculo, esquema o reglas de seguridad deben tener prueba de compatibilidad y aprobación explícita.
+## Requisitos previos de cada despliegue
 
-## Pipeline recomendado
+- **Control de cambios:** versión identificable, cambios revisados por PR y CI en verde (formato, lint, tipos, unitarias, migraciones en limpio, integración, contrato, `npm audit` y build).
+- **Datos:** si hay migración nueva, debe ser aditiva y compatible con el código anterior.
+- **Plan de reversión:** documentado.
+
+Los cambios de API, perfil de cálculo, esquema o seguridad necesitan prueba de compatibilidad y aprobación explícita.
+
+## Pipeline
 
 ```text
-Formato/lint -> tipos -> unitarias -> integración con emuladores
--> contrato -> build -> análisis de dependencias/seguridad
--> despliegue Development -> smoke tests
--> despliegue Staging -> E2E y aprobación
--> producción canaria -> monitoreo -> despliegue gradual
+PR → backend.yml: formato → lint → tipos → unitarias+cobertura → migraciones D1 (local)
+   → integración (runtime Workers + D1 local) → contrato (OpenAPI) → npm audit → build (dry-run)
+release/* → release.yml: CI completo → PR automático a main y develop → tag v<versión>
+push a main → deploy-cloudflare.yml: npm ci → d1 migrations apply --remote → wrangler deploy
 ```
 
-El pipeline usa una cuenta de servicio con IAM mínimo y secretos administrados; nunca credenciales personales ni variables impresas en logs.
+El deploy usa solo el API token de alcance mínimo guardado en los secrets de GitHub. Nunca se usan credenciales personales ni se imprimen variables en los logs.
 
-## Backend Firebase
+## Despliegue del backend
 
-1. Validar configuración y versión de runtime Node.js.
-2. Desplegar índices y reglas compatibles antes de código que los requiera.
-3. Desplegar Cloud Functions de forma gradual o por función cuando sea posible.
-4. Ejecutar smoke tests autenticados: perfil, grupo, gasto, balances y liquidación.
-5. Revisar errores, latencia, consumo y auditoría.
+1. **Orden:** las migraciones se aplican **antes** del código que las necesita; el workflow ya lo hace en ese orden.
+2. **Publicación:** `wrangler deploy` publica una versión nueva de forma atómica. Cloudflare conserva las versiones anteriores.
+3. **Prueba de humo:**
+   - `GET /` → HTML de la PWA.
+   - `GET /api/v1/me` sin sesión → `401` JSON.
+   - Login con Google → `GET /api/v1/me` → `200`.
+4. **Revisión:** errores, latencia y logs en el dashboard (Workers → `4adra` → Observability).
 
-No realizar borrados destructivos ni cambios de reglas que bloqueen clientes existentes sin periodo de transición. Mantener funciones/contratos anteriores durante la ventana de deprecación.
+No hacer borrados destructivos ni cambios de esquema que rompan la versión anterior sin un periodo de transición.
 
-## Web y Android
+## PWA
 
-Web: generar artefacto reproducible con configuración del entorno; publicar inicialmente en canal/canary y verificar autenticación, CSP, API y errores de cliente.
-
-Android: firmar en infraestructura segura, probar contra staging, publicar primero en pista interna/beta y monitorizar fallos antes de producción. No incluir claves privadas, secretos ni configuraciones de producción editables en el binario.
+- **Publicación:** el build de producción de `web/` (subproyecto 2) se copia o apunta en `assets.directory` de `wrangler.jsonc` y se despliega junto con el Worker. No necesita configuración por entorno porque la API está en el mismo origen.
+- **Verificación:** login, CSP, llamadas a la API y errores de cliente.
 
 ## Migraciones y perfiles de cálculo
 
-Las migraciones son aditivas, idempotentes, registran avance y pueden reiniciarse sin duplicar datos. Hacer copia/plan de recuperación antes de cambios masivos. No reescribir importes históricos.
+- **Forma de las migraciones:** son archivos SQL numerados. Deben ser aditivas y no editarse nunca una vez aplicadas; para corregir, se crea otra.
+- **Cambios masivos:** antes, exportar la base con `npx wrangler d1 export 4adra-db --remote --output backup.sql`. D1 también ofrece Time Travel (restauración a un punto en el tiempo, `wrangler d1 time-travel`).
+- **Importes históricos:** nunca se reescriben.
 
-Una estrategia o `CalculationProfile` publicado es inmutable. Para cambiar comportamiento, publicar versión nueva, activarla solo para cálculos futuros y verificar con pruebas doradas que los gastos previos mantienen resultados reproducibles.
+Una estrategia o `CalculationProfile` publicado es inmutable. Para cambiar el comportamiento, se publica una versión nueva, se activa solo para cálculos futuros y se verifica con pruebas doradas que los gastos previos mantienen resultados reproducibles.
 
 ## Reversión e incidentes
 
-Revertir una función o Web a un artefacto anterior conocido; no revertir datos financieros mediante borrado. Si una mutación ya se confirmó, usar una operación compensatoria auditada.
+- **Código:** `npx wrangler rollback` vuelve a la versión anterior del Worker. `npx wrangler deployments list` muestra el historial.
+- **Datos financieros:** nunca se revierten borrando. Si una mutación ya se confirmó, se usa una operación compensatoria auditada.
+- **Base completa:** solo como último recurso, `wrangler d1 time-travel restore`, con registro en `Decisions.md`.
 
-Ante incidente: contener acceso, pausar despliegue, preservar logs/auditoría, evaluar impacto, aplicar reversión segura, comunicar a responsables y documentar acciones correctivas.
+**Ante un incidente:**
+1. Contener: rotar el secreto afectado o hacer rollback.
+2. Pausar los merges a `main`.
+3. Preservar logs y auditoría.
+4. Evaluar el impacto.
+5. Comunicar y documentar las acciones correctivas.
 
 ## Verificación posterior
 
-- Salud de funciones, tasa de errores, latencia y cuota.
-- Autenticación, autorización y reglas de Firestore/Storage.
-- Creación de gasto, cálculo de balance y confirmación de liquidación.
-- Eventos, auditoría, notificaciones y exportaciones.
-- Métricas de cliente: errores, inicio de sesión y llamadas API.
+- Salud del Worker: tasa de errores, latencia, CPU y cuotas de D1.
+- Autenticación (cookie de sesión) y autorización por rol.
+- Creación de gasto, cálculo de balance y confirmación de liquidación, cuando existan.
+- Auditoría (`audit_logs`) escribiéndose en las mutaciones.
 - Confirmación de que no se publicaron secretos ni datos de prueba.
 
-Registrar versión, hora, responsable, entorno, resultado de smoke tests, migraciones y decisión de avance/reversión en el registro de despliegue.
+Registrar en el registro de despliegue la versión (tag `v<versión>` y version ID de Wrangler), la hora, el responsable, el resultado de la prueba de humo, las migraciones aplicadas y la decisión de avanzar o revertir.

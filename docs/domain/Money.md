@@ -15,7 +15,7 @@ Money
 └── currency: CurrencyCode
 ```
 
-`Decimal` debe provenir de una implementación de precisión arbitraria (`BigDecimal` en Kotlin/Java; Decimal.js o equivalente en TypeScript). Nunca se representa con `float`, `double` o número JavaScript nativo para cálculo financiero.
+`Decimal` debe provenir de una implementación de precisión arbitraria (Decimal.js o equivalente en TypeScript; `BigDecimal` si algún día existiera un cliente JVM). Nunca se representa con `float`, `double` o número JavaScript nativo para cálculo financiero.
 
 ## Operaciones permitidas
 
@@ -29,7 +29,7 @@ Una operación con monedas incompatibles falla con error de dominio; nunca reali
 
 ## Serialización y presentación
 
-En API, `amount` viaja como cadena decimal canónica (`"125.50"`). Firestore persiste una representación decimal segura definida por Infrastructure. La UI formatea `Money` según configuración regional, pero no altera su valor.
+En API, `amount` viaja como cadena decimal canónica (`"125.50"`). D1 lo persiste como `TEXT` decimal exacto (nunca `REAL`), según `DatabaseSchema.md`. La UI formatea `Money` según configuración regional, pero no altera su valor.
 
 ## Redondeo y residual
 
