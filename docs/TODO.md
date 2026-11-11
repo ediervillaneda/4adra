@@ -1,7 +1,7 @@
 # TODO.md — Estado de documentación
 
 > **Proyecto:** 4adra  
-> **Última actualización:** 2026-07-13 (ADR-008 a ADR-011, checklists de fases y especificación técnica ejecutable)
+> **Última actualización:** 2026-11-11 (migración a Cloudflare: ADR-014 a ADR-017)
 
 ## Propósito
 
@@ -12,7 +12,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `AGENTS.md` — Reglas maestras, arquitectura y trabajo de agentes.
 - [x] `Architecture.md` — Capas, componentes y flujos.
 - [x] `DomainModel.md` — Entidades, agregados, invariantes y perfiles de cálculo.
-- [x] `DatabaseSchema.md` — Esquema lógico de Firestore y colecciones.
+- [x] `DatabaseSchema.md` — Esquema relacional de D1 (tablas, índices, triggers, migraciones).
 - [x] `BusinessRules.md` — Reglas funcionales y permisos.
 - [x] `Algorithms.md` — Cálculos, estrategias y motor configurable.
 - [x] `ApiSpecification.md` — Contrato HTTP general.
@@ -24,7 +24,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `Roadmap.md` — Evolución planificada.
 - [x] `Decisions.md` — Registro de decisiones (ADR).
 - [x] `Glossary.md` — Lenguaje ubicuo.
-- [x] `UISpecification.md` — Inventario de pantallas, navegación y reglas de presentación (Android y Web, todas las fases). No incluye wireframes visuales ni sistema de diseño de marca — ver "Pendiente fuera de este documento" dentro del archivo.
+- [x] `UISpecification.md` — Inventario de pantallas, navegación y reglas de presentación (PWA en celular y PC, todas las fases). No incluye wireframes visuales ni sistema de diseño de marca — ver "Pendiente fuera de este documento" dentro del archivo.
 
 ## Documentación de API (`api/`)
 
@@ -60,7 +60,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `examples/Expense.json`
 - [x] `examples/Group.json`
 - [x] `examples/Settlement.json`
-- [x] `examples/FirestoreStructure.json`
+- [x] `examples/D1Schema.sql` — esquema D1 completo de referencia
 
 ## Checklists de fases (`checklists/`)
 
@@ -74,17 +74,15 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 
 ## Especificación técnica ejecutable (raíz del repositorio)
 
-- [x] `firebase.json` — configuración de proyecto Firebase (Firestore, Storage, Functions, Hosting, Emulators).
-- [x] `firestore.rules` — deniega el 100 % del acceso directo de clientes (ADR-009).
-- [x] `storage.rules` — ídem para Storage.
-- [x] `firestore.indexes.json` — índices compuestos de `DatabaseSchema.md`.
-- [x] `.firebaserc.example` — plantilla de alias de proyecto por entorno (copiar a `.firebaserc`, ignorado por git).
+- [x] `backend/wrangler.jsonc` — Worker `4adra`, binding D1 `DB`, Static Assets y ruta `4adra.edier.me` (ADR-014).
+- [x] `backend/migrations/0001_init.sql` — Better Auth, `users` y `audit_logs` inmutable (ADR-015, ADR-016).
+- [x] `backend/.dev.vars.example` — nombres de secretos locales, sin valores.
 - [x] `docs/api/openapi.yaml` — contrato HTTP machine-readable, espejo de `ApiSpecification.md`/`api/*.md`.
-- [x] `.github/workflows/backend.yml`, `web.yml`, `android.yml` — CI por plataforma (se omiten sin fallar hasta que exista scaffolding real).
-- [x] `.github/workflows/openapi-lint.yml`, `firebase-config.yml` — validan hoy mismo `docs/api/openapi.yaml` y `firestore.rules`/`storage.rules`/`firestore.indexes.json`, sin necesitar código de aplicación.
-- [ ] `backend/README.md`, `web/README.md`, `android/README.md` — placeholders de estructura; pendiente el scaffolding real (Fase 0).
-- [x] `web/src/environments/environment.ts` — configuración del cliente Firebase del proyecto `development` (`adra-54655`); pendiente restringir la API key en Google Cloud Console (ver checklist Fase 0).
-- [x] `android/app/google-services.json` — config del cliente Android, `applicationId` `com.edier.adra.app` (ADR-012), proyecto Firebase `adra-54655`. Copia vieja del registro anterior en `android/google-services.json` (raíz) pendiente de borrar manualmente.
+- [x] `.github/workflows/backend.yml`, `web.yml` — CI por plataforma (`web.yml` se omite sin fallar hasta que exista la PWA).
+- [x] `.github/workflows/deploy-cloudflare.yml` — migraciones D1 + `wrangler deploy` con push a `main`.
+- [x] `.github/workflows/openapi-lint.yml` — valida `docs/api/openapi.yaml`.
+- [x] `backend/` — scaffold real de Fase 0 sobre Cloudflare (Hono + D1 + Better Auth), `GET /api/v1/me` de punta a punta.
+- [ ] `web/` — scaffold de la PWA Angular (subproyecto 2, con spec propio).
 
 ## Regla de mantenimiento
 

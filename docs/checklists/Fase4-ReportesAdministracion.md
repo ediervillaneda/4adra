@@ -24,7 +24,7 @@ Mejorar visibilidad, exportación y gobernanza: exportaciones CSV/XLSX/PDF/JSON,
 - [ ] Procesamiento asíncrono con estados `QUEUED/PROCESSING/COMPLETED/FAILED/EXPIRED` y expiración a 24 horas (ADR-011).
 - [ ] Herramientas administrativas auditadas para archivo/cierre de grupo y retención de datos, con auditoría reforzada (`docs/Security.md`).
 
-### Android y Web
+### PWA
 
 - [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 4 — Reportes y administración".
 - [ ] Flujo de solicitud/descarga de reportes.

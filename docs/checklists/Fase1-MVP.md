@@ -8,7 +8,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 ## Prerrequisitos
 
-- [ ] Fase 0 completa (`docs/checklists/Fase0-FundacionTecnica.md`), en particular: arquitectura por capas funcionando de punta a punta, Firebase Emulator Suite operativo, CI en verde.
+- [ ] Fase 0 completa (`docs/checklists/Fase0-FundacionTecnica.md`), en particular: arquitectura por capas funcionando de punta a punta, integración en el runtime de Workers con D1 local operativa, CI en verde.
 
 ## Checklist
 
@@ -35,11 +35,12 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 ### Infraestructura (≥80 % cobertura)
 
-- [ ] `FirestoreUserRepository`, `FirestoreGroupRepository`, `FirestoreMembershipRepository`, `FirestoreInvitationRepository`, `FirestoreExpenseRepository`, `FirestoreSettlementRepository`, `FirestoreBalanceRepository`, `FirestoreAuditLogRepository`.
+- [x] `D1UserRepository`, `D1AuditLogWriter` (Fase 0).
+- [ ] `D1GroupRepository`, `D1MembershipRepository`, `D1InvitationRepository`, `D1ExpenseRepository` (gasto + splits en un solo `db.batch`), `D1SettlementRepository`, `D1BalanceRepository`, con sus migraciones SQL (`docs/examples/D1Schema.sql`).
 - [ ] IDs deterministas `{groupId}_{userId}` para `groupMembers` (ADR-010).
-- [ ] `FirebaseAuthProvider` (validación de token, claims).
-- [ ] Adaptador de adjuntos en Storage con URL firmada de 15 minutos (ADR-011).
-- [ ] Índices desplegados desde `firestore.indexes.json`.
+- [x] `BetterAuthAuthenticationProvider` (sesión por cookie, Google) — Fase 0.
+- [ ] Adaptador de adjuntos en R2 (binding del Worker) con URL firmada de 15 minutos (ADR-011).
+- [ ] Índices de `DatabaseSchema.md` creados en las migraciones correspondientes.
 
 ### Presentation / API (≥70 % cobertura)
 
@@ -48,10 +49,10 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [ ] Mapeo de errores de dominio a códigos HTTP de `docs/ApiSpecification.md` y `docs/api/*.md`.
 - [ ] Rate limiting por defecto (60/min mutaciones, 300/min lecturas, 20/min por IP no autenticada — ADR-011).
 
-### Android y Web (MVP)
+### PWA (MVP)
 
 - [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 1 — MVP" (autenticación/perfil, grupos y miembros, gastos, balances y liquidaciones).
-- [ ] Autenticación (Firebase Auth SDK) y perfil.
+- [ ] Autenticación ("Continuar con Google" con el cliente de Better Auth) y perfil.
 - [ ] Crear/listar/archivar grupos.
 - [ ] Invitar miembro, aceptar/rechazar invitación.
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
@@ -63,14 +64,14 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 ### Pruebas
 
 - [ ] Casos de `docs/TestingGuide.md` § "Pruebas de dominio obligatorias" cubiertos para las 4 estrategias de reparto del MVP.
-- [ ] Pruebas de integración contra Firebase Emulator (repositorios, reglas, funciones autenticadas, idempotencia y concurrencia).
+- [ ] Pruebas de integración en el runtime de Workers con D1 local (repositorios, autorización por rol, rutas autenticadas, idempotencia y concurrencia).
 - [ ] Pruebas de contrato contra `docs/api/openapi.yaml`.
 - [ ] E2E críticos 1–4 de `docs/TestingGuide.md` § "E2E críticos" ejecutados en staging.
 
 ## Criterios de salida
 
 - [ ] Todos los cálculos de dominio del MVP alcanzan 100 % de cobertura.
-- [ ] El flujo grupo → gasto → balance → liquidación funciona con emuladores y E2E de staging.
+- [ ] El flujo grupo → gasto → balance → liquidación funciona en local (`wrangler dev` + D1) y en la prueba de humo de producción.
 - [ ] Ningún gasto ni liquidación puede crearse, editarse o confirmarse sin pasar por autorización y auditoría.
 
 ## Documentos relacionados
