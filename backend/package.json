@@ -13,21 +13,26 @@
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "test:integration": "vitest run -c vitest.integration.config.mts",
     "test:contract": "vitest run -c vitest.contract.config.ts",
-    "build": "rimraf dist && tsc -p tsconfig.build.json"
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "cf-typegen": "wrangler types --env-file=.dev.vars.example",
+    "db:migrate:local": "wrangler d1 migrations apply 4adra-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply 4adra-db --remote"
   },
   "dependencies": {
     "express": "^4.21.1",
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^6.1.0"
+    "firebase-functions": "^6.1.0",
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.8.0",
     "@types/express": "^4.17.21",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.0.0",
     "@types/supertest": "^6.0.2",
-    "@vitest/coverage-istanbul": "^3.2.7",
+    "@vitest/coverage-istanbul": "^4.1.12",
     "ajv": "^8.17.1",
     "eslint": "^9.14.0",
     "eslint-config-prettier": "^9.1.0",
@@ -37,6 +42,7 @@
     "supertest": "^7.0.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.13.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.12",
+    "wrangler": "^4.160.1"
   }
 }
