@@ -2,7 +2,7 @@ name: Release
 
 # Git Flow (ADR-013, docs/Decisions.md), ciclo de vida completo de release/hotfix:
 #
-# 1. Push a release/**|hotfix/** -> corre CI completo (backend/web/android) y,
+# 1. Push a release/**|hotfix/** -> corre CI completo (backend/web) y,
 #    si pasa y hay commits nuevos vs main, publica automáticamente a main
 #    (vía Pull Request real, nunca push directo) y sincroniza develop. Taguea
 #    v<version> y crea el GitHub Release.
@@ -10,8 +10,8 @@ name: Release
 #    v<version>-rc y crea un GitHub Release (prerelease). No repite tests,
 #    ya corrieron como parte del PR.
 #
-# Un solo entorno de Firebase: el deploy real solo ocurre con push a main
-# (deploy-firebase.yml), nunca desde release/*, hotfix/* ni develop.
+# Un solo entorno (Cloudflare, https://4adra.edier.me): el deploy real solo ocurre con
+# push a main (deploy-cloudflare.yml), nunca desde release/*, hotfix/* ni develop.
 
 on:
   push:
@@ -36,14 +36,10 @@ jobs:
     if: github.event_name == 'push'
     uses: ./.github/workflows/web.yml
 
-  test-android:
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/android.yml
-
   publish:
     name: Publicar a main y develop
     if: github.event_name == 'push'
-    needs: [test-backend, test-web, test-android]
+    needs: [test-backend, test-web]
     runs-on: ubuntu-latest
     permissions:
       contents: write

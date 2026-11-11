@@ -16,22 +16,6 @@ dist/
 .env.local
 coverage/
 
-# Firebase
-.firebaserc
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-*.emulator-data/
-
-# Android
-.gradle/
-local.properties
-*.apk
-*.aab
-*.jks
-*.keystore
-
 # Build
 build/
 out/
