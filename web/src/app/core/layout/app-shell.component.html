@@ -27,6 +27,12 @@
       </mat-toolbar>
     }
 
+    @if (!onlineStatus.isOnline()) {
+      <div class="banner offline" role="status" data-testid="offline">
+        <span>{{ texts.errors.offline }}</span>
+      </div>
+    }
+
     @if (notifier.message(); as message) {
       <div class="banner" role="alert" data-testid="api-error">
         <span>{{ message }}</span>

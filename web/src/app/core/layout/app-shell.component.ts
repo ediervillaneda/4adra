@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { AuthService } from '../auth/auth.service';
 import { ApiErrorNotifier } from '../http/api-error-notifier';
+import { OnlineStatus } from '../network/online-status';
 import { BrandLogoComponent } from '../../shared/brand-logo.component';
 import { TEXTS } from '../../shared/texts';
 
@@ -33,6 +34,7 @@ export class AppShellComponent {
   private readonly router = inject(Router);
   private readonly session = inject(AuthService).session;
   protected readonly notifier = inject(ApiErrorNotifier);
+  protected readonly onlineStatus = inject(OnlineStatus);
   protected readonly texts = TEXTS;
 
   protected readonly isWide = toSignal(

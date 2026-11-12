@@ -7,6 +7,7 @@ import { Observable, of } from 'rxjs';
 import { AppShellComponent } from './app-shell.component';
 import { AuthService, SessionState } from '../auth/auth.service';
 import { ApiErrorNotifier } from '../http/api-error-notifier';
+import { OnlineStatus } from '../network/online-status';
 
 async function render(wide: boolean, url = '/'): Promise<HTMLElement> {
   const session = signal<SessionState>({
@@ -76,5 +77,18 @@ describe('AppShellComponent', () => {
     fixture.detectChanges();
     expect(TestBed.inject(ApiErrorNotifier).message()).toBeNull();
     expect(element).toBeTruthy();
+  });
+
+  it('shellShouldShowOfflineBannerWhenOffline', async () => {
+    await render(false);
+    TestBed.inject(OnlineStatus);
+    window.dispatchEvent(new Event('offline'));
+    const fixture = TestBed.createComponent(AppShellComponent);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Sin conexión. Algunas acciones no están disponibles.',
+    );
+    window.dispatchEvent(new Event('online'));
   });
 });

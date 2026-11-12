@@ -50,6 +50,11 @@
   color: var(--mat-sys-on-error-container);
 }
 
+.offline {
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
+}
+
 .footer {
   padding: 16px;
   text-align: center;
