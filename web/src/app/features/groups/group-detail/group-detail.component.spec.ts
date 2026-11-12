@@ -76,8 +76,9 @@ function render(): ComponentFixture<GroupDetailComponent> {
 
 async function respondWithCasa(
   fixture: ComponentFixture<GroupDetailComponent>,
+  role = 'MEMBER',
 ): Promise<HTMLElement> {
-  http.expectOne('/api/v1/groups/grp_casa').flush({ data: CASA, ...META });
+  http.expectOne('/api/v1/groups/grp_casa').flush({ data: { ...CASA, role }, ...META });
   http.expectOne('/api/v1/groups/grp_casa/members').flush({ data: MEMBERS, ...META });
   await fixture.whenStable();
   fixture.detectChanges();
@@ -163,5 +164,23 @@ describe('GroupDetailComponent', () => {
     expect(element.querySelector('h1')?.textContent?.trim()).toBe('Grupo no encontrado');
     expect(element.querySelector('[data-testid="member-item"]')).toBeNull();
     expect(element.querySelector<HTMLAnchorElement>('a[href="/"]')).not.toBeNull();
+  });
+
+  it('groupDetailShouldShowInviteLinkOnlyForOwnerAndAdministrator', async () => {
+    const visibility: Record<string, string | null> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role);
+      const link = element.querySelector<HTMLAnchorElement>('[data-testid="invite-link"]');
+      visibility[role] = link?.getAttribute('href') ?? null;
+      http.verify();
+    }
+
+    expect(visibility).toEqual({
+      OWNER: '/grupos/grp_casa/invitar',
+      ADMINISTRATOR: '/grupos/grp_casa/invitar',
+      MEMBER: null,
+      READ_ONLY: null,
+    });
   });
 });

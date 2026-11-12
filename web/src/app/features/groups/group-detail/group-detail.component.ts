@@ -33,6 +33,14 @@ type DetailState =
             {{ texts.groups.defaultCurrency }}: {{ content.group.defaultCurrency }}
           </p>
           <h2 class="section-title">{{ texts.groups.membersTitle }}</h2>
+          @if (canInvite(content.group)) {
+            <a
+              mat-stroked-button
+              data-testid="invite-link"
+              [routerLink]="['/grupos', content.group.id, 'invitar']"
+              >{{ texts.groups.invite }}</a
+            >
+          }
           <mat-list>
             @for (member of content.members; track member.userId) {
               <mat-list-item data-testid="member-item">
@@ -87,6 +95,11 @@ export class GroupDetailComponent {
   constructor() {
     // PendingTasks: la app (y las pruebas, con whenStable) no se dan por estables hasta que cargue.
     void inject(PendingTasks).run(() => this.load());
+  }
+
+  /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
+  protected canInvite(group: GroupSummary): boolean {
+    return group.role === 'OWNER' || group.role === 'ADMINISTRATOR';
   }
 
   protected content(): Extract<DetailState, { status: 'content' }> | null {

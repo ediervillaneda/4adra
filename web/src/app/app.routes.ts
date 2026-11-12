@@ -28,6 +28,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grupos/:groupId/invitar',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/invite-member/invite-member.component').then(
+        (m) => m.InviteMemberComponent,
+      ),
+  },
+  {
     path: 'grupos/:groupId',
     canActivate: [sessionGuard],
     loadComponent: () =>
