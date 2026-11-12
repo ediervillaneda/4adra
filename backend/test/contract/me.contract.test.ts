@@ -12,6 +12,7 @@ import { GetCurrentUserProfileUseCase } from '../../src/application/user/GetCurr
 import { UpdateCurrentUserProfileUseCase } from '../../src/application/user/UpdateCurrentUserProfileUseCase';
 import { UserId } from '../../src/domain/user/UserId';
 import { Email } from '../../src/domain/user/Email';
+import { inMemoryGroupUseCases } from '../support/inMemoryGroupUseCases';
 
 class InMemoryUserRepository implements UserRepository {
   findById(): Promise<User | null> {
@@ -68,6 +69,7 @@ describe('Contrato GET /api/v1/me contra docs/api/openapi.yaml', () => {
         new InMemoryUserRepository(),
         () => new Date('2026-07-13T12:00:00Z'),
       ),
+      ...inMemoryGroupUseCases(),
       authHandler: () => Promise.resolve(new Response(null, { status: 404 })),
       generateRequestId: () => crypto.randomUUID(),
     });

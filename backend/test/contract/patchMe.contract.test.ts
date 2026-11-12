@@ -9,6 +9,7 @@ import { UpdateCurrentUserProfileUseCase } from '../../src/application/user/Upda
 import { UserId } from '../../src/domain/user/UserId';
 import { Email } from '../../src/domain/user/Email';
 import { InMemoryUserRepository } from '../support/InMemoryUserRepository';
+import { inMemoryGroupUseCases } from '../support/inMemoryGroupUseCases';
 
 describe('Contrato PATCH /api/v1/me contra docs/api/openapi.yaml', () => {
   it('shouldReturnTheUserSchemaAfterUpdatingAllowedFields', async () => {
@@ -42,6 +43,7 @@ describe('Contrato PATCH /api/v1/me contra docs/api/openapi.yaml', () => {
       auditLogWriter: { write: () => Promise.resolve() },
       getCurrentUserProfileUseCase: new GetCurrentUserProfileUseCase(repository, now),
       updateCurrentUserProfileUseCase: new UpdateCurrentUserProfileUseCase(repository, now),
+      ...inMemoryGroupUseCases(),
       authHandler: () => Promise.resolve(new Response(null, { status: 404 })),
       generateRequestId: () => crypto.randomUUID(),
     });

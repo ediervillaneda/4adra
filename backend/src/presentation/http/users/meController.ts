@@ -1,8 +1,8 @@
-import { Context, Handler } from 'hono';
+import { Handler } from 'hono';
 import { AppEnv } from '../AppEnv';
 import { GetCurrentUserProfileUseCase } from '../../../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../../../application/user/UpdateCurrentUserProfileUseCase';
-import { ValidationException } from '../../../domain/errors/ValidationException';
+import { readJsonBody } from '../readJsonBody';
 import { successEnvelope } from '../responseEnvelope';
 
 export function createGetMeHandler(useCase: GetCurrentUserProfileUseCase): Handler<AppEnv> {
@@ -10,14 +10,6 @@ export function createGetMeHandler(useCase: GetCurrentUserProfileUseCase): Handl
     const profile = await useCase.execute({ actor: c.get('actor') });
     return c.json(successEnvelope(profile, c.get('requestId')), 200);
   };
-}
-
-async function readJsonBody(c: Context<AppEnv>): Promise<unknown> {
-  try {
-    return await c.req.json();
-  } catch {
-    throw new ValidationException([{ field: 'body', reason: 'invalid_json' }]);
-  }
 }
 
 export function createPatchMeHandler(useCase: UpdateCurrentUserProfileUseCase): Handler<AppEnv> {

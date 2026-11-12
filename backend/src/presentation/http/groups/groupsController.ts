@@ -1,0 +1,20 @@
+import { Handler } from 'hono';
+import { AppEnv } from '../AppEnv';
+import { CreateGroupUseCase } from '../../../application/group/CreateGroupUseCase';
+import { ListMyGroupsUseCase } from '../../../application/group/ListMyGroupsUseCase';
+import { readJsonBody } from '../readJsonBody';
+import { successEnvelope } from '../responseEnvelope';
+
+export function createPostGroupsHandler(useCase: CreateGroupUseCase): Handler<AppEnv> {
+  return async (c) => {
+    const group = await useCase.execute({ actor: c.get('actor'), input: await readJsonBody(c) });
+    return c.json(successEnvelope(group, c.get('requestId')), 201);
+  };
+}
+
+export function createGetGroupsHandler(useCase: ListMyGroupsUseCase): Handler<AppEnv> {
+  return async (c) => {
+    const groups = await useCase.execute({ actor: c.get('actor') });
+    return c.json(successEnvelope(groups, c.get('requestId')), 200);
+  };
+}

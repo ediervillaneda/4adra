@@ -9,14 +9,18 @@ import { BetterAuthAuthenticationProvider } from '../infrastructure/auth/BetterA
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
 import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
 import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRepository';
+import { D1GroupRepository } from '../infrastructure/d1/D1GroupRepository';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
+import { CreateGroupUseCase } from '../application/group/CreateGroupUseCase';
+import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
   const allowedEmails = new D1AllowedEmailRepository(env.DB);
   const userRepository = new D1UserRepository(env.DB);
+  const groupRepository = new D1GroupRepository(env.DB);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -37,6 +41,13 @@ export function composeApp(env: Env): Hono<AppEnv> {
       userRepository,
       () => new Date(),
     ),
+    createGroupUseCase: new CreateGroupUseCase(
+      groupRepository,
+      userRepository,
+      () => uuidv7(),
+      () => new Date(),
+    ),
+    listMyGroupsUseCase: new ListMyGroupsUseCase(groupRepository),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
   });
