@@ -4,6 +4,7 @@ import { CreateGroupUseCase } from '../../../application/group/CreateGroupUseCas
 import { ListMyGroupsUseCase } from '../../../application/group/ListMyGroupsUseCase';
 import { GetGroupUseCase } from '../../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../../application/group/ListGroupMembersUseCase';
+import { InviteMemberUseCase } from '../../../application/invitation/InviteMemberUseCase';
 import { readJsonBody } from '../readJsonBody';
 import { successEnvelope } from '../responseEnvelope';
 
@@ -32,6 +33,19 @@ export function createGetGroupMembersHandler(
       groupId: c.req.param('groupId'),
     });
     return c.json(successEnvelope(members, c.get('requestId')), 200);
+  };
+}
+
+export function createPostInvitationHandler(
+  useCase: InviteMemberUseCase,
+): Handler<AppEnv, '/v1/groups/:groupId/members/invitations'> {
+  return async (c) => {
+    const invitation = await useCase.execute({
+      actor: c.get('actor'),
+      groupId: c.req.param('groupId'),
+      input: await readJsonBody(c),
+    });
+    return c.json(successEnvelope(invitation, c.get('requestId')), 201);
   };
 }
 

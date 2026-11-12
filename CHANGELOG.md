@@ -25,6 +25,12 @@ Ver `docs/Workflows.md`.
   - Lista los miembros activos en orden alfabético, con su foto, su nombre y su rol en español, sin correos.
   - Un grupo inexistente o al que no perteneces muestra "Grupo no encontrado", sin revelar si existe.
   - API: `GET /api/v1/groups/{groupId}` y `GET /api/v1/groups/{groupId}/members`, con `404 GROUP_NOT_FOUND`.
+- **Invitar a alguien por correo** (pieza 2, historia #3):
+  - Owner y Administrator ven "Invitar" en el detalle del grupo (`/grupos/:groupId/invitar`): correo y rol (Administrador, Miembro o Solo lectura).
+  - Solo se invitan correos de la lista de acceso. La invitación queda pendiente 7 días; volver a invitar el mismo correo devuelve la misma.
+  - Explica el rechazo cuando el correo no está en la lista o ya es de un miembro.
+  - API: `POST /api/v1/groups/{groupId}/members/invitations`, con `403 PERMISSION_DENIED`, `409 MEMBER_ALREADY_ACTIVE` y el código nuevo `422 EMAIL_NOT_ALLOWED`. Base de datos: migración `0004_invitations`.
+  - Aún no se puede aceptar ni rechazar (historia #4).
 
 ## [0.2.0] - 2026-11-11
 

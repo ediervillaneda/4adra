@@ -13,7 +13,7 @@ import { Email } from '../../src/domain/user/Email';
 import { InMemoryUserRepository } from '../support/InMemoryUserRepository';
 import { inMemoryGroupUseCases } from '../support/inMemoryGroupUseCases';
 
-function schemaValidator(schema: 'Group' | 'Membership'): ValidateFunction {
+function schemaValidator(schema: 'Group' | 'Membership' | 'Invitation'): ValidateFunction {
   const openapiPath = path.resolve(__dirname, '../../../docs/api/openapi.yaml');
   const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8')) as Record<
     string,
@@ -149,5 +149,24 @@ describe('Contrato /api/v1/groups contra docs/api/openapi.yaml', () => {
     body.data.forEach((member) => {
       expectValidGroup(validate, member);
     });
+  });
+
+  it('inviteResponseShouldMatchOpenApi', async () => {
+    const validate = schemaValidator('Invitation');
+    const app = buildApp();
+    const groupId = await createCasa(app);
+
+    const response = await request(
+      app,
+      {
+        method: 'POST',
+        body: JSON.stringify({ email: 'juan@example.com', role: 'MEMBER' }),
+      },
+      `/api/v1/groups/${groupId}/members/invitations`,
+    );
+    const body: { data: unknown } = await response.json();
+
+    expect(response.status).toBe(201);
+    expectValidGroup(validate, body.data);
   });
 });

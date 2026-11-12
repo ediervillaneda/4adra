@@ -26,6 +26,26 @@ export interface ProfileChanges {
 
 export type MemberRole = 'OWNER' | 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
 
+/** Roles que se pueden asignar al invitar; `OWNER` no (docs/api/Members.md). */
+export const INVITABLE_ROLES = ['ADMINISTRATOR', 'MEMBER', 'READ_ONLY'] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+/** Cuerpo de POST /api/v1/groups/{groupId}/members/invitations. */
+export interface InvitationRequest {
+  email: string;
+  role: InvitableRole;
+}
+
+/** components/schemas/Invitation en openapi.yaml. */
+export interface Invitation {
+  invitationId: string;
+  groupId: string;
+  email: string;
+  role: InvitableRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'REVOKED';
+  expiresAt: string;
+}
+
 /** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
 export interface GroupMember {
   userId: string;

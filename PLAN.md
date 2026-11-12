@@ -1,28 +1,29 @@
-# Plan — Historia #2 de `BACKLOG.md` (cerrada el 2026-11-12)
+# Plan — Historia #3 de `BACKLOG.md`
 
 > Lo escribe `/story` y lo usa `/pair` como entrada. Solo contiene la historia en curso. Al cerrarla, se marca hecha en `BACKLOG.md` y este archivo se reemplaza con la siguiente.
 
 ## Historia
-Como miembro, quiero abrir un grupo y ver sus miembros con su rol, para saber quién participa.
+Como Owner o Administrator, quiero invitar a alguien por su correo, para sumarlo al grupo.
 
 ## Criterios de aceptación
-- [x] Dado que soy miembro activo de un grupo, cuando lo toco en Inicio, entonces veo su nombre, su descripción y su moneda base, y la lista de sus miembros activos en orden alfabético por nombre, con nombre, foto y rol en español (Propietario, Administrador, Miembro, Solo lectura), sin correos.
-- [x] Dado que acabo de crear un grupo, cuando lo abro, entonces aparezco como su único miembro, con el rol Propietario.
-- [x] Dado que el grupo no existe o no soy miembro, cuando abro su dirección, entonces veo "Grupo no encontrado", sin pistas de si el grupo existe.
+- [x] Dado que soy Owner o Administrator de un grupo, cuando invito un correo de la lista de acceso con un rol (Administrador, Miembro o Solo lectura), entonces veo la confirmación "Invitación enviada" y la invitación queda pendiente durante 7 días. Si ese correo ya tenía una invitación pendiente en el grupo, se devuelve la misma y no se crea otra.
+- [x] Dado que el correo no está en la lista de acceso de 4adra, o ya es de un miembro activo del grupo, cuando lo invito, entonces veo un mensaje que explica por qué, y no se crea ninguna invitación.
+- [x] Dado que soy Miembro o Solo lectura, cuando abro el grupo, entonces no veo la opción de invitar, y si igual intento invitar por la API, recibo "permiso denegado".
 
 ## Plan
-- Backend: un caso de uso que devuelve el grupo y sus miembros activos (ordenados alfabéticamente por nombre) solo si el actor tiene una membresía activa; si no, responde "grupo no encontrado" (404 `GROUP_NOT_FOUND`).
-- API: implementar `GET /groups/{groupId}` y `GET /groups/{groupId}/members` tal como ya están en el contrato, con pruebas de integración y de contrato.
-- PWA: la ruta del detalle del grupo, con cada grupo de Inicio enlazado a ella, y la pantalla con los datos del grupo y la lista de miembros, con los estados de carga, contenido y error.
-- Textos y nombres de los roles en `texts.ts`.
-- Documentación: Groups.md, Members.md, UISpecification, CHANGELOG, checklist de la Fase 1 y BACKLOG.md.
+- Backend: un caso de uso que verifica el rol del actor en el grupo, que el correo esté en la lista de acceso y que no sea de un miembro activo, y luego guarda la invitación pendiente con su vencimiento (o devuelve la pendiente que ya existía). Registra auditoría.
+- Base de datos: una migración nueva con la tabla de invitaciones.
+- API: implementar `POST /groups/{groupId}/members/invitations` según el contrato, con los errores 403, 409 y el de correo sin acceso. Pruebas de integración y de contrato.
+- PWA: en el detalle del grupo, el botón "Invitar" (solo para Owner y Administrator) abre un formulario con correo y rol, y muestra la confirmación o el error.
+- Documentación: Members.md, DatabaseSchema, UISpecification, CHANGELOG, checklist de la Fase 1 y BACKLOG.md.
 
 ## Fuera de alcance
-- Las pestañas Gastos, Balances y Liquidaciones del detalle del grupo (solo existe la parte de miembros).
-- Invitar, cambiar rol, remover, salir, editar y archivar (historias #3 a #10).
-- Paginación de miembros (el límite de 100 alcanza de sobra).
-- Grupos archivados y miembros removidos.
+- Ver las invitaciones pendientes en el detalle del grupo (exponer correos requiere una decisión de privacidad aparte).
+- Que el invitado vea, acepte o rechace la invitación (historia #4).
+- El enlace de invitación (historia #5).
+- Mandar un correo de aviso: no hay envío de correos, y las notificaciones son de la Fase 3.
+- Cancelar o reenviar una invitación.
+- El encabezado `Idempotency-Key`, que todavía no existe en ninguna mutación.
 
 ## Sugerencias (tú decides)
-- La etiqueta de rol que ya muestra Inicio es la misma que usará la lista de miembros. Si en Inicio está escrita a mano, conviene sacar una sola traducción de roles para las dos pantallas.
-- Si dos miembros tienen el mismo nombre, desempatar por `userId` para que el orden sea siempre el mismo (las pruebas deben ser deterministas).
+- El "¿es Owner o Administrator en este grupo?" lo necesitarán también las historias #6, #7, #9 y #10. Con una sola historia todavía no conviene sacar una abstracción, pero sí después de la segunda.

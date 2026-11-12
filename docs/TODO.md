@@ -84,7 +84,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `backend/` — scaffold real de Fase 0 sobre Cloudflare (Hono + D1 + Better Auth), `GET /api/v1/me` de punta a punta.
 - [x] `web/` — PWA base en Angular 22 (ADR-019).
 - [x] `BACKLOG.md` y `PLAN.md` (raíz) — backlog de la pieza en curso y plan de la historia en curso (flujo `/backlog` → `/story` → `/pair`, ver `CLAUDE.md`).
-- [ ] Pieza 2, grupos y miembros (rama `feature/grupos-y-miembros`): historias #1 (crear un grupo y verlo en Inicio) y #2 (ver un grupo y sus miembros) hechas y verificadas en local; siguen invitaciones (en la app y por enlace, solo correos de la lista de acceso), roles, remover y salir, editar y archivar. Después vienen la pieza 3 (gastos y balances) y la pieza 4 (liquidaciones).
+- [ ] Pieza 2, grupos y miembros (una rama `feature/*` por historia, desde `develop`): historias #1 (crear un grupo y verlo en Inicio), #2 (ver un grupo y sus miembros) y #3 (invitar por correo) hechas y verificadas en local; siguen aceptar o rechazar invitaciones, el enlace de invitación, roles, remover y salir, editar y archivar. Después vienen la pieza 3 (gastos y balances) y la pieza 4 (liquidaciones).
 
 ## Regla de mantenimiento
 

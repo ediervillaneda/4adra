@@ -10,6 +10,7 @@ import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
 import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
 import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRepository';
 import { D1GroupRepository } from '../infrastructure/d1/D1GroupRepository';
+import { D1InvitationRepository } from '../infrastructure/d1/D1InvitationRepository';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
@@ -17,6 +18,7 @@ import { CreateGroupUseCase } from '../application/group/CreateGroupUseCase';
 import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
 import { GetGroupUseCase } from '../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../application/group/ListGroupMembersUseCase';
+import { InviteMemberUseCase } from '../application/invitation/InviteMemberUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
@@ -52,6 +54,13 @@ export function composeApp(env: Env): Hono<AppEnv> {
     listMyGroupsUseCase: new ListMyGroupsUseCase(groupRepository),
     getGroupUseCase: new GetGroupUseCase(groupRepository),
     listGroupMembersUseCase: new ListGroupMembersUseCase(groupRepository),
+    inviteMemberUseCase: new InviteMemberUseCase(
+      groupRepository,
+      allowedEmails,
+      new D1InvitationRepository(env.DB),
+      () => uuidv7(),
+      () => new Date(),
+    ),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
   });

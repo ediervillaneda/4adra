@@ -6,6 +6,8 @@ import {
   ApiSuccessEnvelope,
   GroupMember,
   GroupSummary,
+  Invitation,
+  InvitationRequest,
   NewGroupRequest,
 } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
@@ -23,6 +25,9 @@ export class GroupNotFoundError extends Error {
     super('GROUP_NOT_FOUND');
   }
 }
+
+/** El backend rechazó la invitación por una regla de negocio; `message` ya está en español. */
+export class InvitationRejectedError extends Error {}
 
 function toGroupNotFound(error: unknown): unknown {
   return error instanceof HttpErrorResponse && error.status === 404
@@ -53,6 +58,25 @@ export class GroupsService {
       return response.data;
     } catch (error) {
       throw toGroupNotFound(error);
+    }
+  }
+
+  async inviteMember(groupId: string, request: InvitationRequest): Promise<Invitation> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessEnvelope<Invitation>>(
+          `/api/v1/groups/${groupId}/members/invitations`,
+          request,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      const code =
+        error instanceof HttpErrorResponse
+          ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
+          : undefined;
+      const message = code === undefined ? undefined : TEXTS.groups.inviteErrors[code];
+      throw message === undefined ? error : new InvitationRejectedError(message);
     }
   }
 

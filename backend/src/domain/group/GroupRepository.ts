@@ -1,6 +1,7 @@
 import { Group } from './Group';
 import { GroupId } from './GroupId';
 import { MemberRole } from './MemberRole';
+import { Email } from '../user/Email';
 import { UserId } from '../user/UserId';
 
 /** Un grupo visto por uno de sus miembros activos, con el rol que tiene en él. */
@@ -27,4 +28,6 @@ export interface GroupRepository {
   findForMember(groupId: GroupId, userId: UserId): Promise<MemberGroup | null>;
   /** Miembros activos del grupo, sin orden garantizado. */
   listActiveMembers(groupId: GroupId): Promise<GroupMember[]>;
+  /** Si el correo es de un miembro activo del grupo. */
+  hasActiveMemberWithEmail(groupId: GroupId, email: Email): Promise<boolean>;
 }

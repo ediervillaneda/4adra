@@ -11,9 +11,11 @@ import {
   createGetGroupMembersHandler,
   createGetGroupsHandler,
   createPostGroupsHandler,
+  createPostInvitationHandler,
 } from './groups/groupsController';
 import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
+import { InviteMemberUseCase } from '../../application/invitation/InviteMemberUseCase';
 import { AuthenticationProvider } from '../../domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../domain/audit/AuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../../application/user/GetCurrentUserProfileUseCase';
@@ -30,6 +32,7 @@ export interface AppDependencies {
   listMyGroupsUseCase: ListMyGroupsUseCase;
   getGroupUseCase: GetGroupUseCase;
   listGroupMembersUseCase: ListGroupMembersUseCase;
+  inviteMemberUseCase: InviteMemberUseCase;
   /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
   authHandler: (request: Request) => Promise<Response>;
   generateRequestId: () => string;
@@ -54,6 +57,10 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.get(
     '/v1/groups/:groupId/members',
     createGetGroupMembersHandler(dependencies.listGroupMembersUseCase),
+  );
+  app.post(
+    '/v1/groups/:groupId/members/invitations',
+    createPostInvitationHandler(dependencies.inviteMemberUseCase),
   );
 
   app.notFound((c) =>
