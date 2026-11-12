@@ -107,6 +107,7 @@ Estructura del backend (`backend/src/`): `domain/`, `application/`, `infrastruct
 **Stack oficial:**
 - **Backend:** TypeScript estricto sobre Cloudflare Workers + Hono + D1 (SQLite) + Better Auth (Google). R2, Web Push y Cron Triggers se suman cuando una fase los necesite.
 - **Web:** PWA con Angular 22 (standalone, signals, zoneless), Angular Material 3 (tema verde-azulado) y `@angular/service-worker`. Vitest y angular-eslint. Interfaz solo en español, con todos los textos en `web/src/app/shared/texts.ts`. **Nunca se pide número de teléfono.**
+  - Las pantallas que cargan o envían datos registran esa operación con `inject(PendingTasks).run(...)`, para que `whenStable()` (en la app y en las pruebas) espere en modo zoneless.
 - **Testing:** Vitest + `@cloudflare/vitest-plugin`.
 
 ### Motor de cálculo (pieza central del dominio)
