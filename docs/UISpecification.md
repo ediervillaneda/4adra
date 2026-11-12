@@ -32,6 +32,13 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 | `/privacidad` | Política de privacidad (pública, contacto `privacidad@edier.me`) | Hecho |
 | `**` | No encontrado | Hecho |
 
+## Implementado en la pieza 2 (grupos y miembros)
+
+| Ruta | Pantalla | Estado |
+|---|---|---|
+| `/` | Inicio: lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace | Hecho (historia #1) |
+| `/grupos/nuevo` | Crear grupo: nombre, descripción opcional y moneda base (preseleccionada con la del perfil); errores por campo | Hecho (historia #1) |
+
 No existe una pantalla separada de "Completar perfil": el perfil nace con COP, es y America/Bogota, y el aviso de Inicio lleva a `/perfil`. Tampoco existe "Registro": la primera entrada con Google crea la cuenta, siempre que el correo esté en la lista de acceso (ADR-018).
 
 ## Sistema de diseño (Proposed — pendiente de confirmación de marca)

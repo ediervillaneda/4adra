@@ -14,6 +14,13 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+### Agregado
+- **Crear un grupo y verlo en Inicio** (pieza 2, historia #1):
+  - El grupo lleva nombre, descripción opcional y moneda base, preseleccionada con la del perfil.
+  - Quien lo crea queda como Owner.
+  - Inicio lista los grupos con su rol y su moneda, y tiene un botón flotante "Crear grupo".
+  - API: `POST` y `GET /api/v1/groups`. Base de datos: migración `0003_groups`, con las tablas `groups` y `group_members`.
+
 ## [0.2.0] - 2026-11-11
 
 Primera versión en Cloudflare: login con Google, acceso solo por invitación y la PWA base. Producción en `https://4adra.edier.me`.
@@ -60,4 +67,4 @@ Andamiaje de la fase 0, sobre Firebase (reemplazado en 0.2.0).
 
 [Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/ediervillaneda/4adra/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/ediervillaneda/4adra/releases/tag/v0.1.0
+[0.1.0]: https://github.com/ediervillaneda/4adra/tree/f47160d634c36aa0c920b2812f4350c1bd0bd9d6

@@ -19,8 +19,9 @@ export const TEXTS = {
   home: {
     greeting: (name: string): string => `Hola, ${name}`,
     emptyGroupsTitle: 'Tus grupos aparecerán aquí',
-    emptyGroupsBody: 'Pronto podrás crear un grupo e invitar a quienes comparten gastos contigo.',
-    createGroupSoon: 'Crear grupo (pronto)',
+    emptyGroupsBody: 'Crea un grupo para empezar a compartir gastos.',
+    groupsTitle: 'Mis grupos',
+    createGroup: 'Crear grupo',
     reviewProfileHint: 'Revisa tu perfil: confirma tu moneda y zona horaria.',
     reviewProfileAction: 'Ir a mi perfil',
   },

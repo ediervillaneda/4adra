@@ -19,9 +19,9 @@ Idempotency-Key: 591c3f9b-1f61-4c0f-8e4b-e3ebba0fa001
 }
 ```
 
-El actor se crea como miembro `OWNER`. `description` es opcional. Si no se indica `calculationProfileId`, se utiliza el perfil predeterminado vigente. Responde `201` con grupo, membresía y versión de perfil activa.
+**Implementado (pieza 2, historia #1).** El actor se crea como miembro `OWNER`. `description` es opcional; vacía equivale a `null`. Por ahora `calculationProfileId` se ignora: el perfil de cálculo llega con los gastos. Si no se indica `calculationProfileId`, se utiliza el perfil predeterminado vigente. Responde `201` con grupo, membresía y versión de perfil activa.
 
-Validar: nombre de 1 a 120 caracteres, moneda ISO admitida y perfil disponible. El nombre no necesita ser único globalmente.
+Validar: nombre de 1 a 120 caracteres después de recortar espacios, descripción de hasta 500, moneda admitida (COP, USD, EUR, MXN o GTQ) y perfil disponible. Los errores responden `400 VALIDATION_ERROR` con detalle por campo (`length_1_to_120`, `max_length_500`, `must_be_string`, `unsupported_currency` o `must_be_object`). El nombre no necesita ser único globalmente.
 
 ## Consultar y listar grupos
 
