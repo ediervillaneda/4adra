@@ -51,10 +51,10 @@ jobs:
         working-directory: web
         run: npm run lint
 
-      - name: Pruebas unitarias con cobertura
+      - name: Pruebas unitarias con cobertura (Vitest)
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
-        run: npm test -- --watch=false --browsers=ChromeHeadless --code-coverage
+        run: npm test
 
       - name: Análisis de dependencias (npm audit)
         if: steps.scaffold.outputs.exists == 'true'
@@ -64,4 +64,4 @@ jobs:
       - name: Build de producción
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
-        run: npm run build -- --configuration=production
+        run: npm run build

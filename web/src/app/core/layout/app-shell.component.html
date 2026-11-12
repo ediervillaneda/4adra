@@ -1,0 +1,75 @@
+<div class="shell" [class.wide]="isWide()">
+  @if (showNavigation() && isWide()) {
+    <nav class="rail" data-testid="nav-rail" [attr.aria-label]="texts.appName">
+      <app-brand-logo [size]="40" />
+      @for (destination of destinations; track destination.path) {
+        <a
+          class="rail-item"
+          [routerLink]="destination.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <mat-icon>{{ destination.icon }}</mat-icon>
+          <span>{{ destination.label }}</span>
+        </a>
+      }
+    </nav>
+  }
+
+  <div class="main">
+    @if (showNavigation() && !isWide()) {
+      <mat-toolbar class="top-bar">
+        <app-brand-logo [size]="32" />
+        <span class="title">{{ texts.appName }}</span>
+        @if (avatar()?.image; as image) {
+          <img class="avatar" [src]="image" [alt]="texts.profile.photoAlt(avatar()!.name)" />
+        }
+      </mat-toolbar>
+    }
+
+    @if (!onlineStatus.isOnline()) {
+      <div class="banner offline" role="status" data-testid="offline">
+        <span>{{ texts.errors.offline }}</span>
+      </div>
+    }
+
+    @if (notifier.message(); as message) {
+      <div class="banner" role="alert" data-testid="api-error">
+        <span>{{ message }}</span>
+        <button mat-button type="button" (click)="notifier.dismiss()">
+          {{ texts.errors.dismiss }}
+        </button>
+      </div>
+    }
+
+    <main class="content">
+      @if (isCheckingSession()) {
+        <div class="splash" role="status" data-testid="splash">
+          <app-brand-logo [size]="72" />
+          <span>{{ texts.loading }}</span>
+        </div>
+      }
+      <router-outlet />
+    </main>
+
+    <footer class="footer">
+      <a routerLink="/privacidad">{{ texts.nav.privacy }}</a>
+    </footer>
+
+    @if (showNavigation() && !isWide()) {
+      <nav class="bottom-nav" data-testid="bottom-nav" [attr.aria-label]="texts.appName">
+        @for (destination of destinations; track destination.path) {
+          <a
+            class="bottom-item"
+            [routerLink]="destination.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            <mat-icon>{{ destination.icon }}</mat-icon>
+            <span>{{ destination.label }}</span>
+          </a>
+        }
+      </nav>
+    }
+  </div>
+</div>

@@ -55,13 +55,14 @@ Disponer de una base segura y repetible para desarrollo:
 - [x] Auditoría base desde un middleware común.
 - [x] Prueba de humo local con `wrangler dev`: `/` → placeholder, `/api/v1/me` → 401 JSON, `/api/nope` → 404 JSON.
 
-### Web (`web/`): subproyecto 2 (spec propio)
+### Web (`web/`): PWA base (spec `2026-11-11-pwa-base-design.md`, ADR-019)
 
-- [ ] Inicializar la PWA Angular con Angular Material y RxJS (manifest + service worker).
-- [ ] ESLint (Angular) y estructura por funcionalidad.
-- [ ] Cliente HTTP tipado con rutas relativas `/api/v1`, contra `docs/api/openapi.yaml`.
-- [ ] Login "Continuar con Google" (cliente de Better Auth) y pantalla de perfil (`GET /api/v1/me`).
-- [ ] Apuntar `assets.directory` de `backend/wrangler.jsonc` al build de la PWA.
+- [x] PWA en Angular 22 con Material 3 (verde-azulado), manifest, íconos "4a" y service worker sin caché de `/api`.
+- [x] angular-eslint, Vitest con un umbral del 70 % y estructura por funcionalidad (`core/`, `features/`, `shared/`).
+- [x] Login "Continuar con Google" (HttpClient contra Better Auth, `errorCallbackURL` → `/entrar`), aviso `NOT_INVITED`, perfil editable con errores por campo y cierre de sesión.
+- [x] Política de privacidad pública (`/privacidad`) y regla "sin número de teléfono".
+- [x] `assets.directory` del Worker apunta a `web/dist/web/browser`; `web.yml` y `deploy-cloudflare.yml` compilan la PWA.
+- [ ] Alias `privacidad@edier.me`, verificación de `edier.me` en Search Console, marca y publicación de la app de Google (`Deployment.md`).
 
 ### CI/CD
 
@@ -80,7 +81,7 @@ Disponer de una base segura y repetible para desarrollo:
 ## Criterios de salida
 
 - [x] Backend: login con Google verificado en producción el 2026-11-11 (Google → Better Auth → sesión en D1 → `GET /api/v1/me` 200 con perfil creado, id UUID v7).
-- [ ] PWA: login con Google desde la interfaz (subproyecto 2).
+- [ ] PWA: login con Google desde la interfaz, verificado en producción.
 - [x] El pipeline de CI ejecuta formato, tipos, pruebas, migraciones e integración en verde para `backend/`.
 - [x] D1 solo es accesible vía el binding del Worker (no existe acceso directo desde clientes).
 - [x] Existe al menos un caso de uso de punta a punta funcionando (`GET /api/v1/me`) como prueba de arquitectura.

@@ -102,8 +102,31 @@ No hacer borrados destructivos ni cambios de esquema que rompan la versión ante
 
 ## PWA
 
-- **Publicación:** el build de producción de `web/` (subproyecto 2) se copia o apunta en `assets.directory` de `wrangler.jsonc` y se despliega junto con el Worker. No necesita configuración por entorno porque la API está en el mismo origen.
-- **Verificación:** login, CSP, llamadas a la API y errores de cliente.
+- **Publicación:**
+  - `assets.directory` de `backend/wrangler.jsonc` apunta a `../web/dist/web/browser`.
+  - `deploy-cloudflare.yml` compila `web/` (`npm ci && npm run build`) antes de migrar y desplegar el Worker.
+  - Desplegar a mano: `cd web && npm run build`, y después `cd ../backend && npx wrangler deploy`.
+  - No hay configuración por entorno, porque la API está en el mismo origen.
+- **Service worker:** al desplegar una versión nueva, la PWA instalada la descarga en segundo plano y la usa en la siguiente apertura. `/api/*` nunca se cachea.
+- **Prueba de humo:**
+  - `/`, `/perfil` y `/privacidad` → HTML de la SPA (200).
+  - `/manifest.webmanifest` y `/ngsw.json` → 200.
+  - `/api/v1/me` → 401 JSON.
+  - `/api/nope` → 404 JSON.
+  - Login con Google, perfil e instalación en el celular.
+
+## Correo de privacidad y publicación de la app de Google
+
+Hecho el 2026-11-11.
+
+1. **Alias `privacidad@edier.me`:** Cloudflare → `edier.me` → Email Routing. La regla reenvía `privacidad@edier.me` al correo del responsable. La política de privacidad (`/privacidad`) publica este alias. `me@edier.me` y el catch-all reenvían al mismo destino. Las reglas también se gestionan con `npx wrangler email routing rules list|update edier.me`, porque el panel a veces no guarda las ediciones.
+2. **Google Search Console:** la propiedad de dominio `edier.me` se verificó con un registro TXT `google-site-verification=…` en el DNS de Cloudflare, creado a mano. No se usó la verificación automática, que pide dar acceso de escritura al DNS. **No hay que borrar ese TXT.**
+3. **Google Auth Platform (proyecto `adra-app`) → Información de la marca:**
+   - Página principal: `https://4adra.edier.me`.
+   - Política de privacidad: `https://4adra.edier.me/privacidad`.
+   - Dominio autorizado: `edier.me`.
+   - **Sin logo, a propósito.** Subirlo obliga a enviar la app a verificación de Google, que tarda días. Si se quiere, se sube `icon-512.png` reducido a 120×120 y se pide la verificación.
+4. **Público → Publicar app:** en producción. Ya no hacen falta usuarios de prueba en Google. La lista de acceso del Worker (ADR-018) sigue decidiendo quién puede crear cuenta.
 
 ## Migraciones y perfiles de cálculo
 

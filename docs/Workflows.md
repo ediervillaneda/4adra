@@ -97,15 +97,15 @@ npm run build              # wrangler deploy --dry-run --outdir dist
 
 ### `web.yml` — Web CI
 
-Dispara igual que `backend.yml` pero sobre `web/**`. Se omite mientras `web/package.json` no exista.
+Dispara igual que `backend.yml` pero sobre `web/**`. La PWA (ADR-019) también se compila en `backend.yml` (para el dry-run) y en `deploy-cloudflare.yml`.
 
 ```bash
 cd web
 npm ci
 npm run lint
-npm test -- --watch=false --browsers=ChromeHeadless --code-coverage
+npm test                   # Vitest + cobertura (umbral 70 %)
 npm audit --omit=dev --audit-level=high
-npm run build -- --configuration=production
+npm run build              # web/dist/web/browser (assets del Worker)
 ```
 
 ### `release.yml` — Release (ciclo de vida completo)

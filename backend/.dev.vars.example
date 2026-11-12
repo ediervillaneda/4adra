@@ -4,3 +4,5 @@ BETTER_AUTH_URL=http://localhost:8787
 BETTER_AUTH_SECRET=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+# Solo desarrollo: origen de `ng serve` (web/) para que Better Auth acepte el login desde ahí.
+TRUSTED_ORIGINS=http://localhost:4200

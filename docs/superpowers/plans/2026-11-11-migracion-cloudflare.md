@@ -337,7 +337,7 @@ it('shouldNotRequireSessionForAuthRoutes')                // /api/auth/* no pasa
 - `AGENTS.md`, `docs/AGENTS.md`, `CLAUDE.md`, `README.md`, `backend/README.md`, `web/README.md`
 - `docs/Architecture.md`, `DatabaseSchema.md`, `Security.md`, `Deployment.md`, `DevelopmentGuide.md`, `TestingGuide.md`, `CodingStandards.md`, `Workflows.md`, `UISpecification.md`, `Roadmap.md`, `Glossary.md`, `TODO.md`, `Decisions.md`, `BusinessRules.md`, `DomainModel.md`
 - `docs/domain/Money.md`, `docs/checklists/*.md`, `docs/diagrams/*.drawio` (solo etiquetas)
-- `docs/superpowers/plans/2026-07-14-backend-scaffold-fase0.md` (nota de obsoleto)
+- ~~`docs/superpowers/plans/2026-07-14-backend-scaffold-fase0.md` (nota de obsoleto)~~ — eliminado el 2026-11-11 (limpieza); queda en el historial de git
 
 - [ ] **Step 1: ADRs en `Decisions.md`.**
   - ADR-002, 003, 008, 009, 010 y 012 pasan a "Estado: Reemplazado por ADR-0xx" sin borrar su contenido.

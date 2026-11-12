@@ -10,6 +10,7 @@ Desktop.ini
 *.swo
 
 # Node
+.angular/
 node_modules/
 dist/
 .env

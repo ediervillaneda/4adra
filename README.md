@@ -12,11 +12,11 @@ Plataforma para administrar gastos compartidos entre personas (grupos, balances,
   - Stack: Hono + D1 + Better Auth (Google).
   - `GET /api/v1/me` funciona de punta a punta.
   - Pruebas: unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
-- **Web** (`web/`): la PWA en Angular es el próximo subproyecto. Mientras tanto, el Worker sirve un placeholder (`backend/public/index.html`).
+- **Web** (`web/`): PWA en Angular 22 con login con Google, aviso de invitación, perfil editable y política de privacidad. Se instala en el celular y abre sin conexión. La sirve el mismo Worker.
 - **Android**: descartado (ADR-017). La PWA se instala en el celular desde el navegador.
 - **Documentación** (`docs/`): completa. Cubre arquitectura, modelo de dominio, reglas de negocio, algoritmos, seguridad, API, UI, roadmap y decisiones (ADRs).
 
-No inventes comandos que no existan todavía en `web/`. Revisa `docs/checklists/Fase0-FundacionTecnica.md` para el estado real pieza por pieza.
+Revisa `docs/checklists/Fase0-FundacionTecnica.md` para el estado real pieza por pieza.
 
 ## Documento maestro
 
@@ -39,7 +39,7 @@ Clean Architecture + DDD Lite. El dominio no conoce Cloudflare, HTTP ni framewor
 - **Backend:**
   - TypeScript estricto sobre Cloudflare Workers (Wrangler), Hono, Cloudflare D1 (SQLite) y Better Auth (Google OAuth).
   - Pruebas con Vitest + `@cloudflare/vitest-plugin`.
-- **Web:** PWA con Angular + Angular Material + RxJS (planeado), servida por el mismo Worker.
+- **Web:** PWA con Angular 22 + Angular Material 3 + `@angular/service-worker`, servida por el mismo Worker. Pruebas con Vitest.
 
 ## Quick start (backend)
 
@@ -56,6 +56,18 @@ npm run test:contract            # contra docs/api/openapi.yaml
 npm run lint && npm run typecheck
 npm run build                    # wrangler deploy --dry-run
 ```
+
+## Quick start (web)
+
+```bash
+cd web
+npm ci
+npm start                        # http://localhost:4200 (proxy de /api → backend en :8787)
+npm test && npm run lint
+npm run build                    # web/dist/web/browser → assets del Worker
+```
+
+Para el login con Google en `localhost:4200`, el backend necesita `TRUSTED_ORIGINS=http://localhost:4200` en `backend/.dev.vars`.
 
 ## Flujo de ramas (Git Flow)
 

@@ -74,6 +74,8 @@ Verificar códigos HTTP, formatos de error, paginación, campos requeridos/opcio
 
 ## Clientes
 
+La PWA (`web/`) usa Vitest, que es el runner por defecto de Angular 22, con TestBed y `HttpTestingController`. Corre con `npm test` y tiene un umbral de cobertura del 70 % en `src/app`. Las pruebas de configuración leen `ngsw-config.json` y el manifest para garantizar que el service worker nunca cachea `/api/*`. Hay una prueba explícita de que el perfil no tiene ningún campo de teléfono.
+
 La PWA prueba estados de presentación, navegación clave, manejo de carga/error, formato de dinero/fechas, diseño responsive (PC y celular), componentes, formularios tipados, accesibilidad básica, servicios API y limpieza de suscripciones. Ningún cliente debe tener pruebas que validen una implementación local alternativa de balances.
 
 ## E2E críticos

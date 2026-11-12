@@ -254,7 +254,7 @@ Cambios autorizados explícitamente por el usuario:
   - **ADR-016**: Better Auth con Google OAuth y sesión por cookie del mismo origen.
   - **ADR-017**: solo PWA; se elimina Android nativo.
 
-**Plan histórico** `docs/superpowers/plans/2026-07-14-backend-scaffold-fase0.md`: se conserva con una nota inicial "Obsoleto: reemplazado por la migración a Cloudflare (ver este spec)".
+**Plan histórico** `docs/superpowers/plans/2026-07-14-backend-scaffold-fase0.md`: eliminado el 2026-11-11 en la limpieza del repositorio; queda en el historial de git.
 
 ## 11. Manejo de errores
 
