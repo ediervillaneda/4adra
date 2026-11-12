@@ -88,6 +88,13 @@ jobs:
         working-directory: backend
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Build de la PWA (los assets del Worker son web/dist)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
       - name: Build (wrangler deploy --dry-run)
         if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend

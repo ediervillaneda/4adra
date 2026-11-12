@@ -2,7 +2,7 @@ name: Deploy Cloudflare (Production)
 
 # Git Flow (ADR-013, docs/Decisions.md): el único disparador de un deploy real es un push a
 # main, y a main solo llega código vía release.yml (release/* o hotfix/*). Publica el Worker
-# `4adra` en https://4adra.edier.me (ADR-014). Requiere los secrets CLOUDFLARE_API_TOKEN y
+# `4adra` (API + PWA de web/) en https://4adra.edier.me (ADR-014, ADR-019). Requiere los secrets CLOUDFLARE_API_TOKEN y
 # CLOUDFLARE_ACCOUNT_ID (docs/Deployment.md); mientras no existan, el job se omite sin fallar.
 
 on:
@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'web/**'
       - '.github/workflows/deploy-cloudflare.yml'
 
 concurrency:
@@ -43,6 +44,13 @@ jobs:
           node-version-file: backend/.nvmrc
           cache: npm
           cache-dependency-path: backend/package-lock.json
+
+      - name: Build de la PWA
+        if: steps.guard.outputs.ready == 'true'
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
 
       - name: Instalar dependencias
         if: steps.guard.outputs.ready == 'true'
