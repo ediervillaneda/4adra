@@ -1,14 +1,14 @@
-export interface SuccessEnvelope<T> {
+interface SuccessEnvelope<T> {
   data: T;
   meta: { requestId: string };
 }
 
-export interface ErrorDetail {
+interface ErrorDetail {
   field?: string;
   reason?: string;
 }
 
-export interface ErrorEnvelope {
+interface ErrorEnvelope {
   error: {
     code: string;
     message: string;

@@ -1,50 +1,81 @@
-import express, { Express } from 'express';
-import request from 'supertest';
+import { describe, it, expect, vi } from 'vitest';
+import { Hono } from 'hono';
 import { auditTrailMiddleware } from '../../../../../src/presentation/http/middleware/auditTrail';
-import { AuditLogWriter } from '../../../../../src/domain/audit/AuditLogWriter';
 import { requestIdMiddleware } from '../../../../../src/presentation/http/middleware/requestId';
+import { AppEnv } from '../../../../../src/presentation/http/AppEnv';
+import { AuditLogWriter } from '../../../../../src/domain/audit/AuditLogWriter';
+import { executionContextFake } from '../executionContextFake';
 
-function appWithFakeWriter(writer: AuditLogWriter): Express {
-  const app = express();
-  app.use(requestIdMiddleware);
-  app.use(auditTrailMiddleware(writer));
-  app.get('/v1/ping', (_req, res) => res.status(200).json({ ok: true }));
-  app.post('/v1/groups', (_req, res) => res.status(201).json({ ok: true }));
-  app.post('/v1/fails', (_req, res) => res.status(400).json({ ok: false }));
+function appWithWriter(writer: AuditLogWriter): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
+  app.use(requestIdMiddleware(() => 'req_1'));
+  app.use(auditTrailMiddleware(writer, () => new Date('2026-07-13T12:00:00.000Z')));
+  app.get('/api/v1/ping', (c) => c.json({ ok: true }, 200));
+  app.post('/api/v1/groups', (c) => c.json({ ok: true }, 201));
+  app.post('/api/v1/fails', (c) => c.json({ ok: false }, 400));
   return app;
 }
 
 describe('auditTrailMiddleware', () => {
   it('shouldNotWriteAuditLogForReadRequests', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
-    const app = appWithFakeWriter({ write });
+    const write = vi.fn().mockResolvedValue(undefined);
+    const ctx = executionContextFake();
 
-    await request(app).get('/v1/ping').expect(200);
-    await new Promise((resolve) => setImmediate(resolve));
+    await appWithWriter({ write }).request('/api/v1/ping', {}, {}, ctx);
+    await ctx.settle();
 
     expect(write).not.toHaveBeenCalled();
   });
 
-  it('shouldWriteAuditLogForSuccessfulMutation', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
-    const app = appWithFakeWriter({ write });
+  it('shouldScheduleAuditWriteWithWaitUntilOnSuccessfulMutation', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    const ctx = executionContextFake();
 
-    await request(app).post('/v1/groups').expect(201);
-    await new Promise((resolve) => setImmediate(resolve));
-
-    expect(write).toHaveBeenCalledTimes(1);
-    expect(write).toHaveBeenCalledWith(
-      expect.objectContaining({ entity: '/v1/groups', operation: 'POST' }),
+    const response = await appWithWriter({ write }).request(
+      '/api/v1/groups',
+      { method: 'POST' },
+      {},
+      ctx,
     );
+    await ctx.settle();
+
+    expect(response.status).toBe(201);
+    expect(ctx.waitUntil).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledWith({
+      actorId: 'unknown',
+      entity: '/api/v1/groups',
+      entityId: '/api/v1/groups',
+      operation: 'POST',
+      requestId: 'req_1',
+      occurredAt: new Date('2026-07-13T12:00:00.000Z'),
+    });
   });
 
-  it('shouldNotWriteAuditLogForFailedMutation', async () => {
-    const write = jest.fn().mockResolvedValue(undefined);
-    const app = appWithFakeWriter({ write });
+  it('shouldNotAuditFailedMutation', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    const ctx = executionContextFake();
 
-    await request(app).post('/v1/fails').expect(400);
-    await new Promise((resolve) => setImmediate(resolve));
+    await appWithWriter({ write }).request('/api/v1/fails', { method: 'POST' }, {}, ctx);
+    await ctx.settle();
 
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it('shouldNotAlterResponseWhenAuditWriteFails', async () => {
+    const write = vi.fn().mockRejectedValue(new Error('D1 no disponible'));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const ctx = executionContextFake();
+
+    const response = await appWithWriter({ write }).request(
+      '/api/v1/groups',
+      { method: 'POST' },
+      {},
+      ctx,
+    );
+
+    expect(response.status).toBe(201);
+    await expect(ctx.settle()).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

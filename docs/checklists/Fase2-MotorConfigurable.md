@@ -30,7 +30,7 @@ Diferenciar el producto con cálculos extensibles y reproducibles: `CalculationE
 - [ ] Pruebas doradas por estrategia: mismas entradas producen siempre la misma salida, incluso tras publicar una estrategia nueva.
 - [ ] Prueba de reproducción histórica: activar un perfil nuevo en un grupo no altera el resultado de gastos ya creados (criterio de salida de Fase 2 en `docs/Roadmap.md`).
 
-### Android y Web
+### PWA
 
 - [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 2 — Motor configurable" (perfil de cálculo del grupo, simulación de perfiles, paso `Custom` en crear/editar gasto).
 
@@ -43,7 +43,7 @@ Diferenciar el producto con cálculos extensibles y reproducibles: `CalculationE
 
 ### Infraestructura y operación
 
-- [ ] `calculationProfiles/{id}` en Firestore con versiones inmutables reales (nunca se sobrescribe una versión publicada).
+- [ ] Tabla `calculation_profiles` en D1 con PK `(id, version)` y trigger que impide modificar una versión publicada.
 - [ ] Monitoreo y alertas sobre fallos de recálculo, tiempos de `BalanceRecalculated` y uso de `POST /balances/recalculate`.
 - [ ] Multi-moneda: al menos dos monedas soportadas end-to-end (por ejemplo USD/COP) con tasa congelada por gasto verificada en pruebas.
 

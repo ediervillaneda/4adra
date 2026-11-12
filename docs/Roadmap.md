@@ -20,11 +20,14 @@ Presenta una evolución por etapas. El roadmap orienta la priorización, pero no
 **Objetivo:** disponer de una base segura y repetible para desarrollo.
 
 - Repositorio, configuración de entornos y CI.
-- Firebase Auth, Emulator Suite, reglas mínimas de Firestore y Storage.
+- Cloudflare Worker (Hono) con D1 y Better Auth (Google); `wrangler dev` y pruebas de integración en el runtime de Workers.
 - Clean Architecture, inyección de dependencias, manejo de errores y auditoría base.
-- Documentación inicial, convenciones, pruebas de dominio y pipeline de despliegue.
+- Documentación inicial, convenciones, pruebas de dominio y pipeline de despliegue (`deploy-cloudflare.yml`, `https://4adra.edier.me`).
+- Scaffold de la PWA Angular (manifest, service worker, login con Google, perfil): subproyecto 2 de la migración a Cloudflare.
 
-**Salida:** backend y clientes pueden autenticarse en desarrollo; el pipeline ejecuta formato, tipos, pruebas y emuladores.
+**Cliente único:** la PWA responsive reemplaza a la app Android nativa, que queda descartada (ADR-017). Reabrirla exigiría un ADR nuevo.
+
+**Salida:** backend y PWA pueden autenticarse en local; el pipeline ejecuta formato, tipos, pruebas, migraciones D1 e integración en el runtime de Workers.
 
 ## Fase 1 — MVP de gastos compartidos
 
@@ -35,9 +38,9 @@ Presenta una evolución por etapas. El roadmap orienta la priorización, pero no
 - Gastos de un pagador con repartos Equal, ExactAmount, Percentage y Shares.
 - Balance por grupo, soft delete, auditoría y recálculo idempotente.
 - Sugerencias de liquidación con estrategia predeterminada.
-- Android y Web: crear/listar gastos, ver balances y grupos.
+- PWA (PC y celular): crear/listar gastos, ver balances y grupos.
 
-**Criterios de salida:** todos los cálculos de dominio alcanzan cobertura completa; el flujo grupo → gasto → balance → liquidación funciona con emuladores y E2E de staging.
+**Criterios de salida:** todos los cálculos de dominio alcanzan cobertura completa; el flujo grupo → gasto → balance → liquidación funciona en local (`wrangler dev` + D1) y en la prueba de humo de producción.
 
 ## Fase 2 — Motor configurable y operación robusta
 
@@ -62,7 +65,7 @@ Presenta una evolución por etapas. El roadmap orienta la priorización, pero no
 - Estado offline limitado en clientes con sincronización segura y resolución explícita de conflictos.
 - Accesibilidad, localización, formatos regionales y mejora de rendimiento.
 
-**Criterios de salida:** notificaciones auditables, acceso a adjuntos protegido y flujos principales accesibles en Android y Web.
+**Criterios de salida:** notificaciones auditables, acceso a adjuntos protegido y flujos principales accesibles en la PWA en PC y celular.
 
 ## Fase 4 — Reportes y administración
 

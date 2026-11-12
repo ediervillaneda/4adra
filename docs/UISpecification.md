@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Inventario de pantallas, flujo de navegación y reglas de presentación para Android y Web, cubriendo las seis fases de `docs/Roadmap.md`. Es el puente entre la especificación de dominio/API (que ya existe) y el trabajo real de diseño visual (wireframes, mockups de alta fidelidad, prototipo) que todavía no existe — este documento no reemplaza esos artefactos, los antecede: define *qué* pantallas hacen falta y *qué* muestran, no *cómo* se ven exactamente.
+Inventario de pantallas, flujo de navegación y reglas de presentación para la PWA (único cliente, ADR-017), en sus dos disposiciones (celular y PC), cubriendo las seis fases de `docs/Roadmap.md`. Es el puente entre la especificación de dominio/API (que ya existe) y el trabajo real de diseño visual (wireframes, mockups de alta fidelidad, prototipo) que todavía no existe — este documento no reemplaza esos artefactos, los antecede: define *qué* pantallas hacen falta y *qué* muestran, no *cómo* se ven exactamente.
 
 No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipografía, logo) — eso sigue pendiente de decisión (ver "Sistema de diseño" abajo) y de las herramientas de diseño reales (Figma u otra).
 
@@ -16,21 +16,37 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 - Toda pantalla que carga datos remotos modela su estado como uno de cuatro estados sellados: `Loading`, `Content`, `Empty`, `Error`. Este documento asume esos cuatro estados en cada pantalla listada abajo, aunque no siempre se repitan en la tabla.
 - El rol mínimo de cada pantalla/acción es el que ya define `docs/Security.md`; la UI oculta o deshabilita acciones no permitidas, pero la autorización real vive en el backend — ocultar un botón no es un control de seguridad.
 - Fechas en huso horario del usuario, importes formateados según configuración regional, pero el valor exacto (`Money` como string) nunca se recalcula ni se redondea en el cliente (`docs/domain/Money.md`).
-- Ambos clientes ya comparten sistema de diseño base por decisión de stack (`docs/AGENTS.md`): **Material Design** (Jetpack Compose Material 3 en Android, Angular Material en Web). Este documento no reinventa eso, construye sobre esa base.
+- Sistema de diseño base por decisión de stack (`docs/AGENTS.md`): **Material Design 3 con Angular Material**. Este documento no reinventa eso, construye sobre esa base.
+- Una sola app responsive: la disposición cambia según el ancho (punto de corte 840 px, el *expanded* de Material 3), no hay dos implementaciones. La PWA es instalable (manifest + service worker) y en el celular se usa como app a pantalla completa.
+
+- **Sin número de teléfono:** ninguna pantalla pide ni muestra un número de teléfono (decisión del responsable del proyecto). La política de privacidad lo declara y hay una prueba que lo garantiza.
+- **Idioma:** la interfaz es solo en español. Todos los textos visibles viven en `web/src/app/shared/texts.ts` (ADR-019).
+
+## Implementado en la pieza 1 (PWA base, 2026-11-11)
+
+| Ruta | Pantalla | Estado |
+|---|---|---|
+| `/` | Inicio: saludo, estado vacío "Tus grupos aparecerán aquí" y aviso "Revisa tu perfil" hasta el primer guardado | Hecho |
+| `/entrar` | Login con "Continuar con Google" y mensajes `NOT_INVITED` / error genérico | Hecho |
+| `/perfil` | Mi perfil: nombre, moneda, idioma y zona horaria (`PATCH /me`), foto de Google en solo lectura y cierre de sesión | Hecho |
+| `/privacidad` | Política de privacidad (pública, contacto `privacidad@edier.me`) | Hecho |
+| `**` | No encontrado | Hecho |
+
+No existe una pantalla separada de "Completar perfil": el perfil nace con COP, es y America/Bogota, y el aviso de Inicio lleva a `/perfil`. Tampoco existe "Registro": la primera entrada con Google crea la cuenta, siempre que el correo esté en la lista de acceso (ADR-018).
 
 ## Sistema de diseño (Proposed — pendiente de confirmación de marca)
 
 No hay todavía paleta de marca, tipografía ni logo definidos en ningún documento del proyecto. Propuesta mínima para no bloquear el trabajo de UI, fácil de reemplazar después sin tocar la estructura de pantallas:
 
-- **Base:** Material Design 3 en ambas plataformas (Material You / dynamic color en Android si se decide soportarlo; tema Angular Material equivalente en Web), sin componentes custom fuera de lo que ya provee cada framework.
+- **Base:** Material Design 3 con Angular Material, sin componentes custom fuera de lo que ya provee el framework.
 - **Color semilla sugerido:** un azul/verde-azulado (asociado a claridad y confianza — coherente con el tagline "Cuentas claras, gastos compartidos"), generado como *seed color* de Material 3 en vez de una paleta fija a mano; se puede ajustar en minutos con Material Theme Builder una vez haya una decisión real de marca.
-- **Colores semánticos obligatorios** (más allá de lo estético, por reglas de negocio): positivo/verde para balance a favor (`balance > 0`), negativo/rojo para balance en contra (`balance < 0`), neutro para balance en cero — igual en Android y Web, para que un usuario que usa ambos clientes no tenga que reaprender la convención.
-- **Tipografía:** la tipografía por defecto de cada sistema (Roboto/system font en Android, la fuente por defecto de Angular Material en Web) hasta que se decida una tipografía de marca.
-- **Pendiente real:** logo, paleta de marca definitiva, ícono de la app. No se puede completar sin una decisión de marca explícita — no inventar esto sin aprobación.
+- **Colores semánticos obligatorios** (más allá de lo estético, por reglas de negocio): positivo/verde para balance a favor (`balance > 0`), negativo/rojo para balance en contra (`balance < 0`), neutro para balance en cero — igual en celular y PC, para que un usuario que usa ambas disposiciones no tenga que reaprender la convención.
+- **Tipografía:** la fuente por defecto de Angular Material (Roboto) hasta que se decida una tipografía de marca.
+- **Pendiente real:** logo, paleta de marca definitiva, ícono de la app (también los íconos del manifest de la PWA). No se puede completar sin una decisión de marca explícita — no inventar esto sin aprobación.
 
 ## Navegación
 
-### Android (bottom navigation + navegación anidada por grupo)
+### Celular, ancho < 840 px (bottom navigation + navegación anidada por grupo)
 
 ```text
 Splash (verifica sesión)
@@ -56,7 +72,7 @@ Splash (verifica sesión)
 
 FAB (botón flotante) contextual: "Crear gasto" dentro de la tab Gastos de un grupo; "Crear grupo" dentro de "Mis grupos".
 
-### Web (barra lateral + contenido por grupo)
+### PC, ancho ≥ 840 px (barra lateral + contenido por grupo)
 
 ```text
 Login / Completar perfil
@@ -77,7 +93,7 @@ Login / Completar perfil
  (filtros, búsqueda) Confirmar liquidación        Perfil de cálculo (Fase 2)
 ```
 
-Diferencia principal con Android: Web usa una tabla/lista densa con filtros visibles (más espacio horizontal), Android usa tarjetas apilables con filtros en un panel colapsable. Ambos consumen los mismos endpoints (`GET /groups/{groupId}/expenses?...`).
+Diferencia principal entre disposiciones: en PC, tabla/lista densa con filtros visibles (más espacio horizontal); en celular, tarjetas apilables con filtros en un panel colapsable. Son los mismos componentes de datos y consumen los mismos endpoints (`GET /groups/{groupId}/expenses?...`).
 
 ## Inventario de pantallas
 
@@ -89,13 +105,12 @@ Convención de columnas: **Estados** asume siempre `Loading/Content/Empty/Error`
 
 | Pantalla | Estados particulares | Datos | Rol mínimo | Acciones principales |
 |---|---|---|---|---|
-| Splash | Verificando sesión (sin `Empty`) | Token local + `GET /me` | Ninguno | Redirige a Login o a Mis grupos |
-| Login | `Error` de credenciales | Firebase Auth SDK (no pasa por nuestra API) | Ninguno | Iniciar sesión; ir a Registro |
-| Registro | igual que Login | Firebase Auth SDK | Ninguno | Crear cuenta con Firebase Auth |
+| Splash | Verificando sesión (sin `Empty`) | `GET /api/auth/get-session` + `GET /me` | Ninguno | Redirige a Login o a Mis grupos |
+| Login | `Error` si Google rechaza o se cancela el consentimiento | Better Auth: `POST /api/auth/sign-in/social` (`provider: google`) | Ninguno | "Continuar con Google" (único botón; no hay registro aparte: la primera vez crea la cuenta) |
 | Completar perfil | Sin `Empty` | `PATCH /me` | Usuario autenticado | Definir nombre, moneda preferida, idioma, zona horaria |
 | Mi perfil | — | `GET /me` | Usuario autenticado | Editar perfil, cerrar sesión |
 
-**Nota abierta:** `docs/Security.md` no especifica qué proveedores de Firebase Auth están aprobados (¿email/password, Google Sign-In, ambos?) — pantallas de Login/Registro dependen de esa decisión, no tomarla aquí sin confirmarla primero.
+**Decidido (ADR-016):** el único proveedor es Google vía Better Auth; no hay pantalla de Registro ni de recuperación de contraseña. Un enlace mágico por correo podría agregarse después como cambio aditivo.
 
 #### Grupos y miembros
 
@@ -181,11 +196,10 @@ Todas las pantallas de Fase 5 están marcadas "por especificar" a propósito: `d
 
 ## Documentos relacionados
 
-`docs/Roadmap.md`, `docs/checklists/*.md`, `docs/Security.md` (matriz de roles), `docs/api/openapi.yaml` (contrato exacto de cada pantalla), `docs/CodingStandards.md` (estados sellados, reglas de Android/Web), `docs/domain/Money.md`, `docs/domain/Currency.md`, `docs/BusinessRules.md`.
+`docs/Roadmap.md`, `docs/checklists/*.md`, `docs/Security.md` (matriz de roles), `docs/api/openapi.yaml` (contrato exacto de cada pantalla), `docs/CodingStandards.md` (estados sellados, reglas de la PWA), `docs/domain/Money.md`, `docs/domain/Currency.md`, `docs/BusinessRules.md`.
 
 ## Pendiente fuera de este documento
 
 - Wireframes/mockups visuales reales (herramienta de diseño externa, por ejemplo Figma) — este documento da la lista de pantallas y su contenido, no el layout pixel a pixel.
 - Decisión de marca (logo, paleta definitiva, tipografía) — ver "Sistema de diseño" arriba.
-- Proveedores de Firebase Auth aprobados (afecta directamente las pantallas de Login/Registro).
 - Especificación de backend de comentarios, notificaciones, offline y todo lo de Fase 5 (ya rastreado en sus checklists respectivos).

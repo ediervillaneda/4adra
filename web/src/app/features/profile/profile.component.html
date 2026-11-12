@@ -1,0 +1,89 @@
+<h1>{{ texts.profile.title }}</h1>
+
+@switch (state()) {
+  @case ('loading') {
+    <p>{{ texts.loading }}</p>
+  }
+  @case ('error') {
+    <p role="alert">{{ texts.errors.generic }}</p>
+  }
+  @case ('content') {
+    @if (profile(); as current) {
+      <div class="identity">
+        @if (current.photoUrl) {
+          <img
+            class="photo"
+            [src]="current.photoUrl"
+            [alt]="texts.profile.photoAlt(current.displayName)"
+          />
+        }
+        <div>
+          <div class="label">{{ texts.profile.email }}</div>
+          <div>{{ current.email }}</div>
+          <div class="hint">{{ texts.profile.photoFromGoogle }}</div>
+        </div>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ texts.profile.displayName }}</mat-label>
+        <input matInput formControlName="displayName" maxlength="100" autocomplete="name" />
+        @if (errorFor('displayName'); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ texts.profile.preferredCurrency }}</mat-label>
+        <mat-select formControlName="preferredCurrency">
+          @for (currency of currencies; track currency) {
+            <mat-option [value]="currency">{{ currency }}</mat-option>
+          }
+        </mat-select>
+        @if (errorFor('preferredCurrency'); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ texts.profile.language }}</mat-label>
+        <mat-select formControlName="language">
+          @for (language of languages; track language) {
+            <mat-option [value]="language">{{ texts.profile.languages[language] }}</mat-option>
+          }
+        </mat-select>
+        @if (errorFor('language'); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ texts.profile.timeZone }}</mat-label>
+        <input
+          matInput
+          formControlName="timeZone"
+          [matAutocomplete]="zones"
+          [placeholder]="texts.profile.timeZoneSearch"
+        />
+        <mat-autocomplete #zones="matAutocomplete">
+          @for (zone of timeZoneSuggestions(); track zone) {
+            <mat-option [value]="zone">{{ zone }}</mat-option>
+          }
+        </mat-autocomplete>
+        @if (errorFor('timeZone'); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="actions">
+        <button mat-flat-button type="submit" [disabled]="saving()">
+          {{ texts.profile.save }}
+        </button>
+        <button mat-stroked-button type="button" data-testid="sign-out" (click)="signOut()">
+          {{ texts.profile.signOut }}
+        </button>
+      </div>
+    </form>
+  }
+}

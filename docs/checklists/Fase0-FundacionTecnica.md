@@ -1,122 +1,91 @@
 # Fase 0 — Fundación técnica
 
-> Checklist operativo de `docs/Roadmap.md` Fase 0. Marca cada casilla al completarla; si el alcance cambia, ajusta este archivo en el mismo cambio (regla de mantenimiento de `docs/TODO.md`).
+> Checklist operativo de `docs/Roadmap.md` Fase 0. Marca cada casilla al completarla. Si el alcance cambia, ajusta este archivo en el mismo cambio (regla de mantenimiento de `docs/TODO.md`).
+>
+> **2026-11-11:** la plataforma se migró de Firebase a Cloudflare (ADR-014..017; spec `docs/superpowers/specs/2026-11-11-migracion-cloudflare-design.md`). Las tareas de Firebase y Android de la versión anterior de este checklist se retiraron; quedan en el historial de git.
 
 ## Objetivo
 
-Disponer de una base segura y repetible para desarrollo: repositorio, entornos, CI, Firebase Auth/Emulator, Clean Architecture escaleteada, inyección de dependencias, manejo de errores y auditoría base.
+Disponer de una base segura y repetible para desarrollo:
+- Repositorio, entornos y CI.
+- Cloudflare Worker con D1 y Better Auth.
+- Clean Architecture escaleteada, inyección de dependencias, manejo de errores y auditoría base.
 
 ## Prerrequisitos
 
 - [x] Documentación de dominio y arquitectura completa (`docs/AGENTS.md`, `docs/Architecture.md`, `docs/DomainModel.md`, `docs/DatabaseSchema.md`, `docs/BusinessRules.md`, `docs/Algorithms.md`, `docs/Security.md`).
-- [x] Decisiones de stack registradas (`docs/Decisions.md`: ADR-008 stack, ADR-009 acceso a Firestore/Storage, ADR-010 IDs deterministas, ADR-011 límites operativos).
-- [x] Artefactos de configuración Firebase iniciales: `firebase.json`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`, `.firebaserc.example`.
-- [x] Contrato HTTP machine-readable inicial: `docs/api/openapi.yaml`.
+- [x] Decisiones de stack registradas en `docs/Decisions.md`: ADR-008 (criterios vigentes), ADR-011 (límites operativos), ADR-014 (Workers), ADR-015 (D1), ADR-016 (Better Auth), ADR-017 (solo PWA).
+- [x] Contrato HTTP machine-readable: `docs/api/openapi.yaml` (servers `4adra.edier.me` y `localhost:8787`, `cookieAuth`).
 
 ## Checklist
 
 ### Repositorio y entornos
 
-- [x] ADR-008 confirmado: GitHub + GitHub Actions, carpetas independientes sin herramienta de monorepo, npm, Node.js "LTS vigente" (número exacto pendiente de fijar al hacer el scaffolding real).
-- [x] Repositorio remoto creado y conectado: `https://github.com/ediervillaneda/4adra`.
-- [x] Workflows de GitHub Actions creados (`.github/workflows/backend.yml`, `web.yml`, `android.yml`) según el pipeline de `docs/Deployment.md`. Cada uno comprueba si existe scaffolding real (`package.json`/`gradlew`) y si no, se omite sin fallar — no bloquean CI mientras las carpetas solo tengan el `README.md` placeholder. Bonus, ya activos hoy sin scaffolding: `openapi-lint.yml` (valida `docs/api/openapi.yaml` con Redocly, verificado localmente con exit 0) y `firebase-config.yml` (valida `firebase.json`/`firestore.indexes.json` como JSON y `firestore.rules`/`storage.rules` arrancando el Emulator Suite con un proyecto demo).
-- [x] Cuando se cree `backend/package.json`, definir los scripts npm que `backend.yml` ya asume: `format:check`, `lint`, `typecheck`, `test` (con `--coverage`), `test:integration` (pensado para correr dentro de `firebase emulators:exec`), `test:contract` (contra `docs/api/openapi.yaml`), `build`.
-- [ ] Cuando se cree `web/package.json`, definir los scripts que `web.yml` ya asume: `lint`, `test` (Karma/Jest headless), `build`.
-- [ ] Cuando se cree el proyecto Android, confirmar que existen las tareas Gradle que `android.yml` ya asume: `lint`, `ktlintCheck`, `detekt`, `test`, `build`, `connectedAndroidTest`.
-- [x] `backend/.nvmrc` confirmado contra nodejs.org: Node 24 (Active LTS al 2026-07-14) (ADR-008 deja el criterio, no el número).
-- [ ] `web/.nvmrc`: confirmar LTS activa vigente contra nodejs.org al crear el scaffolding de `web/` (fuera de alcance de este plan).
-- [x] Proyecto Firebase `development` creado en Firebase Console: `adra-54655` (config de cliente Web ya guardada en `web/src/environments/environment.ts`). Reflejado en `.firebaserc.example`.
-- [ ] Restringir la API key de `adra-54655` en Google Cloud Console (Credentials → Application restrictions → HTTP referrers) al dominio real de la Web una vez se despliegue; hoy no tiene restricción.
-- [ ] Copiar `.firebaserc.example` a `.firebaserc` (real, ignorado por git) apuntando a `adra-54655` para poder desplegar `firestore.rules`/`storage.rules`/`firestore.indexes.json` (tarea ya listada arriba).
-- [ ] Crear los proyectos Firebase `staging` y `production` (separados de `adra-54655`) cuando corresponda, y sus respectivos `environment.staging.ts`/`environment.production.ts` en `web/`. **Estado temporal (2026-07-15):** `deploy-firebase.yml`/`release-branch.yml` ya tienen secrets cargados (`FIREBASE_SERVICE_ACCOUNT[_STAGING]`, `FIREBASE_PROJECT_ID_STAGING`/`_PRODUCTION`) pero **ambos apuntan a `adra-54655`** — decisión explícita para desbloquear el pipeline antes de crear los proyectos reales. Viola la separación de entornos de `docs/Deployment.md`; reemplazar por proyectos reales antes de manejar datos de usuarios reales. Además, la cuenta de facturación de Google Cloud está cerrada (`gcloud billing accounts list` → `OPEN: False`) — Cloud Functions v2 (plan Blaze) no desplegará hasta reactivarla, aunque Firestore/Storage rules sí podrían.
-- [x] Confirmado: "Cuadra" no es un cambio de marca, fue una inconsistencia al registrar la app — el nombre correcto es `com.edier.adra.app` (ADR-012).
-- [x] App Android re-registrada en Firebase con `applicationId` = `com.edier.adra.app` y `android/app/google-services.json` reemplazado por el correcto.
-- [ ] Opcional: eliminar de Firebase Console el registro Android duplicado `com.edier.cuadra.app`.
-- [ ] Restringir la API key de Android en Google Cloud Console a `com.edier.adra.app` + SHA-1 del certificado de firma, antes de publicar (ver `android/README.md`).
-- [ ] Borrar `android/google-services.json` (copia vieja en la raíz, superada por `android/app/google-services.json`).
-- [ ] Crear los tres proyectos Firebase (development, staging, production) descritos en `docs/Deployment.md`, cada uno con Auth, Firestore, Storage y Cloud Messaging habilitados.
-- [ ] Definir plantillas de variables de entorno sin secretos (`.env.example` por plataforma) según `docs/DevelopmentGuide.md`.
+- [x] GitHub + GitHub Actions, carpetas independientes sin herramienta de monorepo, npm con lockfile (ADR-008).
+- [x] Repositorio remoto: `https://github.com/ediervillaneda/4adra`.
+- [x] `backend/.nvmrc`: Node 24 (tooling local y CI; el runtime es `workerd`).
+- [ ] `web/.nvmrc`: confirmar la LTS activa al crear el scaffolding de `web/` (subproyecto 2).
+- [x] Plantilla de secretos locales sin valores: `backend/.dev.vars.example` (`.dev.vars` ignorado por git).
+- [ ] Cuando se cree `web/package.json`, definir los scripts que `web.yml` ya asume: `lint`, `test` (headless), `build`.
+
+### Cloudflare (acciones manuales, `docs/Deployment.md` § "Configuración inicial")
+
+- [x] `npx wrangler login` y verificar con `npx wrangler whoami`.
+- [x] Confirmar que la zona `edier.me` está en la cuenta de Cloudflare.
+- [x] `npx wrangler d1 create 4adra-db`, copiar el `database_id` a `backend/wrangler.jsonc` y ejecutar `npm run db:migrate:remote`.
+- [x] Cliente OAuth de Google en el proyecto de Google Cloud `4adra-app` (ID `adra-app`), app en modo prueba con usuarios de prueba (orígenes `https://4adra.edier.me` y `http://localhost:8787`; callback `/api/auth/callback/google`).
+- [x] `wrangler secret put` de `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+- [x] API token de Cloudflare (Workers + D1 Edit, alcance mínimo) y secrets de GitHub `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`.
+- [x] Secrets de GitHub heredados de Firebase: verificado el 2026-11-11 que el repositorio ya no tiene ninguno.
+- [x] Proyecto Firebase `adra-54655` eliminado por el responsable del proyecto (2026-11-11). Las claves que siguen en el historial de git quedan inutilizadas.
 
 ### Backend (`backend/`)
 
-- [x] Inicializar proyecto Node.js/TypeScript con `strict: true` (`docs/CodingStandards.md`).
-- [x] Crear estructura de carpetas `backend/src/{domain,application,infrastructure,presentation}` (`docs/DevelopmentGuide.md`).
-- [x] Configurar ESLint + Prettier según `docs/CodingStandards.md`.
-- [x] Configurar Jest para pruebas unitarias e integración con Firebase Emulator.
-- [x] Fijar versión de Node en `backend/.nvmrc` y `engines.node` de `package.json`.
-- [x] Implementar el primer caso de uso trivial (por ejemplo `GET /me` de `docs/api/Auth.md`) de punta a punta, atravesando las cuatro capas, como prueba de que la arquitectura funciona antes de escalar a más funcionalidad.
-- [x] Configurar inyección de dependencias (contenedor o composición manual) sin instancias concretas dentro de casos de uso.
-- [x] Manejo de errores: excepciones de dominio específicas (`docs/CodingStandards.md`) traducidas a HTTP solo en Presentation, con el sobre de error de `docs/ApiSpecification.md`.
-- [x] Auditoría base: escritura de `auditLogs` desde un middleware/decorador común, no repetida por caso de uso.
+- [x] Proyecto TypeScript con `strict: true` (`docs/CodingStandards.md`).
+- [x] Estructura `backend/src/{domain,application,infrastructure,presentation}` y entrada del Worker `src/index.ts`.
+- [x] ESLint + Prettier.
+- [x] Vitest: unitarias (Node), integración (`@cloudflare/vitest-plugin`, runtime de Workers + D1 local) y contrato (OpenAPI + ajv).
+- [x] `wrangler.jsonc`: Worker `4adra`, binding D1 `DB`, Static Assets (`run_worker_first: ["/api/*"]`) y ruta `4adra.edier.me`.
+- [x] Migración inicial `migrations/0001_init.sql`: tablas de Better Auth, `users` y `audit_logs` inmutable (triggers).
+- [x] Hono con `requestId`, `authenticate` (cookie → `SessionCredential`), `auditTrail` (`ctx.waitUntil`), `handleError` y 404 JSON.
+- [x] Better Auth con Google (`createAuth`, `BetterAuthAuthenticationProvider`) e IDs UUID v7.
+- [x] Primer caso de uso de punta a punta: `GET /api/v1/me` (perfil creado en el primer acceso), probado con una sesión real en la integración.
+- [x] Composición manual de dependencias en `presentation/compositionRoot.ts`, sin instancias concretas dentro de los casos de uso.
+- [x] Manejo de errores: excepciones de dominio traducidas a HTTP solo en Presentation, con el sobre de `docs/ApiSpecification.md`; los errores inesperados no filtran detalles.
+- [x] Auditoría base desde un middleware común.
+- [x] Prueba de humo local con `wrangler dev`: `/` → placeholder, `/api/v1/me` → 401 JSON, `/api/nope` → 404 JSON.
 
-### Web (`web/`)
+### Web (`web/`): PWA base (spec `2026-11-11-pwa-base-design.md`, ADR-019)
 
-- [ ] Inicializar proyecto Angular con Angular Material y RxJS (`docs/AGENTS.md`).
-- [ ] Configurar ESLint (Angular) y estructura por funcionalidad (`docs/CodingStandards.md`).
-- [ ] Cliente HTTP tipado apuntando a `docs/api/openapi.yaml` (generar tipos o usarlo como referencia de contrato).
-
-### Android (`android/`)
-
-- [ ] **Crear el proyecto en Android Studio** (no a mano — genera correctamente `gradlew`/`gradle-wrapper.jar` y fija versiones de Gradle/AGP compatibles entre sí):
-  - New Project → **Empty Activity** (plantilla Jetpack Compose, según `AGENTS.md`/ADR-008).
-  - **Package name:** `com.edier.adra.app` — debe coincidir exactamente con `android/app/google-services.json` (ADR-012), si no, Firebase no reconoce la app.
-  - **Save location:** la carpeta `android/` de este repo (no una carpeta nueva aparte), para que el módulo `app` quede en `android/app/` y el `google-services.json` que ya está ahí caiga en su lugar sin moverlo.
-  - Language: Kotlin. Minimum SDK: 21+ (ajustar si se necesita otro mínimo).
-- [ ] **Agregar el plugin de Google Services** al `build.gradle.kts` de la raíz del proyecto (`android/build.gradle.kts`):
-  ```kotlin
-  plugins {
-      // ...
-      id("com.google.gms.google-services") version "4.5.0" apply false
-  }
-  ```
-- [ ] **Aplicar el plugin y el SDK de Firebase** en el `build.gradle.kts` del módulo `app` (`android/app/build.gradle.kts`):
-  ```kotlin
-  plugins {
-      id("com.android.application")
-      id("com.google.gms.google-services")
-      // ...
-  }
-
-  dependencies {
-      // Firebase BoM: fija versiones compatibles entre SDKs de Firebase
-      implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
-
-      // Firebase Auth es el único SDK de Firebase que el cliente Android
-      // usa directamente (ADR-009: Firestore/Storage solo vía la API,
-      // nunca con el SDK cliente). No agregar firebase-firestore ni
-      // firebase-storage aquí.
-      implementation("com.google.firebase:firebase-auth")
-  }
-  ```
-- [ ] Sincronizar el proyecto (`Sync Now` en Android Studio) y confirmar que compila.
-- [ ] Configurar Hilt para inyección de dependencias.
-- [ ] Configurar ktlint/detekt (`docs/CodingStandards.md`).
-- [ ] Repositorio remoto que encapsule la API y respete estados sellados (`Loading/Content/Empty/Error`) — nunca acceso directo a Firestore/Storage desde el cliente (ADR-009).
-
-### Firebase
-
-- [ ] Ejecutar `firebase deploy --only firestore:rules,firestore:indexes,storage` en el proyecto `development` y confirmar que las reglas deniegan el 100 % del acceso directo de clientes (ADR-009).
-- [ ] Levantar Firebase Emulator Suite localmente (`firebase emulators:start`) usando los puertos ya fijados en `firebase.json`.
-- [ ] Sembrar datos de prueba mínimos vía Admin SDK (no vía cliente) para validar reglas y emuladores.
+- [x] PWA en Angular 22 con Material 3 (verde-azulado), manifest, íconos "4a" y service worker sin caché de `/api`.
+- [x] angular-eslint, Vitest con un umbral del 70 % y estructura por funcionalidad (`core/`, `features/`, `shared/`).
+- [x] Login "Continuar con Google" (HttpClient contra Better Auth, `errorCallbackURL` → `/entrar`), aviso `NOT_INVITED`, perfil editable con errores por campo y cierre de sesión.
+- [x] Política de privacidad pública (`/privacidad`) y regla "sin número de teléfono".
+- [x] `assets.directory` del Worker apunta a `web/dist/web/browser`; `web.yml` y `deploy-cloudflare.yml` compilan la PWA.
+- [ ] Alias `privacidad@edier.me`, verificación de `edier.me` en Search Console, marca y publicación de la app de Google (`Deployment.md`).
 
 ### CI/CD
 
-- [ ] Workflow de CI (GitHub Actions u otro, según ADR-008) por directorio: formato, lint, tipos, pruebas unitarias.
-- [ ] Integrar Firebase Emulator Suite en CI para pruebas de integración (`docs/TestingGuide.md`).
-- [ ] Pipeline de despliegue a `development` en cada merge a la rama principal (`docs/Deployment.md`).
+- [x] `backend.yml`: formato, lint, tipos, unitarias + cobertura, migraciones D1 en limpio, integración, contrato, `npm audit` y build (`wrangler deploy --dry-run`).
+- [x] `deploy-cloudflare.yml`: migraciones D1 remotas + `wrangler deploy` con push a `main`; si faltan los secrets, falla.
+- [x] `release.yml` por tag con notas de `CHANGELOG.md`. El lint de OpenAPI quedó integrado en `backend.yml`. Primera versión con este flujo: `v0.2.0`.
+- [x] Primer deploy real a `https://4adra.edier.me` (2026-11-11, manual con `wrangler deploy`, versión `a40dfda1`). Prueba de humo: `/` 200, `/api/v1/me` 401 JSON, `/api/nope` 404 JSON, `sign-in/social` devuelve la URL de Google.
 
 ### Documentación
 
-- [ ] Actualizar este checklist con cualquier decisión tomada durante la ejecución (versiones exactas, nombres de proyecto Firebase, URL de CI).
-- [ ] Registrar en `docs/Decisions.md` cualquier desviación respecto a ADR-008/009/010/011.
+- [x] ADR-014..017 registrados; ADR-002, 003, 008 (parcial), 009, 010 y 012 marcados como reemplazados.
+- [x] `CLAUDE.md`, `AGENTS.md` y `README.md` con los comandos reales.
+- [x] Decisiones del aprovisionamiento: Cloudflare aceptó el nombre `4adra`; el proyecto de Google Cloud se llama `4adra-app` para no confundirlo con el proyecto Firebase `adra-54655` (que se llama "4adra" en la consola).
+- [ ] Pasar la app de Google de "Prueba" a "En producción" cuando se quiera abrir a cualquier cuenta de Google.
 
 ## Criterios de salida
 
-- [ ] Backend y clientes pueden autenticarse contra el entorno `development` (Firebase Auth real o emulado).
-- [ ] El pipeline de CI ejecuta formato, tipos, pruebas y emuladores en verde para los tres directorios.
-- [ ] `firestore.rules`/`storage.rules` desplegadas y verificadas (un intento de lectura/escritura directa desde un cliente sin pasar por la API falla).
-- [ ] Existe al menos un caso de uso end-to-end funcionando (`GET /me`) como prueba de arquitectura.
+- [x] Backend: login con Google verificado en producción el 2026-11-11 (Google → Better Auth → sesión en D1 → `GET /api/v1/me` 200 con perfil creado, id UUID v7).
+- [ ] PWA: login con Google desde la interfaz, verificado en producción.
+- [x] El pipeline de CI ejecuta formato, tipos, pruebas, migraciones e integración en verde para `backend/`.
+- [x] D1 solo es accesible vía el binding del Worker (no existe acceso directo desde clientes).
+- [x] Existe al menos un caso de uso de punta a punta funcionando (`GET /api/v1/me`) como prueba de arquitectura.
 
 ## Documentos relacionados
 
-`docs/Roadmap.md` (Fase 0), `docs/Decisions.md` (ADR-008 a ADR-011), `docs/DevelopmentGuide.md`, `docs/CodingStandards.md`, `docs/TestingGuide.md`, `docs/Deployment.md`, `docs/Security.md`, `firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `docs/api/openapi.yaml`.
+`docs/Roadmap.md` (Fase 0), `docs/Decisions.md` (ADR-008, ADR-011, ADR-014 a ADR-017), `docs/DevelopmentGuide.md`, `docs/CodingStandards.md`, `docs/TestingGuide.md`, `docs/Deployment.md`, `docs/Security.md`, `backend/wrangler.jsonc`, `backend/migrations/`, `docs/api/openapi.yaml`.

@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Define la estrategia de pruebas para asegurar cálculos financieros correctos, contratos estables, seguridad y comportamiento consistente entre Android, Web y backend.
+Define la estrategia de pruebas para asegurar cálculos financieros correctos, contratos estables, seguridad y comportamiento consistente entre la PWA y el backend.
 
 ## Principios
 
@@ -20,11 +20,11 @@ Define la estrategia de pruebas para asegurar cálculos financieros correctos, c
 
 | Nivel | Propósito | Herramientas sugeridas |
 |---|---|---|
-| Unitarias | Dominio, casos de uso, mapeos y validaciones | Jest, JUnit, MockK |
-| Integración | Repositorios, funciones, reglas Firebase y Storage | Firebase Emulator, Jest |
-| Contrato | API HTTP y DTOs entre clientes y backend | Jest, esquemas JSON/OpenAPI |
-| UI | Flujos visuales y estado de pantallas | Compose UI Test, Angular TestBed |
-| End-to-end | Flujos críticos completos | Entorno de staging y cuentas de prueba |
+| Unitarias | Dominio, casos de uso, mapeos, middlewares Hono (`app.request`) y validaciones | Vitest (`npm test`, Node) |
+| Integración | Repositorios D1, Better Auth, triggers y la API de punta a punta (`SELF.fetch`) | Vitest + `@cloudflare/vitest-plugin` (runtime de Workers + D1 local, `npm run test:integration`) |
+| Contrato | API HTTP y DTOs contra `docs/api/openapi.yaml` | Vitest + ajv (`npm run test:contract`) |
+| UI | Flujos visuales y estado de pantallas de la PWA | Angular TestBed |
+| End-to-end | Flujos críticos completos | Producción con cuentas de prueba, o `npm run dev` local |
 
 Cobertura mínima: Domain 100 %, Application 95 %, Infrastructure 80 % y Presentation 70 %. La cobertura no sustituye pruebas de casos límite ni revisión.
 
@@ -54,13 +54,15 @@ Cada `CalculationProfile` y estrategia requiere pruebas de registro, selección,
 
 Usar conjuntos de *golden tests*: entradas fijas y resultados esperados compartidos entre backend y, cuando sea útil, clientes.
 
-## Integración con Firebase Emulator
+## Integración en el runtime de Workers (D1 local)
 
-Las pruebas de integración se ejecutan contra Firebase Emulator; nunca contra producción. Cubrir:
+Las pruebas de integración corren dentro de `workerd` (Miniflare) con una D1 local a la que se aplican todas las migraciones de `backend/migrations/` antes de cada archivo (`test/integration/applyMigrations.ts`). Nunca se ejecutan contra producción y nunca llaman a Google. Cubrir:
 
-- Firestore repositories, índices y transacciones.
-- Reglas Firestore y Storage con usuarios Owner, Administrator, Member, ReadOnly y no miembro.
-- Cloud Functions autenticadas, errores HTTP, idempotencia y concurrencia.
+- Repositorios D1: ida y vuelta de campos, upsert, llaves foráneas, `UNIQUE` y `db.batch` atómico.
+- Triggers de inmutabilidad (`audit_logs`, tasas, perfiles publicados).
+- Better Auth: sesión real sembrada con un `createAuth` de prueba (email/contraseña habilitado solo ahí), cookie falsificada o vencida → `401`.
+- Autorización por rol con usuarios Owner, Administrator, Member, ReadOnly y no miembro.
+- API de punta a punta con `SELF.fetch`: errores HTTP, idempotencia y concurrencia.
 - Carga de adjuntos, URL firmada y denegación de rutas ajenas.
 - Eventos, auditoría, notificaciones simuladas y recálculo de balances.
 
@@ -72,15 +74,17 @@ Verificar códigos HTTP, formatos de error, paginación, campos requeridos/opcio
 
 ## Clientes
 
-Android prueba estados de ViewModel, navegación clave, manejo de carga/error y formato de dinero/fechas. Web prueba componentes, formularios tipados, accesibilidad básica, servicios API y limpieza de suscripciones. Ningún cliente debe tener pruebas que validen una implementación local alternativa de balances.
+La PWA (`web/`) usa Vitest, que es el runner por defecto de Angular 22, con TestBed y `HttpTestingController`. Corre con `npm test` y tiene un umbral de cobertura del 70 % en `src/app`. Las pruebas de configuración leen `ngsw-config.json` y el manifest para garantizar que el service worker nunca cachea `/api/*`. Hay una prueba explícita de que el perfil no tiene ningún campo de teléfono.
+
+La PWA prueba estados de presentación, navegación clave, manejo de carga/error, formato de dinero/fechas, diseño responsive (PC y celular), componentes, formularios tipados, accesibilidad básica, servicios API y limpieza de suscripciones. Ningún cliente debe tener pruebas que validen una implementación local alternativa de balances.
 
 ## E2E críticos
 
-Ejecutar en staging antes de una versión:
+Ejecutar contra `npm run dev` antes de publicar una versión, y la prueba de humo en producción después (`Deployment.md`):
 
 1. Registro/inicio de sesión y carga de perfil.
 2. Crear grupo e invitar miembro.
-3. Registrar gasto con reparto y verificar balances en ambos clientes.
+3. Registrar gasto con reparto y verificar balances en PC y en celular.
 4. Confirmar liquidación y validar auditoría.
 5. Cambiar perfil de cálculo y registrar un gasto nuevo sin alterar uno histórico.
 6. Cargar y acceder a un adjunto autorizado; rechazar acceso no autorizado.
@@ -90,4 +94,4 @@ Ejecutar en staging antes de una versión:
 
 Usar fábricas de datos legibles (`aGroup`, `anExpense`, `aMember`) y valores explícitos; nunca datos personales reales. Congelar reloj, generador de IDs y tipo de cambio mediante inyección de dependencias.
 
-El pipeline ejecuta formato, lint, tipos, unitarias, integración con emuladores, pruebas de contrato y análisis de cobertura. Un cambio no se integra si falla una prueba, reduce los mínimos o altera una prueba dorada sin decisión y revisión explícitas.
+El pipeline ejecuta formato, lint, tipos, unitarias, migraciones D1 en limpio, integración en el runtime de Workers, pruebas de contrato y análisis de cobertura. Un cambio no se integra si falla una prueba, reduce los mínimos o altera una prueba dorada sin decisión y revisión explícitas.

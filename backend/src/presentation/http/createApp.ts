@@ -1,35 +1,46 @@
-import express, { Express } from 'express';
-import { requestIdMiddleware, RequestWithId } from './middleware/requestId';
-import { authenticateMiddleware, AuthenticatedRequest } from './middleware/authenticate';
+import { Hono } from 'hono';
+import { AppEnv } from './AppEnv';
+import { requestIdMiddleware } from './middleware/requestId';
+import { authenticateMiddleware } from './middleware/authenticate';
 import { auditTrailMiddleware } from './middleware/auditTrail';
-import { errorHandlerMiddleware } from './middleware/errorHandler';
-import { asyncHandler } from './asyncHandler';
-import { createGetMeHandler } from './users/meController';
+import { handleError } from './middleware/errorHandler';
+import { errorEnvelope } from './responseEnvelope';
+import { createGetMeHandler, createPatchMeHandler } from './users/meController';
 import { AuthenticationProvider } from '../../domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../domain/audit/AuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../../application/user/GetCurrentUserProfileUseCase';
+import { UpdateCurrentUserProfileUseCase } from '../../application/user/UpdateCurrentUserProfileUseCase';
 
 export interface AppDependencies {
   authenticationProvider: AuthenticationProvider;
   auditLogWriter: AuditLogWriter;
   getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase;
+  updateCurrentUserProfileUseCase: UpdateCurrentUserProfileUseCase;
+  /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
+  authHandler: (request: Request) => Promise<Response>;
+  generateRequestId: () => string;
 }
 
-export function createApp(dependencies: AppDependencies): Express {
-  const app = express();
-  app.use(express.json());
-  app.use(requestIdMiddleware);
-  app.use(auditTrailMiddleware(dependencies.auditLogWriter));
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- el middleware nunca deja escapar rechazos: captura errores y los pasa a next().
-  app.use(authenticateMiddleware(dependencies.authenticationProvider));
+export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
+  const app = new Hono<AppEnv>().basePath('/api');
 
-  app.get(
-    '/v1/me',
-    asyncHandler<AuthenticatedRequest & RequestWithId>(
-      createGetMeHandler(dependencies.getCurrentUserProfileUseCase),
+  app.use(requestIdMiddleware(dependencies.generateRequestId));
+  app.on(['GET', 'POST'], '/auth/*', (c) => dependencies.authHandler(c.req.raw));
+
+  app.use(
+    '/v1/*',
+    auditTrailMiddleware(dependencies.auditLogWriter, () => new Date()),
+  );
+  app.use('/v1/*', authenticateMiddleware(dependencies.authenticationProvider));
+  app.get('/v1/me', createGetMeHandler(dependencies.getCurrentUserProfileUseCase));
+  app.patch('/v1/me', createPatchMeHandler(dependencies.updateCurrentUserProfileUseCase));
+
+  app.notFound((c) =>
+    c.json(
+      errorEnvelope('NOT_FOUND', 'Recurso no encontrado.', c.get('requestId') ?? 'unknown'),
+      404,
     ),
   );
-
-  app.use(errorHandlerMiddleware);
+  app.onError(handleError);
   return app;
 }

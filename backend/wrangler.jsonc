@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "4adra",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Build de la PWA (web/, ADR-019). /api/* siempre pasa por el Worker.
+  "assets": {
+    "directory": "../web/dist/web/browser",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "4adra-db",
+      // Base creada con `wrangler d1 create 4adra-db` (2026-11-11, región ENAM).
+      "database_id": "2b53af62-df26-4dba-a3a8-3822e313dbc9",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "routes": [{ "pattern": "4adra.edier.me", "custom_domain": true }],
+  "vars": { "BETTER_AUTH_URL": "https://4adra.edier.me" },
+  "observability": { "enabled": true }
+}

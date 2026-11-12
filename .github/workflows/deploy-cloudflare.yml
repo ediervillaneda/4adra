@@ -1,0 +1,57 @@
+name: Deploy Cloudflare (Production)
+
+# Despliega a producción (https://4adra.edier.me) cuando se mergea un PR a main. main no acepta push
+# directo y solo admite el merge si los checks "Backend CI" y "Web CI" pasaron y la rama está al día
+# con main (protección de rama, docs/Workflows.md). Publica el Worker `4adra` (API + PWA de web/) tras aplicar
+# las migraciones de D1. Requiere los secrets CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'web/**'
+      - '.github/workflows/deploy-cloudflare.yml'
+
+concurrency:
+  group: deploy-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Migraciones D1 y deploy del Worker (production)
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Build de la PWA
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      - name: Build (wrangler deploy --dry-run)
+        working-directory: backend
+        run: npm run build
+
+      - name: Aplicar migraciones D1 (remoto)
+        working-directory: backend
+        run: npm run db:migrate:remote
+
+      - name: Deploy del Worker
+        working-directory: backend
+        run: npx wrangler deploy

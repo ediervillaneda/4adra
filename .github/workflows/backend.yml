@@ -1,162 +1,88 @@
 name: Backend CI
 
+# Backend CI: valida el Worker (backend/) en todos los PR, sin filtro de carpetas: el check "Backend CI"
+# es obligatorio para mergear a main (protección de rama). También corre en cada push a main o develop
+# que toque backend/ o el contrato OpenAPI. En orden:
+#   1. Formato (Prettier), lint (ESLint) y tipos (tsc).
+#   2. Pruebas unitarias con umbrales de cobertura.
+#   3. Migraciones D1 en limpio, pruebas de integración (runtime de Workers + D1 local) y de contrato.
+#   4. Lint del contrato OpenAPI (Redocly) y npm audit.
+#   5. Build de la PWA y wrangler deploy --dry-run.
+# No despliega nada ni usa secrets.
+
 on:
   push:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'docs/api/openapi.yaml'
       - '.github/workflows/backend.yml'
   pull_request:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend.yml'
-  workflow_call: {}
 
 concurrency:
   group: backend-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-test-build:
-    name: Formato · Lint · Tipos · Pruebas · Build
+  ci:
+    # Este nombre es el check obligatorio de main: no cambiarlo sin actualizar la protección de rama.
+    name: Backend CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Verificar scaffolding (backend/package.json)
-        id: scaffold
-        run: |
-          if [ -f backend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
-          fi
+      - uses: actions/checkout@v7
 
       - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: backend/.nvmrc
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
       - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm ci
 
       - name: Formato (Prettier)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm run format:check
 
       - name: Lint (ESLint estricto)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm run lint
 
       - name: Comprobación de tipos (tsc --noEmit)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm run typecheck
 
-      - name: Pruebas unitarias con cobertura (Jest)
-        if: steps.scaffold.outputs.exists == 'true'
+      - name: Pruebas unitarias con cobertura (Vitest)
         working-directory: backend
-        run: npm test -- --coverage
+        run: npm test
+
+      - name: Migraciones D1 en limpio (local)
+        working-directory: backend
+        run: npm run db:migrate:local
+
+      - name: Pruebas de integración (runtime de Workers + D1 local)
+        working-directory: backend
+        run: npm run test:integration
+
+      - name: Pruebas de contrato (docs/api/openapi.yaml)
+        working-directory: backend
+        run: npm run test:contract
+
+      - name: Lint del contrato OpenAPI (Redocly)
+        run: npx --yes @redocly/cli@2.77.0 lint docs/api/openapi.yaml
 
       - name: Análisis de dependencias (npm audit)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: backend
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Build
-        if: steps.scaffold.outputs.exists == 'true'
+      - name: Build de la PWA (los assets del Worker son web/dist)
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build (wrangler deploy --dry-run)
         working-directory: backend
         run: npm run build
-
-  emulator-integration:
-    name: Pruebas de integración (Firebase Emulator)
-    runs-on: ubuntu-latest
-    needs: lint-test-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verificar scaffolding (backend/package.json)
-        id: scaffold
-        run: |
-          if [ -f backend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de integración."
-          fi
-
-      - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm ci
-
-      - name: Configurar JDK (requerido por Firebase Emulator Suite)
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Instalar Firebase CLI
-        if: steps.scaffold.outputs.exists == 'true'
-        run: npm install -g firebase-tools
-
-      - name: Ejecutar pruebas de integración dentro del Firebase Emulator Suite
-        if: steps.scaffold.outputs.exists == 'true'
-        # Se ejecuta desde la raíz del repo porque firebase.json vive ahí.
-        run: |
-          firebase emulators:exec \
-            --project demo-4adra \
-            --only auth,firestore,storage \
-            "npm --prefix backend run test:integration"
-
-  contract-tests:
-    name: Pruebas de contrato (docs/api/openapi.yaml)
-    runs-on: ubuntu-latest
-    needs: lint-test-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verificar scaffolding (backend/package.json)
-        id: scaffold
-        run: |
-          if [ -f backend/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::backend/package.json no existe todavía; se omiten las pruebas de contrato."
-          fi
-
-      - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: backend/.nvmrc
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm ci
-
-      - name: Ejecutar pruebas de contrato contra docs/api/openapi.yaml
-        if: steps.scaffold.outputs.exists == 'true'
-        working-directory: backend
-        run: npm run test:contract

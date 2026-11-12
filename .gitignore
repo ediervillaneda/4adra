@@ -10,27 +10,12 @@ Desktop.ini
 *.swo
 
 # Node
+.angular/
 node_modules/
 dist/
 .env
 .env.local
 coverage/
-
-# Firebase
-.firebaserc
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-*.emulator-data/
-
-# Android
-.gradle/
-local.properties
-*.apk
-*.aab
-*.jks
-*.keystore
 
 # Build
 build/
@@ -41,3 +26,10 @@ out/
 
 # Git worktrees (superpowers:using-git-worktrees)
 .worktrees/
+
+# Cloudflare Wrangler
+.wrangler/
+backend/.dev.vars
+
+# Credenciales OAuth descargadas de Google Cloud Console (nunca versionar)
+client_secret_*.json

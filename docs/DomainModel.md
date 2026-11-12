@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Define los conceptos del negocio, sus relaciones e invariantes. El dominio es independiente de Firebase, Firestore, Android, Angular, API, JSON y bases de datos.
+Define los conceptos del negocio, sus relaciones e invariantes. El dominio es independiente de Cloudflare, D1, Better Auth, Angular, API, JSON y bases de datos.
 
 ## Modelo general
 
@@ -57,7 +57,7 @@ Posición regenerable por usuario y grupo: `GroupId`, `UserId`, `Paid`, `Consume
 ### Otros
 
 - `Category`: `Id`, `Name`, `Color`, `Icon`, `Order`.
-- `Attachment`: `Id`, `ExpenseId`, archivo, MIME, ruta de Storage y datos de carga.
+- `Attachment`: `Id`, `ExpenseId`, archivo, MIME, clave del objeto en R2 y datos de carga.
 - `AuditLog`: identidad, entidad, operación, valor anterior/nuevo, usuario y fecha. Nunca se borra.
 
 ## Value objects

@@ -30,7 +30,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-002 — Cloud Functions como backend único
 
 **Fecha:** 2026-07-13  
-**Estado:** Accepted
+**Estado:** Superseded por ADR-014 (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** Android y Web necesitan resultados idénticos y validación de operaciones sensibles.
 
@@ -43,7 +43,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-003 — Firestore como persistencia con esquema lógico
 
 **Fecha:** 2026-07-13  
-**Estado:** Accepted
+**Estado:** Superseded por ADR-015 (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** Firestore no obliga esquema, pero el proyecto requiere consistencia de datos y consultas previsibles.
 
@@ -106,7 +106,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-008 — Stack y estructura técnica de Fase 0
 
 **Fecha:** 2026-07-13
-**Estado:** Accepted (confirmado por el responsable del proyecto el 2026-07-13)
+**Estado:** Superseded por ADR-014 y ADR-017 en lo relativo a Firebase, Cloud Functions y Android (siguen vigentes: GitHub Actions, npm con lockfile, carpetas independientes, TypeScript estricto) (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** `Roadmap.md` Fase 0 exige una base repetible (repositorio, entornos, CI) pero ningún documento fijaba versiones ni herramientas concretas, bloqueando el primer commit de código. El repositorio local no tenía `git remote` configurado, así que el hosting/CI tampoco estaba decidido.
 
@@ -119,7 +119,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-009 — Firestore y Storage sin acceso directo de clientes
 
 **Fecha:** 2026-07-13
-**Estado:** Accepted
+**Estado:** Superseded por ADR-015 (D1 solo es accesible vía binding del Worker; no existen reglas de cliente) (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** `Architecture.md` describe el flujo de clientes como `View -> ViewModel -> API client -> Cloud Functions`, sin mencionar Firestore ni Storage. `Security.md` exige denegar por defecto y que las operaciones críticas pasen por Cloud Functions. Mantener reglas de Firestore/Storage parcialmente abiertas (por ejemplo, lecturas directas por membresía) contradice ese flujo y duplicaría en reglas una autorización que ya vive en el backend.
 
@@ -132,7 +132,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-010 — IDs deterministas para `groupMembers`
 
 **Fecha:** 2026-07-13
-**Estado:** Accepted
+**Estado:** Superseded por ADR-015 (restricción UNIQUE (group_id, user_id) en group_members) (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** `DatabaseSchema.md` no fijaba cómo se genera `membershipId`. Buscar "la membresía de este usuario en este grupo" con un ID aleatorio exige una consulta indexada en cada operación de autorización, lo cual es más lento y más código que una lectura directa por clave.
 
@@ -173,7 +173,7 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 ## ADR-012 — Nombre de paquete Android
 
 **Fecha:** 2026-07-13
-**Estado:** Accepted (registrado en Firebase y `google-services.json` reemplazado)
+**Estado:** Superseded por ADR-017 (sin app Android) (2026-11-11, migración a Cloudflare). Se conserva como historia.
 
 **Contexto:** Ni Android ni Firebase permiten identificadores cuyo primer segmento empiece con dígito, así que "4adra" no es válido como `applicationId`. El nombre de paquete es esencialmente permanente una vez publicado en Play Store. Se propusieron primero `com.adra.app` y luego `com.eacorp.adra` como alternativas basadas en dominio. Se registró por error `com.edier.cuadra.app` en Firebase (proyecto `adra-54655`) — confirmado que "Cuadra" **no** era un cambio de marca intencional, fue una inconsistencia al escribirlo.
 
@@ -204,7 +204,168 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 
 **Consecuencias:** El código de este repositorio (incluyendo `docs/`, reglas de negocio y especificación financiera) queda visible públicamente — decisión explícita del responsable del proyecto, aceptando ese trade-off a cambio de poder usar branch protection nativa de GitHub sin costo. Las ramas `fase_#/task_#_<slug>` ya creadas para Fase 0 se consolidan en una única `feature/backend-scaffold-fase0` para no abrir 17 PRs redundantes contra `develop`. El repositorio requirió habilitar "Allow GitHub Actions to create and approve pull requests" (`can_approve_pull_request_reviews`/`default_workflow_permissions: write` vía API, off por defecto) para que `release.yml` pueda abrir y mergear los PRs automáticos hacia `main`/`develop`.
 
+**Actualización (2026-11-11, versión 0.2.0):** se simplificó la publicación.
+- `release/*` y `hotfix/*` llegan a `main` y a `develop` con PRs normales. Ya no hay auto-merge ni tags `-rc`, y `backend.yml` y `web.yml` dejaron de ser reusables.
+- Cada versión se documenta en `CHANGELOG.md` (formato Keep a Changelog, versionado semántico) y en `backend/package.json` y `web/package.json`.
+- Al pushear el tag `v<versión>` sobre `main`, el nuevo `release.yml` valida el tag y crea el GitHub Release con la sección del CHANGELOG.
+- El deploy sigue saliendo del push a `main` (`deploy-cloudflare.yml`).
+- `openapi-lint.yml` se integró en `backend.yml`.
+- Procedimiento completo en `docs/Workflows.md`.
+
 Los secrets `FIREBASE_SERVICE_ACCOUNT`/`FIREBASE_PROJECT_ID_PRODUCTION` ya existen y apuntan al único proyecto Firebase real hoy, `adra-54655` (development) — no se crearon proyectos `staging`/`production` separados; el responsable del proyecto decidió un solo entorno de Firebase por ahora (2026-07-15), ver estado en `docs/checklists/Fase0-FundacionTecnica.md`. La cuenta de facturación de Google Cloud está cerrada, así que el deploy de Cloud Functions (plan Blaze) fallará hasta reactivarla, aunque Firestore/Storage rules sí deberían poder desplegarse.
+
+**Actualización 2026-11-11 (ADR-014):** el deploy ahora es `deploy-cloudflare.yml` (también solo con push a `main`); `deploy-firebase.yml`, `firebase-config.yml` y `android.yml` se eliminaron. Los secrets `FIREBASE_SERVICE_ACCOUNT`/`FIREBASE_PROJECT_ID_PRODUCTION` ya no se usan y deben borrarse del repositorio en GitHub; los nuevos son `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.
+
+---
+
+## ADR-014 — Cloudflare Workers como backend y hosting únicos (Hono + Static Assets)
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted (spec `docs/superpowers/specs/2026-11-11-migracion-cloudflare-design.md`)
+
+**Contexto:** El responsable del proyecto decidió eliminar Firebase por completo y publicar con Cloudflare, en `4adra.edier.me`, sin mantener servidores propios. La cuenta de facturación de Google Cloud estaba cerrada (ADR-013), lo que ya bloqueaba el deploy de Cloud Functions.
+
+**Decisión:**
+- **Un solo Worker `4adra`** (`backend/wrangler.jsonc`) sirve todo desde un mismo origen:
+  - `/api/v1/*`: la API.
+  - `/api/auth/*`: el login (ADR-016).
+  - `/*`: los archivos estáticos de la PWA, con Workers Static Assets (`run_worker_first: ["/api/*"]` y `not_found_handling: single-page-application`).
+- **Hono reemplaza a Express**, porque es nativo del runtime de Workers.
+- **Las capas no cambian:** `domain/` y `application/` quedan igual. La única excepción es el puerto `AuthenticationProvider`, que pasa de `verifyIdToken` a `resolveSession(SessionCredential)`.
+- **Entornos:** local con `wrangler dev` (`localhost:8787`) y producción en `4adra.edier.me` (custom domain). No hay staging.
+- **Deploy:** solo desde CI con push a `main` (`deploy-cloudflare.yml`).
+- **Equivalencias de los servicios de Firebase** (se implementan cuando una fase lo requiera):
+  - Storage → R2.
+  - Cloud Messaging → Web Push (VAPID).
+  - Cloud Scheduler → Cron Triggers.
+  - Emulator Suite → Miniflare / `@cloudflare/vitest-plugin`.
+
+**Consecuencias:**
+- **Sin CORS y con cookie de sesión del mismo origen.**
+- **Trabajo en segundo plano:** solo vía `ctx.waitUntil`; la auditoría lo usa.
+- **Runtime:** no hay Node completo. Se usa `nodejs_compat` cuando haga falta, y una librería que dependa de APIs de Node no soportadas no sirve.
+- **Pruebas:** Vitest (Jest no corre en el runtime de Workers).
+- **Requisitos:** la zona `edier.me` en la cuenta de Cloudflare, más los secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` en GitHub (`docs/Deployment.md`).
+
+---
+
+## ADR-015 — Cloudflare D1 como persistencia relacional
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted
+
+**Contexto:** Los datos de 4adra son muy relacionales (grupo → miembros → gastos → splits → liquidaciones) y exigen operaciones atómicas (un gasto con sus splits). Se evaluaron dos opciones:
+- **D1 (SQLite administrado):** gratis en este volumen, sin otro proveedor y emulado en local.
+- **PostgreSQL (Neon) vía Hyperdrive:** tipo `NUMERIC` exacto y más escala, pero con otro proveedor y Docker para desarrollar en local.
+
+**Decisión:**
+- **Motor:** D1, con el binding `DB` a la base `4adra-db`.
+- **Esquema:**
+  - Tablas `snake_case`, con llaves foráneas reales y `UNIQUE (group_id, user_id)` en `group_members` (reemplaza a ADR-010).
+  - Montos, tasas y porcentajes en `TEXT` decimal exacto, validados por los value objects (`Money`/`Decimal.js`), nunca `REAL`.
+  - Fechas en `TEXT` ISO-8601 UTC con milisegundos.
+  - IDs UUID v7 generados en el backend.
+- **Operaciones:**
+  - Las escrituras atómicas de varios registros usan `db.batch([...])`, porque D1 no tiene transacciones interactivas.
+  - `audit_logs` es inmutable mediante triggers `BEFORE UPDATE/DELETE` (refuerza ADR-006).
+- **Migraciones:**
+  - SQL numerado en `backend/migrations/`, aplicado con `wrangler d1 migrations apply` (local en CI, remoto en el deploy).
+  - Solo se crean las tablas que el código usa. El destino completo está en `docs/examples/D1Schema.sql`.
+
+**Consecuencias:**
+- **Acceso:** la PWA no puede tocar la base; solo el Worker vía binding. Las reglas de seguridad de Firestore/Storage dejan de existir (reemplaza a ADR-009).
+- **Límites:** 10 GB por base. Si se superan, migrar a PostgreSQL es directo porque el dominio solo conoce repositorios.
+- **Diseño de casos de uso:** se debe pensar en `batch` en lugar de transacciones con lecturas intermedias.
+
+---
+
+## ADR-016 — Better Auth con Google y sesión por cookie del mismo origen
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted
+
+**Contexto:** Al retirar Firebase Auth hacía falta otro proveedor de identidad. Opciones evaluadas:
+- **Better Auth dentro del Worker:** sin terceros nuevos.
+- **Google + enlace mágico por correo:** requiere un servicio de correo.
+- **Usuario y contraseña:** más superficie de ataque.
+- **SaaS (Clerk/Auth0):** reintroduce dependencia de terceros.
+
+**Decisión:**
+- **Librería y proveedor:** Better Auth montado en `/api/auth/*`, con un único proveedor social, Google. Usa el dialecto D1 nativo de la librería y guarda identidad y sesiones en las tablas `user`, `session`, `account` y `verification` (`0001_init.sql`).
+- **Sesión:** cookie `HttpOnly; Secure; SameSite=Lax` del mismo origen.
+- **Middleware `authenticate`:** pasa el encabezado `Cookie` como `SessionCredential` opaco a `BetterAuthAuthenticationProvider`, que valida con `auth.api.getSession`.
+- **Identificadores:** el `user.id` de Better Auth (UUID v7) es el `UserId` del dominio. El perfil de dominio vive en `users` y lo crea `GetCurrentUserProfileUseCase` en el primer acceso.
+- **Secretos:** `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`, con `wrangler secret put` en producción y `.dev.vars` en local. Nunca en el repositorio.
+
+**Consecuencias:**
+- **Contrato OpenAPI:** `securitySchemes` pasa de `bearerAuth` (Firebase ID Token) a `cookieAuth`, autorizado explícitamente por el responsable del proyecto.
+- **Pruebas:** nunca llaman a Google. Las de integración habilitan email y contraseña solo en su propia instancia, para sembrar sesiones reales.
+- **Futuro:** agregar el enlace mágico por correo es un cambio aditivo.
+
+---
+
+## ADR-017 — Solo PWA; se descarta la app Android nativa
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted
+
+**Contexto:** El plan original tenía dos clientes: Angular para la web y Kotlin/Compose para Android. Eso duplicaba cada pantalla y su mantenimiento, para un producto de gastos compartidos entre grupos de amigos o familia.
+
+**Decisión:** Un único cliente, la PWA en Angular, responsive para PC y celular e instalable desde el navegador ("Agregar a pantalla de inicio"). Se servirá como Static Assets del Worker (ADR-014). Se eliminan `android/`, `google-services.json`, `android.yml` y el ADR-012 queda reemplazado. El scaffolding de la PWA es un subproyecto con spec propio.
+
+**Consecuencias:**
+- No hay presencia en Google Play.
+- Las notificaciones push en Android van por Web Push, algo más limitadas que FCM nativo.
+- `UISpecification.md`, `CodingStandards.md`, `TestingGuide.md` y `Roadmap.md` dejan de describir Android.
+- Volver a una app nativa exigiría un ADR nuevo.
+
+## ADR-018 — Acceso a la plataforma solo por lista (inscripción manual)
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted
+
+**Contexto:** Con el login con Google abierto, cualquier cuenta de Google podría crear una cuenta en 4adra. El responsable del proyecto quiere que solo entren personas invitadas. Al inicio habrá dos usuarios en producción, así que no se justifica construir un flujo de invitaciones.
+
+Además, el "modo prueba" de Google no sirve como control de acceso:
+- obliga a gestionar usuarios en la consola de Google;
+- tiene un límite de 100 usuarios;
+- muestra una advertencia de app no verificada.
+
+**Decisión:**
+- **Tabla `allowed_emails`** (`0002_allowed_emails.sql`): correo en minúsculas, nota opcional, fecha de alta y `revoked_at`.
+- **Hook de registro:** `createAuth` recibe `isSignUpAllowed` y registra un hook `databaseHooks.user.create.before` de Better Auth. Si el correo no está vigente en la lista, rechaza la creación de la cuenta con `403 NOT_INVITED`. En el login con Google, eso redirige a `/api/auth/error?error=NOT_INVITED`.
+- **Puerto de dominio:** `AllowedEmailRepository`, implementado por `D1AllowedEmailRepository`.
+- **Usuarios existentes:** el filtro solo actúa al crear cuentas, así que los usuarios que ya existen siguen entrando.
+- **Inscripción y revocación:** son manuales, con `wrangler d1 execute --remote` (`docs/Deployment.md`). No hay endpoints, rol de administrador ni envío de correos.
+- **Privacidad:** los correos nunca se versionan, porque el repositorio es público.
+
+**Consecuencias:**
+- La app de Google puede publicarse para cualquier cuenta, ya que el filtro real vive en el Worker.
+- Revocar un correo impide registrarse, pero no expulsa a un usuario ya creado. Para bloquearlo se usa `users.status = 'DISABLED'`, que ya responde 403 `USER_DISABLED`.
+- **Evolución prevista:** invitaciones desde la app con un rol `PLATFORM_ADMIN` y, opcionalmente, correo de invitación. Se construirá sobre la misma tabla, en un ADR nuevo.
+
+## ADR-019 — PWA en Angular 22 servida por el Worker
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted (spec `docs/superpowers/specs/2026-11-11-pwa-base-design.md`)
+
+**Contexto:** ADR-017 fijó una única PWA como cliente. Con el backend en el Worker (ADR-014) y la sesión por cookie del mismo origen (ADR-016), había que decidir cómo construir, servir y desarrollar esa PWA.
+
+**Decisión:**
+- **Framework:** Angular 22 en `web/`, con componentes standalone, signals y zoneless, Angular Material 3 (tema generado desde la semilla verde-azulado `#00796B`) y `@angular/service-worker`. Pruebas con Vitest, el runner por defecto de Angular 22, y lint con angular-eslint.
+- **Publicación:** el build (`web/dist/web/browser`) es el `assets.directory` del Worker `4adra`: un solo deploy en un solo origen, sin CORS. Se descartaron Cloudflare Pages en otro origen (CORS y cookies cruzadas) y SSR en el Worker (complejidad sin beneficio para una app privada).
+- **Login sin SDK:** `HttpClient` llama a `/api/auth/sign-in/social` (con `errorCallbackURL: '/entrar'`), `/api/auth/get-session` y `/api/auth/sign-out`. No hace falta el cliente de Better Auth para tres llamadas.
+- **Service worker:** cachea la app y las fuentes, y **nunca** `/api/*`, porque son datos privados.
+- **Desarrollo:** `ng serve` en `localhost:4200` con un proxy de `/api` hacia `wrangler dev`. Better Auth acepta ese origen solo cuando `TRUSTED_ORIGINS` lo incluye, y únicamente `.dev.vars` lo define.
+- **Interfaz:** solo en español, con los textos centralizados en `shared/texts.ts` para traducir después.
+- **Datos personales:** nunca se pide un número de teléfono.
+
+**Consecuencias:**
+- **Builds:** `backend.yml` y `deploy-cloudflare.yml` compilan `web/` antes de `wrangler deploy` (el dry-run exige que exista el directorio de assets).
+- **Contenido de la política:** `/privacidad` debe mantenerse alineada con lo que la app realmente guarda.
+- **Fuentes:** se cargan de Google Fonts y el service worker las cachea. Auto-hospedarlas queda como mejora opcional.
+- **Botón de instalación:** no hay uno propio; Chrome lo ofrece.
+- **Offline:** no hay cola de operaciones sin conexión (Fase 3).
 
 ## Cómo añadir una decisión
 

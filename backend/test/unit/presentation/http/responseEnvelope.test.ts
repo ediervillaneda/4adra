@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { successEnvelope, errorEnvelope } from '../../../../src/presentation/http/responseEnvelope';
 
 describe('responseEnvelope', () => {

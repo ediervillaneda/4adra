@@ -1,5 +1,6 @@
-import { AuthenticatedActor } from './AuthenticatedActor';
+import { SessionCredential } from './SessionCredential';
+import { SessionResolution } from './SessionResolution';
 
 export interface AuthenticationProvider {
-  verifyIdToken(idToken: string): Promise<AuthenticatedActor>;
+  resolveSession(credential: SessionCredential): Promise<SessionResolution>;
 }

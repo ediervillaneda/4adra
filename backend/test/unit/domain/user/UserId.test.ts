@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { UserId } from '../../../../src/domain/user/UserId';
 
 describe('UserId', () => {

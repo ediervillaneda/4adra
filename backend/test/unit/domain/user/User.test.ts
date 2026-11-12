@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { User } from '../../../../src/domain/user/User';
 import { UserId } from '../../../../src/domain/user/UserId';
 import { Email } from '../../../../src/domain/user/Email';
@@ -44,5 +45,32 @@ describe('User', () => {
   it('shouldThrowUserDisabledExceptionWhenDisabledUserAssertsActive', () => {
     const user = User.create(validProps({ status: 'DISABLED' }));
     expect(() => user.assertActive()).toThrow(UserDisabledException);
+  });
+});
+
+describe('User.updateProfile', () => {
+  it('shouldApplyChangesAndBumpUpdatedAtKeepingIdentity', () => {
+    const user = User.create(validProps());
+    const now = new Date('2026-11-11T18:00:00.000Z');
+
+    const updated = user.updateProfile(
+      { displayName: 'Ana P.', preferredCurrency: 'COP', timeZone: 'America/Bogota' },
+      now,
+    );
+
+    expect(updated.displayName).toBe('Ana P.');
+    expect(updated.preferredCurrency).toBe('COP');
+    expect(updated.timeZone).toBe('America/Bogota');
+    expect(updated.language).toBe('es');
+    expect(updated.email.toString()).toBe('ana@example.com');
+    expect(updated.createdAt.toISOString()).toBe('2026-07-13T12:00:00.000Z');
+    expect(updated.updatedAt).toBe(now);
+    expect(user.displayName).toBe('Ana Pérez');
+  });
+
+  it('shouldClearPhotoUrlWhenNullIsGiven', () => {
+    const user = User.create(validProps({ photoUrl: 'https://example.com/a.png' }));
+
+    expect(user.updateProfile({ photoUrl: null }, new Date()).photoUrl).toBeNull();
   });
 });
