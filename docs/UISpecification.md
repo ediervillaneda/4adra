@@ -19,6 +19,21 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 - Sistema de diseño base por decisión de stack (`docs/AGENTS.md`): **Material Design 3 con Angular Material**. Este documento no reinventa eso, construye sobre esa base.
 - Una sola app responsive: la disposición cambia según el ancho (punto de corte 840 px, el *expanded* de Material 3), no hay dos implementaciones. La PWA es instalable (manifest + service worker) y en el celular se usa como app a pantalla completa.
 
+- **Sin número de teléfono:** ninguna pantalla pide ni muestra un número de teléfono (decisión del responsable del proyecto). La política de privacidad lo declara y hay una prueba que lo garantiza.
+- **Idioma:** la interfaz es solo en español. Todos los textos visibles viven en `web/src/app/shared/texts.ts` (ADR-019).
+
+## Implementado en la pieza 1 (PWA base, 2026-11-11)
+
+| Ruta | Pantalla | Estado |
+|---|---|---|
+| `/` | Inicio: saludo, estado vacío "Tus grupos aparecerán aquí" y aviso "Revisa tu perfil" hasta el primer guardado | Hecho |
+| `/entrar` | Login con "Continuar con Google" y mensajes `NOT_INVITED` / error genérico | Hecho |
+| `/perfil` | Mi perfil: nombre, moneda, idioma y zona horaria (`PATCH /me`), foto de Google en solo lectura y cierre de sesión | Hecho |
+| `/privacidad` | Política de privacidad (pública, contacto `privacidad@edier.me`) | Hecho |
+| `**` | No encontrado | Hecho |
+
+No existe una pantalla separada de "Completar perfil": el perfil nace con COP, es y America/Bogota, y el aviso de Inicio lleva a `/perfil`. Tampoco existe "Registro": la primera entrada con Google crea la cuenta, siempre que el correo esté en la lista de acceso (ADR-018).
+
 ## Sistema de diseño (Proposed — pendiente de confirmación de marca)
 
 No hay todavía paleta de marca, tipografía ni logo definidos en ningún documento del proyecto. Propuesta mínima para no bloquear el trabajo de UI, fácil de reemplazar después sin tocar la estructura de pantallas:

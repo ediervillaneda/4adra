@@ -336,6 +336,29 @@ Además, el "modo prueba" de Google no sirve como control de acceso:
 - Revocar un correo impide registrarse, pero no expulsa a un usuario ya creado. Para bloquearlo se usa `users.status = 'DISABLED'`, que ya responde 403 `USER_DISABLED`.
 - **Evolución prevista:** invitaciones desde la app con un rol `PLATFORM_ADMIN` y, opcionalmente, correo de invitación. Se construirá sobre la misma tabla, en un ADR nuevo.
 
+## ADR-019 — PWA en Angular 22 servida por el Worker
+
+**Fecha:** 2026-11-11  
+**Estado:** Accepted (spec `docs/superpowers/specs/2026-11-11-pwa-base-design.md`)
+
+**Contexto:** ADR-017 fijó una única PWA como cliente. Con el backend en el Worker (ADR-014) y la sesión por cookie del mismo origen (ADR-016), había que decidir cómo construir, servir y desarrollar esa PWA.
+
+**Decisión:**
+- **Framework:** Angular 22 en `web/`, con componentes standalone, signals y zoneless, Angular Material 3 (tema generado desde la semilla verde-azulado `#00796B`) y `@angular/service-worker`. Pruebas con Vitest, el runner por defecto de Angular 22, y lint con angular-eslint.
+- **Publicación:** el build (`web/dist/web/browser`) es el `assets.directory` del Worker `4adra`: un solo deploy en un solo origen, sin CORS. Se descartaron Cloudflare Pages en otro origen (CORS y cookies cruzadas) y SSR en el Worker (complejidad sin beneficio para una app privada).
+- **Login sin SDK:** `HttpClient` llama a `/api/auth/sign-in/social` (con `errorCallbackURL: '/entrar'`), `/api/auth/get-session` y `/api/auth/sign-out`. No hace falta el cliente de Better Auth para tres llamadas.
+- **Service worker:** cachea la app y las fuentes, y **nunca** `/api/*`, porque son datos privados.
+- **Desarrollo:** `ng serve` en `localhost:4200` con un proxy de `/api` hacia `wrangler dev`. Better Auth acepta ese origen solo cuando `TRUSTED_ORIGINS` lo incluye, y únicamente `.dev.vars` lo define.
+- **Interfaz:** solo en español, con los textos centralizados en `shared/texts.ts` para traducir después.
+- **Datos personales:** nunca se pide un número de teléfono.
+
+**Consecuencias:**
+- **Builds:** `backend.yml` y `deploy-cloudflare.yml` compilan `web/` antes de `wrangler deploy` (el dry-run exige que exista el directorio de assets).
+- **Contenido de la política:** `/privacidad` debe mantenerse alineada con lo que la app realmente guarda.
+- **Fuentes:** se cargan de Google Fonts y el service worker las cachea. Auto-hospedarlas queda como mejora opcional.
+- **Botón de instalación:** no hay uno propio; Chrome lo ofrece.
+- **Offline:** no hay cola de operaciones sin conexión (Fase 3).
+
 ## Cómo añadir una decisión
 
 Copiar el formato ADR, usar el siguiente identificador, enlazar documentos afectados y describir riesgos/alternativas consideradas. No usar este registro para tareas pequeñas de implementación ni para notas temporales.

@@ -1,59 +1,47 @@
-# Web
+# web/
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+**PWA de 4adra**, el único cliente (ADR-017 y ADR-019). Está hecha con Angular 22 (standalone, signals, zoneless), Angular Material 3 (tema verde-azulado) y `@angular/service-worker`. Se adapta a PC y celular, se instala desde el navegador y abre sin conexión.
 
-## Development server
+El Worker `4adra` sirve el build (`dist/web/browser`) como Static Assets en `https://4adra.edier.me`, en el mismo origen que la API: sin CORS y con la cookie de sesión `HttpOnly`.
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Comandos
 
 ```bash
-ng generate component component-name
+npm ci
+npm start        # ng serve en http://localhost:4200 (proxy.conf.json: /api → http://localhost:8787)
+npm test         # Vitest con cobertura (umbral 70 %)
+npm run lint     # angular-eslint
+npm run build    # dist/web/browser
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+**Login con Google en desarrollo:**
+1. En `backend/`: `TRUSTED_ORIGINS=http://localhost:4200` en `.dev.vars`, y luego `npm run dev`.
+2. Aquí: `npm start`.
+3. El cliente OAuth de Google debe tener `http://localhost:4200` como origen autorizado.
 
-```bash
-ng generate --help
+## Estructura
+
+```text
+src/app/
+├── core/
+│   ├── auth/        AuthService (sesión de Better Auth) y guards
+│   ├── http/        interceptor (401 → /entrar; 5xx → mensaje con requestId) y notificador
+│   ├── layout/      shell responsive (barra inferior < 840 px; navigation rail ≥ 840 px; pie con Privacidad)
+│   └── network/     estado de conexión (aviso "Sin conexión")
+├── features/        home, login, profile, privacy, not-found
+└── shared/          texts.ts (todos los textos, en español), api.ts (tipos del contrato), logo
 ```
 
-## Building
+## Reglas
 
-To build the project run:
+- **Lógica de negocio:** no se calcula nada financiero ni se aplican reglas de negocio aquí. La PWA solo presenta lo que devuelve la API.
+- **Textos:** solo en español, y todos salen de `shared/texts.ts`; las plantillas no llevan literales.
+- **Datos personales:** nunca se pide ni se guarda un número de teléfono.
+- **API:** se llama con rutas relativas (`/api/...`) y nunca se leen ni se guardan tokens.
+- **Service worker:** no cachea `/api/*` (`ngsw-config.json`).
 
-```bash
-ng build
-```
+## Referencias
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- `docs/superpowers/specs/2026-11-11-pwa-base-design.md`: spec de esta pieza.
+- `docs/UISpecification.md`: pantallas y navegación.
+- `docs/api/Auth.md` y `docs/api/openapi.yaml`: contrato de la API.

@@ -8,7 +8,7 @@
 **Phase 0 (Foundation)**, platform migrated from Firebase to Cloudflare (ADR-014..017). What exists today:
 
 - `backend/`: real Cloudflare Worker (`4adra`) — Hono + D1 + Better Auth (Google). `GET /api/v1/me` works end to end; unit, integration (Workers runtime + local D1) and contract (OpenAPI) tests.
-- `web/`: still only a `README.md`. The PWA (Angular) is the next sub-project and gets its own spec.
+- `web/`: Angular 22 PWA (ADR-019): Google login, "invitation required" notice, editable profile, privacy policy, installable and offline-capable. Served by the Worker as Static Assets.
 - No Android app (discarded, ADR-017): a single responsive PWA serves PC and mobile.
 - `docs/`: full documentation, contract at `docs/api/openapi.yaml`, per-phase checklists in `docs/checklists/`.
 
@@ -19,7 +19,7 @@ Production URL: `https://4adra.edier.me` (app and `/api` on the same origin). Lo
 | Layer | Technology |
 |---|---|
 | Backend | TypeScript (strict), Cloudflare Workers, Hono, Cloudflare D1 (SQLite), Better Auth (Google OAuth), Wrangler |
-| Web (PWA) | Angular, TypeScript, Angular Material, RxJS — served as Workers Static Assets (planned) |
+| Web (PWA) | Angular 22 (standalone, signals, zoneless), Angular Material 3, `@angular/service-worker`, Vitest, angular-eslint — served as Workers Static Assets |
 | Testing | Vitest, `@cloudflare/vitest-plugin` (Workers runtime + local D1), ajv contract tests |
 
 ---
@@ -46,7 +46,17 @@ npm run db:migrate:remote   # apply migrations to production D1 (CI does this on
 npm run deploy              # wrangler deploy (CI does this on main)
 ```
 
-Web (Angular) commands do not exist yet — do not invent them.
+From `web/` (Node 24, npm):
+
+```bash
+npm ci
+npm start        # ng serve on http://localhost:4200, proxies /api to localhost:8787 (run backend `npm run dev` with TRUSTED_ORIGINS=http://localhost:4200)
+npm test         # Vitest + 70% coverage threshold
+npm run lint     # angular-eslint
+npm run build    # web/dist/web/browser = the Worker's Static Assets (required before `wrangler deploy --dry-run`)
+```
+
+UI is Spanish-only; every visible string lives in `web/src/app/shared/texts.ts`. Never ask for a phone number.
 
 ---
 
@@ -100,9 +110,8 @@ backend/
 │   ├── presentation/    # Hono app, middlewares, controllers, compositionRoot
 │   └── index.ts         # Worker entry (export default { fetch })
 ├── migrations/          # D1 SQL migrations (NNNN_description.sql)
-├── public/              # static assets (PWA build later)
 └── wrangler.jsonc       # Worker, D1 binding, assets, route 4adra.edier.me
-web/                     # Angular PWA (planned)
+web/src/app/              # Angular PWA: core/ (auth, http, layout, network), features/ (home, login, profile, privacy, not-found), shared/ (texts, api types)
 ```
 
 | Layer | May Depend On | Never Depends On |

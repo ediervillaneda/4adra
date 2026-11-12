@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **4adra** (Cuentas claras, gastos compartidos) está en Fase 0 y corre sobre **Cloudflare** (ADR-014..017):
 
 - **`backend/`**: Worker real (`4adra`) con Hono + D1 + Better Auth (Google). `GET /api/v1/me` funciona de punta a punta, con pruebas unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
-- **`web/`**: todavía solo un `README.md`. La PWA Angular es el siguiente subproyecto, con spec propio.
+- **`web/`**: PWA en Angular 22 (ADR-019). Incluye login con Google, aviso de invitación, perfil editable, política de privacidad, y es instalable y funciona sin conexión. El Worker la sirve como Static Assets.
 - **No hay app Android** (descartada, ADR-017): una sola PWA responsive sirve PC y celular.
 - **`docs/`**: checklists por fase en `docs/checklists/`, contrato HTTP en `docs/api/openapi.yaml`, specs y planes en `docs/superpowers/`.
 
@@ -29,7 +29,27 @@ npm run build                    # wrangler deploy --dry-run
 npm run cf-typegen               # regenerar worker-configuration.d.ts tras editar wrangler.jsonc
 ```
 
-El deploy (`db:migrate:remote` + `wrangler deploy`) solo lo hace CI con push a `main` (`.github/workflows/deploy-cloudflare.yml`). No existen comandos de `web/` todavía; no inventarlos.
+El deploy (build de `web/` + `db:migrate:remote` + `wrangler deploy`) solo lo hace CI con push a `main` (`.github/workflows/deploy-cloudflare.yml`). Para `wrangler deploy --dry-run` hace falta haber compilado `web/` antes.
+
+### Comandos reales de `web/` (PWA Angular 22, Node 24 + npm, lockfile propio)
+
+```bash
+cd web
+npm ci
+npm start                        # ng serve → http://localhost:4200, con proxy de /api → localhost:8787
+npm test                         # Vitest + umbral de cobertura del 70 %
+npm run lint                     # angular-eslint
+npm run build                    # → web/dist/web/browser (los Static Assets del Worker)
+```
+
+**Desarrollo local con login real:** dos terminales.
+1. `cd backend && npm run dev`, con `TRUSTED_ORIGINS=http://localhost:4200` en `.dev.vars`.
+2. `cd web && npm start`.
+
+**Alternativa:** `cd web && npm run build` y luego `cd backend && npm run dev`, para probar todo en `localhost:8787`.
+
+Si `wrangler dev` deja de responder, revisa que no queden instancias anteriores vivas en el puerto 8787.
+
 
 ## Documento maestro
 
@@ -59,7 +79,7 @@ https://4adra.edier.me
  └─ Cloudflare Worker "4adra" (backend/wrangler.jsonc)
      ├─ /api/v1/*   → Hono (Presentation) → Application → Domain ← Infrastructure → D1
      ├─ /api/auth/* → Better Auth (Google OAuth, sesiones en D1)
-     └─ /*          → Workers Static Assets (PWA; hoy un placeholder en backend/public)
+     └─ /*          → Workers Static Assets (build de la PWA: web/dist/web/browser)
 ```
 
 Las dependencias siempre apuntan hacia el dominio. El dominio (`domain/`) no conoce Hono, D1, Better Auth, Angular, HTTP ni JSON.
@@ -75,7 +95,7 @@ Estructura del backend (`backend/src/`): `domain/`, `application/`, `infrastruct
 
 **Stack oficial:**
 - **Backend:** TypeScript estricto sobre Cloudflare Workers + Hono + D1 (SQLite) + Better Auth (Google). R2, Web Push y Cron Triggers se suman cuando una fase los necesite.
-- **Web:** Angular/TypeScript/Angular Material/RxJS como PWA.
+- **Web:** PWA con Angular 22 (standalone, signals, zoneless), Angular Material 3 (tema verde-azulado) y `@angular/service-worker`. Vitest y angular-eslint. Interfaz solo en español, con todos los textos en `web/src/app/shared/texts.ts`. **Nunca se pide número de teléfono.**
 - **Testing:** Vitest + `@cloudflare/vitest-plugin`.
 
 ### Motor de cálculo (pieza central del dominio)

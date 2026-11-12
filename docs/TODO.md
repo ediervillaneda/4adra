@@ -82,7 +82,7 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `.github/workflows/deploy-cloudflare.yml` — migraciones D1 + `wrangler deploy` con push a `main`.
 - [x] `.github/workflows/openapi-lint.yml` — valida `docs/api/openapi.yaml`.
 - [x] `backend/` — scaffold real de Fase 0 sobre Cloudflare (Hono + D1 + Better Auth), `GET /api/v1/me` de punta a punta.
-- [ ] `web/` — scaffold de la PWA Angular (subproyecto 2, con spec propio).
+- [x] `web/` — PWA base en Angular 22 (ADR-019). Las siguientes piezas son grupos, gastos y liquidaciones.
 
 ## Regla de mantenimiento
 
