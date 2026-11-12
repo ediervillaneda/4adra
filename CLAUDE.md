@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del repositorio
 
-**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.2.0 (ver `CHANGELOG.md`); está en curso la **pieza 2 de 4 (grupos y miembros)**, en la rama `feature/grupos-y-miembros`:
+**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.2.0 (ver `CHANGELOG.md`); está en curso la **pieza 2 de 4 (grupos y miembros)**, con una rama `feature/*` por historia, desde `develop`:
 
-- **`backend/`**: Worker real (`4adra`) con Hono + D1 + Better Auth (Google). `GET`/`PATCH /api/v1/me` y `POST`/`GET /api/v1/groups` funcionan de punta a punta, con pruebas unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
-- **`web/`**: PWA en Angular 22 (ADR-019). Incluye login con Google, aviso de invitación, perfil editable, política de privacidad, crear un grupo y verlo en Inicio, y es instalable y funciona sin conexión. El Worker la sirve como Static Assets.
+- **`backend/`**: Worker real (`4adra`) con Hono + D1 + Better Auth (Google). `GET`/`PATCH /api/v1/me`, `POST`/`GET /api/v1/groups`, `GET /api/v1/groups/{groupId}` (y `/members`) y `POST /api/v1/groups/{groupId}/members/invitations` funcionan de punta a punta, con pruebas unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
+- **`web/`**: PWA en Angular 22 (ADR-019). Incluye login con Google, aviso de invitación, perfil editable, política de privacidad, crear un grupo y verlo en Inicio, ver su detalle con los miembros, invitar por correo, y es instalable y funciona sin conexión. El Worker la sirve como Static Assets.
 - **No hay app Android** (descartada, ADR-017): una sola PWA responsive sirve PC y celular.
 - **`docs/`**: checklists por fase en `docs/checklists/`, contrato HTTP en `docs/api/openapi.yaml`, specs y planes en `docs/superpowers/`.
 

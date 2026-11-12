@@ -46,6 +46,8 @@ Idempotency-Key: e25d9c11-271c-48f5-95e2-79e5a7903c51
 { "email": "juan@example.com", "role": "MEMBER" }
 ```
 
+**Implementado (pieza 2, historia #3).** Solo se invitan correos de la lista de acceso de 4adra (ADR-018); si no está, responde `422 EMAIL_NOT_ALLOWED` y no se crea nada. Si el correo ya tiene una invitación `PENDING` vigente en el grupo, se devuelve esa misma con `201`, sin crear otra ni cambiarle el rol; una pendiente vencida no cuenta y se crea una nueva. Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`; Member y ReadOnly reciben `403 PERMISSION_DENIED`, antes de consultar la lista de acceso. El cuerpo inválido responde `400 VALIDATION_ERROR` (`email`/`invalid_email`, `role`/`unsupported_role`, `body`/`must_be_object`). Por ahora no se envía aviso por correo, no se procesa `Idempotency-Key` y las invitaciones pendientes no se listan en el grupo.
+
 Owner y Administrator pueden invitar. Roles asignables al invitar: `ADMINISTRATOR`, `MEMBER` y `READ_ONLY`; `OWNER` solo puede asignarse mediante transferencia de propiedad autorizada.
 
 La invitación se asocia al correo normalizado, expira 7 días después de creada por defecto (`expiresAt = createdAt + 7 días`, ajustable vía `appSettings` según ADR-011) y es de un solo uso. Si el usuario ya es miembro activo, la solicitud debe ser idempotente o retornar `409 MEMBER_ALREADY_ACTIVE` sin crear una segunda membresía.
@@ -111,6 +113,7 @@ Estados de invitación: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`.
 | `INVITATION_NOT_FOUND` | Invitación inexistente o no visible |
 | `INVITATION_EXPIRED` | Invitación vencida |
 | `MEMBER_ALREADY_ACTIVE` | Usuario ya pertenece al grupo |
+| `EMAIL_NOT_ALLOWED` | El correo invitado no está en la lista de acceso (`422`, ADR-018) |
 | `LAST_OWNER` | Operación dejaría al grupo sin Owner |
 | `OUTSTANDING_BALANCE` | Salida no permitida por deuda pendiente |
 | `PERMISSION_DENIED` | Rol insuficiente |

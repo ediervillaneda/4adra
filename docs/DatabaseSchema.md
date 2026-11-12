@@ -48,13 +48,18 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 
 El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batch`.
 
+## Invitaciones (migración `0004_invitations`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `invitations` | FK `group_id` → `groups` e `invited_by` → `users`; `CHECK` de rol (`ADMINISTRATOR`/`MEMBER`/`READ_ONLY`) y de estado; índices `(group_id, status)` y `(email, status)` | Correo normalizado; `expires_at` = `created_at` + 7 días (ADR-011). Una invitación nunca se borra: conserva su estado final |
+
 ## Tablas previstas (se crean en la fase que las implemente)
 
 | Tabla | Claves e integridad | Notas |
 |---|---|---|
 | `calculation_profiles` | PK `(id, version)` | Versiones publicadas inmutables (trigger), ADR-005 |
 | `groups` (columnas pendientes) | FK `(calculation_profile_id, calculation_profile_version)` | Se agregan con los gastos (pieza 3) |
-| `invitations` | FK `group_id`; índices `(group_id, status)`, `(email, status)` | Una invitación aceptada o rechazada no se borra: conserva su estado final |
 | `categories` | — | Catálogo global gestionado por la plataforma |
 | `exchange_rates` | Índice `(from_currency, to_currency, captured_at)` | Una tasa usada no cambia (triggers) |
 | `expenses` | FK `group_id`, `paid_by`, `category_id`, `created_by` | Exactamente un pagador; tasa y versión de perfil congeladas al crear |
@@ -69,6 +74,8 @@ El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batc
 **Existentes:**
 - `session_userId_idx`, `account_userId_idx`, `verification_identifier_idx`
 - `idx_audit_logs_entity (entity, entity_id)`
+- `idx_group_members_user_status (user_id, status)` (`0003`)
+- `idx_invitations_group_status (group_id, status)`, `idx_invitations_email_status (email, status)` (`0004`)
 
 **Previstos:**
 
@@ -76,8 +83,6 @@ El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batc
 |---|---|
 | `expenses` | `(group_id, expense_date)`, `(group_id, category_id)`, `(group_id, paid_by)`, `(group_id, status)` |
 | `settlements` | `(group_id, status)`, `(from_user, status)`, `(to_user, status)` |
-| `group_members` | `(user_id, status)` (el `UNIQUE (group_id, user_id)` ya indexa la otra consulta) |
-| `invitations` | `(group_id, status)`, `(email, status)` |
 
 ## Atomicidad
 
