@@ -6,10 +6,31 @@ import { HomeComponent } from './home.component';
 import { AuthService, SessionState } from '../../core/auth/auth.service';
 import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
 import { CurrentProfileStore } from '../../core/profile/current-profile.store';
-import { UserProfile } from '../../shared/api';
+import { GroupsService } from '../../core/groups/groups.service';
+import { GroupSummary, UserProfile } from '../../shared/api';
 import { ANA_PROFILE } from '../../core/profile/profile.fixtures';
 
-function render(reviewed: boolean, profile: UserProfile | null = null): HTMLElement {
+interface RenderOptions {
+  reviewed?: boolean;
+  profile?: UserProfile | null;
+  groups?: GroupSummary[];
+}
+
+function groupOf(overrides: Partial<GroupSummary>): GroupSummary {
+  return {
+    id: 'grp_1',
+    name: 'Casa',
+    description: null,
+    defaultCurrency: 'COP',
+    status: 'ACTIVE',
+    role: 'OWNER',
+    createdAt: '2026-11-12T15:00:00.000Z',
+    updatedAt: '2026-11-12T15:00:00.000Z',
+    ...overrides,
+  };
+}
+
+async function render(options: RenderOptions = {}): Promise<HTMLElement> {
   const session = signal<SessionState>({
     status: 'authenticated',
     user: { name: 'Ana', email: 'ana@example.com', image: null },
@@ -19,14 +40,20 @@ function render(reviewed: boolean, profile: UserProfile | null = null): HTMLElem
     providers: [
       provideRouter([]),
       { provide: AuthService, useValue: { session } },
-      { provide: ProfileReviewFlag, useValue: { isReviewed: () => reviewed } },
+      { provide: ProfileReviewFlag, useValue: { isReviewed: () => options.reviewed ?? true } },
       {
         provide: CurrentProfileStore,
-        useValue: { profile: signal(profile), load: () => Promise.resolve() },
+        useValue: { profile: signal(options.profile ?? null), load: () => Promise.resolve() },
+      },
+      {
+        provide: GroupsService,
+        useValue: { listGroups: () => Promise.resolve(options.groups ?? []) },
       },
     ],
   });
   const fixture = TestBed.createComponent(HomeComponent);
+  fixture.detectChanges();
+  await fixture.whenStable();
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -34,25 +61,75 @@ function render(reviewed: boolean, profile: UserProfile | null = null): HTMLElem
 describe('HomeComponent', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
-  it('homeShouldGreetUserByNameAndShowEmptyGroupsState', () => {
-    const element = render(true);
-
-    expect(element.textContent).toContain('Hola, Ana');
-    expect(element.textContent).toContain('Tus grupos aparecerán aquí');
-    expect(element.querySelector<HTMLButtonElement>('button[disabled]')?.textContent).toContain(
-      'Crear grupo (pronto)',
-    );
+  it('homeShouldGreetUserByName', async () => {
+    expect((await render()).textContent).toContain('Hola, Ana');
   });
 
-  it('homeShouldGreetWithTheAppProfileNameOnceLoaded', () => {
-    expect(render(true, { ...ANA_PROFILE, displayName: 'Anita' }).textContent).toContain(
-      'Hola, Anita',
-    );
+  it('homeShouldGreetWithTheAppProfileNameOnceLoaded', async () => {
+    const element = await render({ profile: { ...ANA_PROFILE, displayName: 'Anita' } });
+
+    expect(element.textContent).toContain('Hola, Anita');
   });
 
-  it('homeShouldShowReviewProfileHintUntilProfileSaved', () => {
-    expect(render(false).textContent).toContain('Revisa tu perfil');
+  it('homeShouldShowReviewProfileHintUntilProfileSaved', async () => {
+    expect((await render({ reviewed: false })).textContent).toContain('Revisa tu perfil');
     TestBed.resetTestingModule();
-    expect(render(true).textContent).not.toContain('Revisa tu perfil');
+    expect((await render({ reviewed: true })).textContent).not.toContain('Revisa tu perfil');
+  });
+
+  it('homeShouldListGroupsWithNameRoleAndCurrency', async () => {
+    const element = await render({
+      groups: [
+        groupOf({ id: 'grp_casa', name: 'Casa', role: 'OWNER', defaultCurrency: 'COP' }),
+        groupOf({
+          id: 'grp_viaje',
+          name: 'Viaje Guatemala',
+          role: 'MEMBER',
+          defaultCurrency: 'USD',
+        }),
+      ],
+    });
+    const items = Array.from(element.querySelectorAll('[data-testid="group-item"]')).map(
+      (item) => item.textContent,
+    );
+
+    expect(items).toHaveLength(2);
+    expect(items[0]).toContain('Casa');
+    expect(items[0]).toContain('Propietario');
+    expect(items[0]).toContain('COP');
+    expect(items[1]).toContain('Viaje Guatemala');
+    expect(items[1]).toContain('Miembro');
+    expect(items[1]).toContain('USD');
+    expect(element.textContent).not.toContain('Tus grupos aparecerán aquí');
+  });
+
+  it('homeShouldLinkEachGroupToItsDetail', async () => {
+    const element = await render({
+      groups: [
+        groupOf({ id: 'grp_casa', name: 'Casa' }),
+        groupOf({ id: 'grp_viaje', name: 'Viaje' }),
+      ],
+    });
+
+    const links = Array.from(
+      element.querySelectorAll<HTMLAnchorElement>('a[data-testid="group-item"]'),
+    ).map((link) => [
+      link.querySelector('[matListItemTitle]')?.textContent?.trim(),
+      link.getAttribute('href'),
+    ]);
+
+    expect(links).toEqual([
+      ['Casa', '/grupos/grp_casa'],
+      ['Viaje', '/grupos/grp_viaje'],
+    ]);
+  });
+
+  it('homeShouldShowEmptyStateWhenUserHasNoGroups', async () => {
+    const element = await render({ groups: [] });
+    const createLink = element.querySelector<HTMLAnchorElement>('a[href="/grupos/nuevo"]');
+
+    expect(element.textContent).toContain('Tus grupos aparecerán aquí');
+    expect(element.querySelector('[data-testid="group-item"]')).toBeNull();
+    expect(createLink?.textContent).toContain('Crear grupo');
   });
 });

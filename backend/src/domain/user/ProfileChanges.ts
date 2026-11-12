@@ -1,6 +1,6 @@
 import { ValidationException, ValidationIssue } from '../errors/ValidationException';
+import { isSupportedCurrency } from '../money/CurrencyCode';
 
-const SUPPORTED_CURRENCIES = ['COP', 'USD', 'EUR', 'MXN', 'GTQ'] as const;
 const SUPPORTED_LANGUAGES = ['es', 'en'] as const;
 
 const ALLOWED_FIELDS = new Set([
@@ -71,7 +71,7 @@ export function validateProfileChanges(input: unknown): ProfileChanges {
   }
   if ('preferredCurrency' in body) {
     const value = body.preferredCurrency;
-    if (typeof value === 'string' && (SUPPORTED_CURRENCIES as readonly string[]).includes(value)) {
+    if (isSupportedCurrency(value)) {
       changes.preferredCurrency = value;
     } else {
       issues.push({ field: 'preferredCurrency', reason: 'unsupported_currency' });

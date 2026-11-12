@@ -6,16 +6,30 @@ import { auditTrailMiddleware } from './middleware/auditTrail';
 import { handleError } from './middleware/errorHandler';
 import { errorEnvelope } from './responseEnvelope';
 import { createGetMeHandler, createPatchMeHandler } from './users/meController';
+import {
+  createGetGroupHandler,
+  createGetGroupMembersHandler,
+  createGetGroupsHandler,
+  createPostGroupsHandler,
+} from './groups/groupsController';
+import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
+import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
 import { AuthenticationProvider } from '../../domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../domain/audit/AuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../../application/user/UpdateCurrentUserProfileUseCase';
+import { CreateGroupUseCase } from '../../application/group/CreateGroupUseCase';
+import { ListMyGroupsUseCase } from '../../application/group/ListMyGroupsUseCase';
 
 export interface AppDependencies {
   authenticationProvider: AuthenticationProvider;
   auditLogWriter: AuditLogWriter;
   getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase;
   updateCurrentUserProfileUseCase: UpdateCurrentUserProfileUseCase;
+  createGroupUseCase: CreateGroupUseCase;
+  listMyGroupsUseCase: ListMyGroupsUseCase;
+  getGroupUseCase: GetGroupUseCase;
+  listGroupMembersUseCase: ListGroupMembersUseCase;
   /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
   authHandler: (request: Request) => Promise<Response>;
   generateRequestId: () => string;
@@ -34,6 +48,13 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.use('/v1/*', authenticateMiddleware(dependencies.authenticationProvider));
   app.get('/v1/me', createGetMeHandler(dependencies.getCurrentUserProfileUseCase));
   app.patch('/v1/me', createPatchMeHandler(dependencies.updateCurrentUserProfileUseCase));
+  app.post('/v1/groups', createPostGroupsHandler(dependencies.createGroupUseCase));
+  app.get('/v1/groups', createGetGroupsHandler(dependencies.listMyGroupsUseCase));
+  app.get('/v1/groups/:groupId', createGetGroupHandler(dependencies.getGroupUseCase));
+  app.get(
+    '/v1/groups/:groupId/members',
+    createGetGroupMembersHandler(dependencies.listGroupMembersUseCase),
+  );
 
   app.notFound((c) =>
     c.json(

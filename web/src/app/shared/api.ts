@@ -24,6 +24,37 @@ export interface ProfileChanges {
   timeZone: string;
 }
 
+export type MemberRole = 'OWNER' | 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
+
+/** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
+export interface GroupMember {
+  userId: string;
+  displayName: string;
+  photoUrl: string | null;
+  role: MemberRole;
+  status: 'ACTIVE';
+  joinedAt: string;
+}
+
+/** Grupo visto por uno de sus miembros (components/schemas/Group en openapi.yaml). */
+export interface GroupSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  defaultCurrency: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  role: MemberRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Cuerpo de POST /api/v1/groups. */
+export interface NewGroupRequest {
+  name: string;
+  description: string | null;
+  defaultCurrency: string;
+}
+
 export interface ApiSuccessEnvelope<T> {
   data: T;
   meta: { requestId: string };

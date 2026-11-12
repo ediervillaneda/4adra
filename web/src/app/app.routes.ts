@@ -20,6 +20,22 @@ export const routes: Routes = [
       import('./features/profile/profile.component').then((m) => m.ProfileComponent),
   },
   {
+    path: 'grupos/nuevo',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/create-group/create-group.component').then(
+        (m) => m.CreateGroupComponent,
+      ),
+  },
+  {
+    path: 'grupos/:groupId',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/group-detail/group-detail.component').then(
+        (m) => m.GroupDetailComponent,
+      ),
+  },
+  {
     path: 'privacidad',
     loadComponent: () =>
       import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),

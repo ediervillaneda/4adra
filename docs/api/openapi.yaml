@@ -137,6 +137,7 @@ components:
 
     Group:
       type: object
+      required: [id, name, description, defaultCurrency, role, status, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -478,8 +479,12 @@ paths:
               properties:
                 name:
                   type: string
+                  minLength: 1
+                  maxLength: 120
                 description:
                   type: string
+                  nullable: true
+                  maxLength: 500
                 defaultCurrency:
                   $ref: '#/components/schemas/CurrencyCode'
                 calculationProfileId:

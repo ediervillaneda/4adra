@@ -39,13 +39,21 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 
 `audit_logs` tiene los triggers `audit_logs_no_update` y `audit_logs_no_delete` (`RAISE(ABORT, 'audit_logs es inmutable')`). Así la base misma impide alterar la auditoría (ADR-006).
 
+## Grupos y membresías (migración `0003_groups`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `groups` | FK `created_by` → `users`; `CHECK` sobre la longitud del nombre (1 a 120), la descripción (hasta 500) y la moneda (COP, USD, EUR, MXN o GTQ) | Estado `ACTIVE`/`ARCHIVED`; `version` para `If-Match`. El perfil de cálculo se agrega con los gastos |
+| `group_members` | `UNIQUE (group_id, user_id)`; FK a `groups` y `users`; índice `(user_id, status)` | Rol `OWNER`/`ADMINISTRATOR`/`MEMBER`/`READ_ONLY`; estado `ACTIVE`/`REMOVED`. Reemplaza el ID determinista de ADR-010 |
+
+El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batch`.
+
 ## Tablas previstas (se crean en la fase que las implemente)
 
 | Tabla | Claves e integridad | Notas |
 |---|---|---|
 | `calculation_profiles` | PK `(id, version)` | Versiones publicadas inmutables (trigger), ADR-005 |
-| `groups` | FK `owner_id` → `users`; FK `(calculation_profile_id, calculation_profile_version)` | Moneda por defecto; estado soft delete |
-| `group_members` | `UNIQUE (group_id, user_id)` | Reemplaza el ID determinista de ADR-010; rol `OWNER`/`ADMINISTRATOR`/`MEMBER`/`READ_ONLY` |
+| `groups` (columnas pendientes) | FK `(calculation_profile_id, calculation_profile_version)` | Se agregan con los gastos (pieza 3) |
 | `invitations` | FK `group_id`; índices `(group_id, status)`, `(email, status)` | Una invitación aceptada o rechazada no se borra: conserva su estado final |
 | `categories` | — | Catálogo global gestionado por la plataforma |
 | `exchange_rates` | Índice `(from_currency, to_currency, captured_at)` | Una tasa usada no cambia (triggers) |
