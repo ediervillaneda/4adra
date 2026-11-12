@@ -67,9 +67,25 @@ describe('AuthService', () => {
     });
   });
 
-  it('shouldBeAnonymousWhenGetSessionFails', async () => {
+  it('shouldBeUnavailableWhenGetSessionFailsWith5xx', async () => {
     const pending = service.refreshSession();
-    http.expectOne('/api/auth/get-session').flush(null, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/auth/get-session').flush(null, { status: 503, statusText: 'Error' });
+    await pending;
+
+    expect(service.session()).toEqual({ status: 'unavailable' });
+  });
+
+  it('shouldBeUnavailableWhenOffline', async () => {
+    const pending = service.refreshSession();
+    http.expectOne('/api/auth/get-session').error(new ProgressEvent('error'), { status: 0 });
+    await pending;
+
+    expect(service.session()).toEqual({ status: 'unavailable' });
+  });
+
+  it('shouldBeAnonymousWhenGetSessionFailsWith4xx', async () => {
+    const pending = service.refreshSession();
+    http.expectOne('/api/auth/get-session').flush(null, { status: 403, statusText: 'x' });
     await pending;
 
     expect(service.session()).toEqual({ status: 'anonymous' });

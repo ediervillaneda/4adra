@@ -45,6 +45,17 @@ describe('session guards', () => {
     expect(urlOf(await runGuard(guestGuard, ANA))).toBe('/');
   });
 
+  it('sessionGuardShouldLetUserInWhenSessionIsUnavailable', async () => {
+    const result = TestBed.runInInjectionContext(() =>
+      sessionGuard(route, state),
+    ) as Promise<unknown>;
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/auth/get-session')
+      .error(new ProgressEvent('error'), { status: 0 });
+
+    expect(await result).toBe(true);
+  });
+
   it('guestGuardShouldAllowAnonymous', async () => {
     expect(await runGuard(guestGuard, null)).toBe(true);
   });

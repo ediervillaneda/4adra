@@ -28,6 +28,8 @@ export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
           void router.navigateByUrl('/entrar');
         } else if (error.status === 403 && body?.error?.code === 'USER_DISABLED') {
           notifier.show(TEXTS.errors.userDisabled);
+        } else if (error.status === 0 && !navigator.onLine) {
+          // Sin red: el aviso "Sin conexión" del shell ya lo explica.
         } else if (error.status === 0 || error.status >= 500) {
           const requestId = body?.meta?.requestId;
           notifier.show(requestId ? TEXTS.errors.withReference(requestId) : TEXTS.errors.generic);

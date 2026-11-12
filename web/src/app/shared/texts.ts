@@ -90,6 +90,7 @@ export const PRIVACY = {
       paragraphs: [
         'No pedimos ni guardamos tu número de teléfono, tu ubicación, tus contactos ni datos de pago.',
         'No usamos publicidad ni herramientas de analítica de terceros.',
+        'Las fuentes tipográficas se cargan desde Google Fonts, por lo que tu navegador se conecta a los servidores de Google para descargarlas.',
       ],
     },
     {

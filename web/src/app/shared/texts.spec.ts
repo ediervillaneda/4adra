@@ -15,5 +15,6 @@ describe('TEXTS', () => {
 
     expect(text).toContain('número de teléfono');
     expect(PRIVACY.contactEmail).toBe('privacidad@edier.me');
+    expect(text).toContain('Google Fonts');
   });
 });

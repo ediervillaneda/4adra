@@ -4,9 +4,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HomeComponent } from './home.component';
 import { AuthService, SessionState } from '../../core/auth/auth.service';
-import { ProfileReviewFlag } from '../../core/profile-review-flag';
+import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
+import { CurrentProfileStore } from '../../core/profile/current-profile.store';
+import { UserProfile } from '../../shared/api';
+import { ANA_PROFILE } from '../../core/profile/profile.fixtures';
 
-function render(reviewed: boolean): HTMLElement {
+function render(reviewed: boolean, profile: UserProfile | null = null): HTMLElement {
   const session = signal<SessionState>({
     status: 'authenticated',
     user: { name: 'Ana', email: 'ana@example.com', image: null },
@@ -17,6 +20,10 @@ function render(reviewed: boolean): HTMLElement {
       provideRouter([]),
       { provide: AuthService, useValue: { session } },
       { provide: ProfileReviewFlag, useValue: { isReviewed: () => reviewed } },
+      {
+        provide: CurrentProfileStore,
+        useValue: { profile: signal(profile), load: () => Promise.resolve() },
+      },
     ],
   });
   const fixture = TestBed.createComponent(HomeComponent);
@@ -34,6 +41,12 @@ describe('HomeComponent', () => {
     expect(element.textContent).toContain('Tus grupos aparecerán aquí');
     expect(element.querySelector<HTMLButtonElement>('button[disabled]')?.textContent).toContain(
       'Crear grupo (pronto)',
+    );
+  });
+
+  it('homeShouldGreetWithTheAppProfileNameOnceLoaded', () => {
+    expect(render(true, { ...ANA_PROFILE, displayName: 'Anita' }).textContent).toContain(
+      'Hola, Anita',
     );
   });
 

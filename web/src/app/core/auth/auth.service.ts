@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -11,7 +11,11 @@ export interface SessionUser {
 }
 
 export type SessionState =
-  { status: 'loading' } | { status: 'anonymous' } | { status: 'authenticated'; user: SessionUser };
+  | { status: 'loading' }
+  | { status: 'anonymous' }
+  /** No se pudo consultar la sesión (sin red o servidor caído): no se asume que no hay sesión. */
+  | { status: 'unavailable' }
+  | { status: 'authenticated'; user: SessionUser };
 
 interface BetterAuthSession {
   user?: { name?: string | null; email: string; image?: string | null };
@@ -44,8 +48,10 @@ export class AuthService {
             }
           : { status: 'anonymous' },
       );
-    } catch {
-      this.markAnonymous();
+    } catch (error) {
+      const unreachable =
+        error instanceof HttpErrorResponse && (error.status === 0 || error.status >= 500);
+      this.state.set(unreachable ? { status: 'unavailable' } : { status: 'anonymous' });
     }
   }
 

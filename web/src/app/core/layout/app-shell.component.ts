@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -9,6 +9,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { AuthService } from '../auth/auth.service';
 import { ApiErrorNotifier } from '../http/api-error-notifier';
 import { OnlineStatus } from '../network/online-status';
+import { CurrentProfileStore } from '../profile/current-profile.store';
 import { BrandLogoComponent } from '../../shared/brand-logo.component';
 import { TEXTS } from '../../shared/texts';
 
@@ -32,7 +33,9 @@ const WIDE_LAYOUT = '(min-width: 840px)';
 })
 export class AppShellComponent {
   private readonly router = inject(Router);
-  private readonly session = inject(AuthService).session;
+  private readonly auth = inject(AuthService);
+  private readonly session = this.auth.session;
+  private readonly currentProfile = inject(CurrentProfileStore);
   protected readonly notifier = inject(ApiErrorNotifier);
   protected readonly onlineStatus = inject(OnlineStatus);
   protected readonly texts = TEXTS;
@@ -56,6 +59,37 @@ export class AppShellComponent {
     const state = this.session();
     return state.status === 'authenticated' ? state.user : null;
   });
+
+  protected readonly isCheckingSession = computed(() => this.session().status === 'loading');
+
+  /** Foto y nombre del perfil de la app; mientras carga, los de Google. */
+  protected readonly avatar = computed(() => {
+    const user = this.user();
+    const profile = this.currentProfile.profile();
+    if (user === null) {
+      return null;
+    }
+    return {
+      name: profile?.displayName ?? user.name,
+      image: profile ? profile.photoUrl : user.image,
+    };
+  });
+
+  constructor() {
+    effect(() => {
+      // Al volver la conexión, reintenta consultar la sesión que no se pudo verificar.
+      if (this.onlineStatus.isOnline() && this.session().status === 'unavailable') {
+        void this.auth.refreshSession();
+      }
+    });
+    effect(() => {
+      if (this.session().status === 'authenticated') {
+        void this.currentProfile.load();
+      } else if (this.session().status === 'anonymous') {
+        this.currentProfile.clear();
+      }
+    });
+  }
 
   /** La navegación solo tiene sentido con sesión y fuera del login. */
   protected readonly showNavigation = computed(

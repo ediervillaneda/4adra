@@ -107,4 +107,21 @@ describe('Registro solo por lista de acceso (integración)', () => {
     expect(accepted.status).toBe(200);
     expect(body.url?.startsWith('https://accounts.google.com/')).toBe(true);
   });
+
+  it('shouldRedirectOAuthStateErrorsToEntrarInsteadOfBetterAuthErrorPage', async () => {
+    const auth = createAuth({
+      database: env.DB,
+      secret: 'test-secret-at-least-32-characters-long',
+      baseURL: 'http://localhost:8787',
+      google: { clientId: 'test-client', clientSecret: 'test-secret' },
+    });
+
+    const response = await auth.handler(
+      new Request('http://localhost:8787/api/auth/callback/google?code=x&state=inexistente'),
+    );
+    const location = response.headers.get('location') ?? '';
+
+    expect(response.status).toBe(302);
+    expect(location.startsWith('/entrar?error=') || location.includes('/entrar?error=')).toBe(true);
+  });
 });

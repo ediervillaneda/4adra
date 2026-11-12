@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 interface NgswConfig {
   navigationUrls?: string[];
+  navigationRequestStrategy?: string;
   dataGroups?: { urls: string[] }[];
   assetGroups: { resources: { files?: string[]; urls?: string[] } }[];
 }
@@ -28,6 +29,7 @@ describe('configuración PWA', () => {
     expect(dataUrls.some((url) => url.startsWith('/api'))).toBe(false);
     expect(assetUrls.some((url) => url.startsWith('/api'))).toBe(false);
     expect(config.navigationUrls).toContain('!/api/**');
+    expect(config.navigationRequestStrategy).toBe('freshness');
   });
 
   it('manifestShouldDeclareStandaloneSpanishApp', () => {

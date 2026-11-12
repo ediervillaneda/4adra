@@ -2,10 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ProfileComponent } from './profile.component';
-import { ProfileService, ProfileValidationError } from './profile.service';
+import { ProfileService, ProfileValidationError } from '../../core/profile/profile.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ProfileReviewFlag } from '../../core/profile-review-flag';
-import { ANA_PROFILE } from './profile.fixtures';
+import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
+import { CurrentProfileStore } from '../../core/profile/current-profile.store';
+import { ANA_PROFILE } from '../../core/profile/profile.fixtures';
 
 interface Fakes {
   getProfile: ReturnType<typeof vi.fn>;
@@ -13,6 +14,7 @@ interface Fakes {
   signOut: ReturnType<typeof vi.fn>;
   markReviewed: ReturnType<typeof vi.fn>;
   openSnackBar: ReturnType<typeof vi.fn>;
+  setProfile: ReturnType<typeof vi.fn>;
 }
 
 async function render(fakes: Fakes): Promise<ComponentFixture<ProfileComponent>> {
@@ -26,6 +28,7 @@ async function render(fakes: Fakes): Promise<ComponentFixture<ProfileComponent>>
       { provide: AuthService, useValue: { signOut: fakes.signOut } },
       { provide: ProfileReviewFlag, useValue: { markReviewed: fakes.markReviewed } },
       { provide: MatSnackBar, useValue: { open: fakes.openSnackBar } },
+      { provide: CurrentProfileStore, useValue: { set: fakes.setProfile } },
     ],
   });
   const fixture = TestBed.createComponent(ProfileComponent);
@@ -42,6 +45,7 @@ function newFakes(): Fakes {
     signOut: vi.fn().mockResolvedValue(undefined),
     markReviewed: vi.fn(),
     openSnackBar: vi.fn(),
+    setProfile: vi.fn(),
   };
 }
 
@@ -92,6 +96,7 @@ describe('ProfileComponent', () => {
       duration: 3000,
     });
     expect(fakes.markReviewed).toHaveBeenCalled();
+    expect(fakes.setProfile).toHaveBeenCalledWith({ ...ANA_PROFILE, displayName: 'Ana P.' });
   });
 
   it('componentShouldShowFieldErrorNextToFieldAndKeepInput', async () => {

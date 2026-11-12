@@ -21,8 +21,8 @@
       <mat-toolbar class="top-bar">
         <app-brand-logo [size]="32" />
         <span class="title">{{ texts.appName }}</span>
-        @if (user()?.image; as image) {
-          <img class="avatar" [src]="image" [alt]="texts.profile.photoAlt(user()!.name)" />
+        @if (avatar()?.image; as image) {
+          <img class="avatar" [src]="image" [alt]="texts.profile.photoAlt(avatar()!.name)" />
         }
       </mat-toolbar>
     }
@@ -43,6 +43,12 @@
     }
 
     <main class="content">
+      @if (isCheckingSession()) {
+        <div class="splash" role="status" data-testid="splash">
+          <app-brand-logo [size]="72" />
+          <span>{{ texts.loading }}</span>
+        </div>
+      }
       <router-outlet />
     </main>
 

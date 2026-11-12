@@ -7,9 +7,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ProfileService, ProfileValidationError } from './profile.service';
+import { ProfileService, ProfileValidationError } from '../../core/profile/profile.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ProfileReviewFlag } from '../../core/profile-review-flag';
+import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
+import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import {
   ProfileChanges,
   SUPPORTED_CURRENCIES,
@@ -43,6 +44,7 @@ export class ProfileComponent {
   private readonly auth = inject(AuthService);
   private readonly reviewFlag = inject(ProfileReviewFlag);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly currentProfile = inject(CurrentProfileStore);
 
   protected readonly texts = TEXTS;
   protected readonly currencies = SUPPORTED_CURRENCIES;
@@ -105,6 +107,7 @@ export class ProfileComponent {
     try {
       const updated = await this.profiles.updateProfile(changes);
       this.applyProfile(updated);
+      this.currentProfile.set(updated);
       this.reviewFlag.markReviewed();
       this.snackBar.open(TEXTS.profile.saved, undefined, { duration: 3000 });
     } catch (error) {

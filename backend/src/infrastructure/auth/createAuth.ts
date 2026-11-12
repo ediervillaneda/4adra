@@ -39,6 +39,9 @@ export function createAuth(config: AuthConfig) {
     secret: config.secret,
     baseURL: config.baseURL,
     trustedOrigins: config.trustedOrigins ?? [],
+    // Errores de OAuth antes de leer el state (state vencido, callback repetido) también van a la
+    // pantalla de login de la PWA en vez de la página de error genérica de Better Auth.
+    onAPIError: { errorURL: '/entrar' },
     emailAndPassword: { enabled: config.emailAndPasswordEnabled ?? false },
     // Los tokens de Google se cifran en D1 (XChaCha20-Poly1305 con BETTER_AUTH_SECRET).
     account: { encryptOAuthTokens: true },

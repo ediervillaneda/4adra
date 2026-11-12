@@ -3,7 +3,8 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { AuthService } from '../../core/auth/auth.service';
-import { ProfileReviewFlag } from '../../core/profile-review-flag';
+import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
+import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import { TEXTS } from '../../shared/texts';
 
 @Component({
@@ -49,10 +50,18 @@ import { TEXTS } from '../../shared/texts';
 })
 export class HomeComponent {
   private readonly session = inject(AuthService).session;
+  private readonly currentProfile = inject(CurrentProfileStore);
   protected readonly texts = TEXTS;
   protected readonly showReviewHint = !inject(ProfileReviewFlag).isReviewed();
   protected readonly greeting = computed(() => {
     const state = this.session();
-    return TEXTS.home.greeting(state.status === 'authenticated' ? state.user.name : '');
+    const name =
+      this.currentProfile.profile()?.displayName ??
+      (state.status === 'authenticated' ? state.user.name : '');
+    return TEXTS.home.greeting(name);
   });
+
+  constructor() {
+    void this.currentProfile.load();
+  }
 }

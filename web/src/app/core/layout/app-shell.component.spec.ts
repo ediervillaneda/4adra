@@ -8,17 +8,34 @@ import { AppShellComponent } from './app-shell.component';
 import { AuthService, SessionState } from '../auth/auth.service';
 import { ApiErrorNotifier } from '../http/api-error-notifier';
 import { OnlineStatus } from '../network/online-status';
+import { CurrentProfileStore } from '../profile/current-profile.store';
+import { ANA_PROFILE } from '../profile/profile.fixtures';
+import { vi } from 'vitest';
 
-async function render(wide: boolean, url = '/'): Promise<HTMLElement> {
-  const session = signal<SessionState>({
+const refreshSession = vi.fn().mockResolvedValue(undefined);
+
+async function render(
+  wide: boolean,
+  url = '/',
+  status: SessionState = {
     status: 'authenticated',
     user: { name: 'Ana', email: 'ana@example.com', image: null },
-  });
+  },
+): Promise<HTMLElement> {
+  const session = signal<SessionState>(status);
   TestBed.configureTestingModule({
     imports: [AppShellComponent],
     providers: [
       provideRouter([{ path: '**', children: [] }]),
-      { provide: AuthService, useValue: { session } },
+      { provide: AuthService, useValue: { session, refreshSession } },
+      {
+        provide: CurrentProfileStore,
+        useValue: {
+          profile: signal({ ...ANA_PROFILE, photoUrl: 'https://example.com/ana.png' }),
+          load: () => Promise.resolve(),
+          clear: () => undefined,
+        },
+      },
       {
         provide: BreakpointObserver,
         useValue: {
@@ -43,6 +60,30 @@ describe('AppShellComponent', () => {
 
     expect(element.querySelector('[data-testid="bottom-nav"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="nav-rail"]')).toBeNull();
+  });
+
+  it('shellShouldShowSplashWhileSessionIsLoading', async () => {
+    const element = await render(false, '/', { status: 'loading' });
+
+    expect(element.querySelector('[data-testid="splash"]')?.textContent).toContain('Cargando');
+  });
+
+  it('shellShouldUseAppProfilePhotoForAvatar', async () => {
+    const element = await render(false);
+
+    expect(element.querySelector<HTMLImageElement>('img.avatar')?.src).toBe(
+      'https://example.com/ana.png',
+    );
+  });
+
+  it('shellShouldRefreshSessionWhenConnectionReturnsWhileUnavailable', async () => {
+    refreshSession.mockClear();
+    await render(false, '/', { status: 'unavailable' });
+
+    window.dispatchEvent(new Event('online'));
+    TestBed.tick();
+
+    expect(refreshSession).toHaveBeenCalled();
   });
 
   it('shellShouldShowRailFrom840', async () => {

@@ -43,5 +43,6 @@
     "!/**/*.*",
     "!/**/*__*",
     "!/**/*__*/**"
-  ]
+  ],
+  "navigationRequestStrategy": "freshness"
 }

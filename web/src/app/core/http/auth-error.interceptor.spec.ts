@@ -62,6 +62,16 @@ describe('authErrorInterceptor', () => {
     expect(TestBed.inject(ApiErrorNotifier).message()).toBe('Algo salió mal.');
   });
 
+  it('interceptorShouldNotDuplicateOfflineBannerWhenBrowserIsOffline', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const pending = firstValueFrom(http.get('/api/auth/get-session')).catch(() => undefined);
+    controller.expectOne('/api/auth/get-session').error(new ProgressEvent('error'), { status: 0 });
+    await pending;
+    onLine.mockRestore();
+
+    expect(TestBed.inject(ApiErrorNotifier).message()).toBeNull();
+  });
+
   it('interceptorShouldLeaveValidationErrorsToTheCaller', async () => {
     await failWith('/api/v1/me', 400, { error: { code: 'VALIDATION_ERROR', message: 'x' } });
 
