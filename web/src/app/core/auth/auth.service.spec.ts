@@ -91,6 +91,15 @@ describe('AuthService', () => {
     expect(service.session()).toEqual({ status: 'anonymous' });
   });
 
+  it('shouldShareInFlightSessionRequest', async () => {
+    const first = service.refreshSession();
+    const second = service.refreshSession();
+    http.expectOne('/api/auth/get-session').flush(null);
+    await Promise.all([first, second]);
+
+    expect(service.session()).toEqual({ status: 'anonymous' });
+  });
+
   it('shouldPostSignOutAndNavigateToEntrar', async () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const pending = service.signOut();

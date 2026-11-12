@@ -68,6 +68,13 @@ describe('AppShellComponent', () => {
     expect(element.querySelector('[data-testid="splash"]')?.textContent).toContain('Cargando');
   });
 
+  it('shellShouldResolveSessionOnStartEvenOnRoutesWithoutGuard', async () => {
+    refreshSession.mockClear();
+    await render(false, '/privacidad', { status: 'loading' });
+
+    expect(refreshSession).toHaveBeenCalled();
+  });
+
   it('shellShouldUseAppProfilePhotoForAvatar', async () => {
     const element = await render(false);
 

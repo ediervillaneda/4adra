@@ -76,6 +76,10 @@ export class AppShellComponent {
   });
 
   constructor() {
+    // Las rutas públicas no tienen guard: el shell resuelve la sesión al arrancar.
+    if (this.session().status === 'loading') {
+      void this.auth.refreshSession();
+    }
     effect(() => {
       // Al volver la conexión, reintenta consultar la sesión que no se pudo verificar.
       if (this.onlineStatus.isOnline() && this.session().status === 'unavailable') {

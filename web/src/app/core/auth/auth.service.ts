@@ -31,7 +31,17 @@ export class AuthService {
 
   readonly session = this.state.asReadonly();
 
-  async refreshSession(): Promise<void> {
+  private pendingRefresh: Promise<void> | null = null;
+
+  /** Consulta la sesión; si ya hay una consulta en curso, la comparte. */
+  refreshSession(): Promise<void> {
+    this.pendingRefresh ??= this.fetchSession().finally(() => {
+      this.pendingRefresh = null;
+    });
+    return this.pendingRefresh;
+  }
+
+  private async fetchSession(): Promise<void> {
     try {
       const result = await firstValueFrom(
         this.http.get<BetterAuthSession | null>('/api/auth/get-session'),
