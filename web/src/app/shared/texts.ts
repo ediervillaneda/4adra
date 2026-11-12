@@ -24,6 +24,28 @@ export const TEXTS = {
     reviewProfileHint: 'Revisa tu perfil: confirma tu moneda y zona horaria.',
     reviewProfileAction: 'Ir a mi perfil',
   },
+  groups: {
+    createTitle: 'Nuevo grupo',
+    name: 'Nombre del grupo',
+    description: 'Descripción (opcional)',
+    defaultCurrency: 'Moneda base',
+    create: 'Crear grupo',
+    cancel: 'Cancelar',
+    roles: {
+      OWNER: 'Propietario',
+      ADMINISTRATOR: 'Administrador',
+      MEMBER: 'Miembro',
+      READ_ONLY: 'Solo lectura',
+    } as Record<string, string>,
+    errors: {
+      required: 'Este campo es obligatorio.',
+      length_1_to_120: 'Debe tener entre 1 y 120 caracteres.',
+      max_length_500: 'Máximo 500 caracteres.',
+      must_be_string: 'Valor inválido.',
+      unsupported_currency: 'Moneda no soportada.',
+      unknown: 'Valor inválido.',
+    } as Record<string, string>,
+  },
   profile: {
     title: 'Mi perfil',
     photoAlt: (name: string): string => `Foto de ${name}`,
