@@ -1,149 +1,63 @@
 name: Release
 
-# Git Flow (ADR-013, docs/Decisions.md), ciclo de vida completo de release/hotfix:
-#
-# 1. Push a release/**|hotfix/** -> corre CI completo (backend/web) y,
-#    si pasa y hay commits nuevos vs main, publica automáticamente a main
-#    (vía Pull Request real, nunca push directo) y sincroniza develop. Taguea
-#    v<version> y crea el GitHub Release.
-# 2. PR mergeado hacia release/** (fixes de estabilización) -> taguea
-#    v<version>-rc y crea un GitHub Release (prerelease). No repite tests,
-#    ya corrieron como parte del PR.
-#
-# Un solo entorno (Cloudflare, https://4adra.edier.me): el deploy real solo ocurre con
-# push a main (deploy-cloudflare.yml), nunca desde release/*, hotfix/* ni develop.
+# Publicar una versión (docs/Workflows.md):
+#   1. PR release/<versión> → main con CHANGELOG.md y package.json en <versión>.
+#      El merge despliega a producción (deploy-cloudflare.yml).
+#   2. git tag -a v<versión> origin/main -m "Release <versión>" && git push origin v<versión>
+# Este workflow valida el tag y crea el GitHub Release con la sección de CHANGELOG.md.
 
 on:
   push:
-    branches:
-      - 'release/**'
-      - 'hotfix/**'
-  pull_request:
-    types: [closed]
-    branches:
-      - 'release/**'
+    tags: ['v*.*.*']
 
-concurrency:
-  group: release-${{ github.event.pull_request.base.ref || github.ref_name }}
-  cancel-in-progress: false
+permissions:
+  contents: write
 
 jobs:
-  test-backend:
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/backend.yml
-
-  test-web:
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/web.yml
-
-  publish:
-    name: Publicar a main y develop
-    if: github.event_name == 'push'
-    needs: [test-backend, test-web]
+  release:
+    name: GitHub Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Derivar nombre de versión desde la rama
+      - name: Validar el tag
         id: version
         run: |
-          ref_name="${GITHUB_REF#refs/heads/}"
-          version="${ref_name#release/}"
-          version="${version#hotfix/}"
-          echo "ref_name=$ref_name" >> "$GITHUB_OUTPUT"
+          version="${GITHUB_REF_NAME#v}"
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::El tag $GITHUB_REF_NAME no apunta a un commit de main."
+            exit 1
+          fi
+          for pkg in backend/package.json web/package.json; do
+            found=$(node -p "require('./$pkg').version")
+            if [ "$found" != "$version" ]; then
+              echo "::error::$pkg tiene la versión $found y el tag es $version."
+              exit 1
+            fi
+          done
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Verificar que hay commits nuevos vs main
-        id: guard
+      - name: Extraer las notas de CHANGELOG.md
         run: |
-          git fetch origin main
-          ahead=$(git rev-list --count origin/main..HEAD)
-          if [ "$ahead" -eq 0 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::${{ steps.version.outputs.ref_name }} no tiene commits nuevos respecto a main todavía (recién cortada). Se omite la publicación hasta que reciba el merge de develop."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          awk -v v="${{ steps.version.outputs.version }}" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found && /^\[[^]]+\]: / { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if [ -z "$(tr -d '[:space:]' < notes.md)" ]; then
+            echo "::error::CHANGELOG.md no tiene la sección [${{ steps.version.outputs.version }}]."
+            exit 1
           fi
 
-      - name: Abrir y mergear PR hacia main
-        if: steps.guard.outputs.ready == 'true'
+      - name: Crear el GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          existing=$(gh pr list --base main --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
-          if [ -z "$existing" ]; then
-            gh pr create --base main --head "${{ steps.version.outputs.ref_name }}" \
-              --title "release: ${{ steps.version.outputs.version }}" \
-              --body "Publicación automática de \`${{ steps.version.outputs.ref_name }}\` a \`main\` (ADR-013)."
-          fi
-          gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
-
-      - name: Taguear main
-        if: steps.guard.outputs.ready == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git tag -a "v${{ steps.version.outputs.version }}" origin/main \
-            -m "Release ${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
-
-      - name: Abrir y mergear PR de sincronización hacia develop
-        if: steps.guard.outputs.ready == 'true'
-        run: |
-          existing=$(gh pr list --base develop --head "${{ steps.version.outputs.ref_name }}" --json number --jq '.[0].number')
-          if [ -z "$existing" ]; then
-            gh pr create --base develop --head "${{ steps.version.outputs.ref_name }}" \
-              --title "chore: sincronizar develop tras release ${{ steps.version.outputs.version }}" \
-              --body "Sincronización automática de \`${{ steps.version.outputs.ref_name }}\` a \`develop\` tras publicar a \`main\` (ADR-013)."
-          fi
-          gh pr merge "${{ steps.version.outputs.ref_name }}" --merge
-
-      - name: Crear GitHub Release
-        if: steps.guard.outputs.ready == 'true'
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          generate_release_notes: true
-
-  tag-candidate:
-    name: Crear tag de release candidate
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          fetch-depth: 0
-
-      - name: Derivar versión desde la rama release/*
-        id: version
-        run: |
-          version="${{ github.event.pull_request.base.ref }}"
-          version="${version#release/}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Crear y pushear tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ steps.version.outputs.version }}-rc" \
-            -m "Release candidate ${{ steps.version.outputs.version }} (${{ github.event.pull_request.base.ref }})"
-          git push origin "v${{ steps.version.outputs.version }}-rc"
-
-      - name: Crear GitHub Release (prerelease)
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ steps.version.outputs.version }}-rc
-          name: v${{ steps.version.outputs.version }}-rc
-          prerelease: true
-          generate_release_notes: true
-          target_commitish: ${{ github.event.pull_request.base.ref }}
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --verify-tag

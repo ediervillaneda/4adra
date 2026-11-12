@@ -67,8 +67,8 @@ Disponer de una base segura y repetible para desarrollo:
 ### CI/CD
 
 - [x] `backend.yml`: formato, lint, tipos, unitarias + cobertura, migraciones D1 en limpio, integración, contrato, `npm audit` y build (`wrangler deploy --dry-run`).
-- [x] `deploy-cloudflare.yml`: migraciones D1 remotas + `wrangler deploy` con push a `main`; se omite si faltan los secrets.
-- [x] `release.yml` sin Android; `openapi-lint.yml` vigente.
+- [x] `deploy-cloudflare.yml`: migraciones D1 remotas + `wrangler deploy` con push a `main`; si faltan los secrets, falla.
+- [x] `release.yml` por tag con notas de `CHANGELOG.md`. El lint de OpenAPI quedó integrado en `backend.yml`. Primera versión con este flujo: `v0.2.0`.
 - [x] Primer deploy real a `https://4adra.edier.me` (2026-11-11, manual con `wrangler deploy`, versión `a40dfda1`). Prueba de humo: `/` 200, `/api/v1/me` 401 JSON, `/api/nope` 404 JSON, `sign-in/social` devuelve la URL de Google.
 
 ### Documentación

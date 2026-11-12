@@ -1,5 +1,9 @@
 name: Web CI
 
+# Web CI: valida la PWA (web/) en cada PR y en cada push a main o develop que toque web/.
+# En orden: lint (angular-eslint), pruebas con cobertura (Vitest, umbral 70 %), npm audit y build de
+# producción (web/dist/web/browser, los Static Assets del Worker). No despliega nada ni usa secrets.
+
 on:
   push:
     branches: [main, develop]
@@ -10,7 +14,6 @@ on:
     paths:
       - 'web/**'
       - '.github/workflows/web.yml'
-  workflow_call: {}
 
 concurrency:
   group: web-${{ github.ref }}
@@ -23,18 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Verificar scaffolding (web/package.json)
-        id: scaffold
-        run: |
-          if [ -f web/package.json ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::web/package.json no existe todavía (ver docs/checklists/Fase0-FundacionTecnica.md). Este job no falla mientras el scaffolding real no exista."
-          fi
-
       - name: Configurar Node.js
-        if: steps.scaffold.outputs.exists == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
@@ -42,26 +34,21 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Instalar dependencias (npm ci)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
         run: npm ci
 
       - name: Lint (Angular ESLint)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
         run: npm run lint
 
       - name: Pruebas unitarias con cobertura (Vitest)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
         run: npm test
 
       - name: Análisis de dependencias (npm audit)
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
         run: npm audit --omit=dev --audit-level=high
 
       - name: Build de producción
-        if: steps.scaffold.outputs.exists == 'true'
         working-directory: web
         run: npm run build

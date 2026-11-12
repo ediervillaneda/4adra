@@ -81,9 +81,10 @@ Los cambios de API, perfil de cálculo, esquema o seguridad necesitan prueba de 
 
 ```text
 PR → backend.yml: formato → lint → tipos → unitarias+cobertura → migraciones D1 (local)
-   → integración (runtime Workers + D1 local) → contrato (OpenAPI) → npm audit → build (dry-run)
-release/* → release.yml: CI completo → PR automático a main y develop → tag v<versión>
-push a main → deploy-cloudflare.yml: npm ci → d1 migrations apply --remote → wrangler deploy
+   → integración (runtime Workers + D1 local) → contrato (OpenAPI) → lint OpenAPI → npm audit → build (dry-run)
+PR release/<versión> → main (CHANGELOG.md + versión en package.json)
+push a main → deploy-cloudflare.yml: build web → d1 migrations apply --remote → wrangler deploy
+tag v<versión> → release.yml: valida el tag → GitHub Release con las notas de CHANGELOG.md
 ```
 
 El deploy usa solo el API token de alcance mínimo guardado en los secrets de GitHub. Nunca se usan credenciales personales ni se imprimen variables en los logs.

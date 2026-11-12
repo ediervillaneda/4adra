@@ -77,7 +77,7 @@ Para el login con Google en `localhost:4200`, el backend necesita `TRUSTED_ORIGI
 
 GitHub Actions corre formato, lint, tipos, pruebas, migraciones y build en cada PR y en cada push a `main`/`develop`.
 
-El deploy real a Cloudflare (migraciones D1 + `wrangler deploy`) solo se dispara con push a `main` (`deploy-cloudflare.yml`). Pasos manuales de la primera vez: `docs/Deployment.md`.
+El deploy real a Cloudflare (migraciones D1 + `wrangler deploy`) solo se dispara con push a `main` (`deploy-cloudflare.yml`). Cada versión se registra en **[CHANGELOG.md](CHANGELOG.md)**; al pushear su tag `v<versión>`, `release.yml` crea el GitHub Release. Pasos manuales de la primera vez: `docs/Deployment.md`.
 
 ## Documentación completa
 
