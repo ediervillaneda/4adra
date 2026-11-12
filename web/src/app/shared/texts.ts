@@ -12,7 +12,8 @@ export const TEXTS = {
   },
   login: {
     continueWithGoogle: 'Continuar con Google',
-    notInvited: 'Necesitas una invitación para usar 4adra. Pídele acceso a quien te recomendó la app.',
+    notInvited:
+      'Necesitas una invitación para usar 4adra. Pídele acceso a quien te recomendó la app.',
     genericError: 'No se pudo iniciar sesión. Intenta de nuevo.',
   },
   home: {
