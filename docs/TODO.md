@@ -78,9 +78,9 @@ Lista de control de la documentación planificada. Al completar un archivo, quie
 - [x] `backend/migrations/0001_init.sql` — Better Auth, `users` y `audit_logs` inmutable (ADR-015, ADR-016).
 - [x] `backend/.dev.vars.example` — nombres de secretos locales, sin valores.
 - [x] `docs/api/openapi.yaml` — contrato HTTP machine-readable, espejo de `ApiSpecification.md`/`api/*.md`.
-- [x] `.github/workflows/backend.yml`, `web.yml` — CI por plataforma (`web.yml` se omite sin fallar hasta que exista la PWA).
+- [x] `.github/workflows/backend.yml`, `web.yml` — CI por plataforma .
 - [x] `.github/workflows/deploy-cloudflare.yml` — migraciones D1 + `wrangler deploy` con push a `main`.
-- [x] `.github/workflows/openapi-lint.yml` — valida `docs/api/openapi.yaml`.
+- [x] `.github/workflows/release.yml` — GitHub Release al pushear el tag `v<versión>`, con notas de `CHANGELOG.md`. El lint de OpenAPI vive en `backend.yml`.
 - [x] `backend/` — scaffold real de Fase 0 sobre Cloudflare (Hono + D1 + Better Auth), `GET /api/v1/me` de punta a punta.
 - [x] `web/` — PWA base en Angular 22 (ADR-019). Las siguientes piezas son grupos, gastos y liquidaciones.
 

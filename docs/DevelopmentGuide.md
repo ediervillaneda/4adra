@@ -93,10 +93,10 @@ Todo endpoint mutante necesita autenticación, autorización, validación, `Idem
 
 Ver ADR-013 en `Decisions.md` para el contexto completo. Resumen operativo:
 
-- **`main`**: producción. Nunca recibe commits ni merges directos — solo merges automáticos desde `release/*` o `hotfix/*` vía `release.yml`. Protegida contra push directo.
+- **`main`**: producción. Nunca recibe commits ni merges directos — solo PRs desde `release/*` o `hotfix/*`. Cada versión publicada lleva su tag `v<versión>`. Protegida contra push directo.
 - **`develop`**: integración continua. Recibe merges desde `feature/*` vía Pull Request. Protegida contra push directo.
 - **`feature/<slug>`**: una rama por tarea/funcionalidad, creada desde `develop`. PR de vuelta a `develop` cuando esté lista, con CI en verde.
-- **`release/<version>`**: cortada de `develop` cuando un conjunto de features está listo para publicar. Un push a `release/*` dispara `release.yml`: corre toda la batería de tests (backend/web) y, si pasan, mergea automáticamente a `main` (tag `v<version>` + GitHub Release) y de vuelta a `develop`.
+- **`release/<version>`**: cortada de `develop` cuando un conjunto de features está listo para publicar. En la rama se actualiza `CHANGELOG.md` y la versión de `backend/` y `web/`, y se abre un PR a `main`. Tras el merge se pushea el tag `v<version>` (`release.yml` crea el GitHub Release) y se abre un PR de vuelta a `develop`. Pasos en `docs/Workflows.md`.
 - **`hotfix/<slug>`**: corrección urgente cortada de `main`, se publica igual que una release (merge a `main` y a `develop`).
 
 El deploy real a Cloudflare (`deploy-cloudflare.yml`) solo se dispara por push a `main` — nunca desde `develop` ni desde `feature/*`.

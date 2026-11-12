@@ -204,6 +204,14 @@ Cada ADR incluye: identificador, fecha, estado (`Proposed`, `Accepted`, `Superse
 
 **Consecuencias:** El código de este repositorio (incluyendo `docs/`, reglas de negocio y especificación financiera) queda visible públicamente — decisión explícita del responsable del proyecto, aceptando ese trade-off a cambio de poder usar branch protection nativa de GitHub sin costo. Las ramas `fase_#/task_#_<slug>` ya creadas para Fase 0 se consolidan en una única `feature/backend-scaffold-fase0` para no abrir 17 PRs redundantes contra `develop`. El repositorio requirió habilitar "Allow GitHub Actions to create and approve pull requests" (`can_approve_pull_request_reviews`/`default_workflow_permissions: write` vía API, off por defecto) para que `release.yml` pueda abrir y mergear los PRs automáticos hacia `main`/`develop`.
 
+**Actualización (2026-11-11, versión 0.2.0):** se simplificó la publicación.
+- `release/*` y `hotfix/*` llegan a `main` y a `develop` con PRs normales. Ya no hay auto-merge ni tags `-rc`, y `backend.yml` y `web.yml` dejaron de ser reusables.
+- Cada versión se documenta en `CHANGELOG.md` (formato Keep a Changelog, versionado semántico) y en `backend/package.json` y `web/package.json`.
+- Al pushear el tag `v<versión>` sobre `main`, el nuevo `release.yml` valida el tag y crea el GitHub Release con la sección del CHANGELOG.
+- El deploy sigue saliendo del push a `main` (`deploy-cloudflare.yml`).
+- `openapi-lint.yml` se integró en `backend.yml`.
+- Procedimiento completo en `docs/Workflows.md`.
+
 Los secrets `FIREBASE_SERVICE_ACCOUNT`/`FIREBASE_PROJECT_ID_PRODUCTION` ya existen y apuntan al único proyecto Firebase real hoy, `adra-54655` (development) — no se crearon proyectos `staging`/`production` separados; el responsable del proyecto decidió un solo entorno de Firebase por ahora (2026-07-15), ver estado en `docs/checklists/Fase0-FundacionTecnica.md`. La cuenta de facturación de Google Cloud está cerrada, así que el deploy de Cloud Functions (plan Blaze) fallará hasta reactivarla, aunque Firestore/Storage rules sí deberían poder desplegarse.
 
 **Actualización 2026-11-11 (ADR-014):** el deploy ahora es `deploy-cloudflare.yml` (también solo con push a `main`); `deploy-firebase.yml`, `firebase-config.yml` y `android.yml` se eliminaron. Los secrets `FIREBASE_SERVICE_ACCOUNT`/`FIREBASE_PROJECT_ID_PRODUCTION` ya no se usan y deben borrarse del repositorio en GitHub; los nuevos son `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.

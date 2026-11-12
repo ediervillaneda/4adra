@@ -1,9 +1,9 @@
 name: Deploy Cloudflare (Production)
 
-# Git Flow (ADR-013, docs/Decisions.md): el único disparador de un deploy real es un push a
-# main, y a main solo llega código vía release.yml (release/* o hotfix/*). Publica el Worker
-# `4adra` (API + PWA de web/) en https://4adra.edier.me (ADR-014, ADR-019). Requiere los secrets CLOUDFLARE_API_TOKEN y
-# CLOUDFLARE_ACCOUNT_ID (docs/Deployment.md); mientras no existan, el job se omite sin fallar.
+# Despliega a producción (https://4adra.edier.me) cuando se mergea un PR a main. main no acepta push
+# directo y solo admite el merge si los checks "Backend CI" y "Web CI" pasaron y la rama está al día
+# con main (protección de rama, docs/Workflows.md). Publica el Worker `4adra` (API + PWA de web/) tras aplicar
+# las migraciones de D1. Requiere los secrets CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID.
 
 on:
   push:
@@ -27,18 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Verificar secrets requeridos
-        id: guard
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Faltan los secrets CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID (ver docs/Deployment.md). Se omite el deploy."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Configurar Node.js
-        if: steps.guard.outputs.ready == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: backend/.nvmrc
@@ -46,28 +35,23 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Build de la PWA
-        if: steps.guard.outputs.ready == 'true'
         working-directory: web
         run: |
           npm ci
           npm run build
 
       - name: Instalar dependencias
-        if: steps.guard.outputs.ready == 'true'
         working-directory: backend
         run: npm ci
 
       - name: Build (wrangler deploy --dry-run)
-        if: steps.guard.outputs.ready == 'true'
         working-directory: backend
         run: npm run build
 
       - name: Aplicar migraciones D1 (remoto)
-        if: steps.guard.outputs.ready == 'true'
         working-directory: backend
         run: npm run db:migrate:remote
 
       - name: Deploy del Worker
-        if: steps.guard.outputs.ready == 'true'
         working-directory: backend
         run: npx wrangler deploy
