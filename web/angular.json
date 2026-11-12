@@ -84,7 +84,8 @@
             ],
             "coverageExclude": [
               "src/app/**/*.spec.ts",
-              "src/app/app.config.ts"
+              "src/app/app.config.ts",
+              "src/app/**/*.fixtures.ts"
             ],
             "coverageThresholds": {
               "statements": 70,

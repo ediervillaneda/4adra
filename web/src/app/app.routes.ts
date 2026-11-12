@@ -14,6 +14,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'perfil',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+  },
+  {
     path: 'privacidad',
     loadComponent: () =>
       import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
