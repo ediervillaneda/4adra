@@ -25,7 +25,8 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 ### Casos de uso (Application, ≥95 % cobertura)
 
-- [ ] `CreateGroup`, `ArchiveGroup`.
+- [x] `CreateGroup` (y `ListMyGroups`).
+- [ ] `ArchiveGroup`.
 - [ ] `InviteMember`, `AcceptInvitation`, `DeclineInvitation`, `ChangeMemberRole`, `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
 - [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`).
 - [ ] `CalculateBalances` (recálculo idempotente, ciclo `BalanceDirty` → `BalanceRecalculated`, `docs/Algorithms.md`).
@@ -36,8 +37,9 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 ### Infraestructura (≥80 % cobertura)
 
 - [x] `D1UserRepository`, `D1AuditLogWriter` (Fase 0).
-- [ ] `D1GroupRepository`, `D1MembershipRepository`, `D1InvitationRepository`, `D1ExpenseRepository` (gasto + splits en un solo `db.batch`), `D1SettlementRepository`, `D1BalanceRepository`, con sus migraciones SQL (`docs/examples/D1Schema.sql`).
-- [ ] IDs deterministas `{groupId}_{userId}` para `groupMembers` (ADR-010).
+- [x] `D1GroupRepository` (alta atómica del grupo con su Owner y listado por membresía; migración `0003_groups`).
+- [ ] `D1MembershipRepository`, `D1InvitationRepository`, `D1ExpenseRepository` (gasto + splits en un solo `db.batch`), `D1SettlementRepository`, `D1BalanceRepository`, con sus migraciones SQL (`docs/examples/D1Schema.sql`).
+- [x] ~~IDs deterministas `{groupId}_{userId}` para `groupMembers` (ADR-010)~~: en D1 lo reemplaza `UNIQUE (group_id, user_id)` en `group_members`.
 - [x] `BetterAuthAuthenticationProvider` (sesión por cookie, Google) — Fase 0.
 - [ ] Adaptador de adjuntos en R2 (binding del Worker) con URL firmada de 15 minutos (ADR-011).
 - [ ] Índices de `DatabaseSchema.md` creados en las migraciones correspondientes.
@@ -53,7 +55,8 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 - [ ] Construir las pantallas listadas en `docs/UISpecification.md` § "Fase 1 — MVP" (autenticación/perfil, grupos y miembros, gastos, balances y liquidaciones).
 - [ ] Autenticación ("Continuar con Google" con el cliente de Better Auth) y perfil.
-- [ ] Crear/listar/archivar grupos.
+- [x] Crear y listar grupos (Inicio y `/grupos/nuevo`).
+- [ ] Archivar grupos.
 - [ ] Invitar miembro, aceptar/rechazar invitación.
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
 - [ ] Ver balances del grupo.

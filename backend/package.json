@@ -18,7 +18,7 @@
     "cf-typegen": "wrangler types --env-file=.dev.vars.example",
     "db:migrate:local": "wrangler d1 migrations apply 4adra-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply 4adra-db --remote",
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --infer-origin-from-routes=false",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
