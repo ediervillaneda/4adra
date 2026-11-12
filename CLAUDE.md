@@ -52,6 +52,16 @@ npm run build                    # → web/dist/web/browser (los Static Assets d
 Si `wrangler dev` deja de responder, revisa que no queden instancias anteriores vivas en el puerto 8787.
 
 
+## Flujo de trabajo (regla principal)
+
+Todo trabajo nuevo sigue tres pasos, en orden y sin saltarse ninguno:
+
+1. **`/backlog`** de la fase en curso (hoy, la pieza 2: grupos y miembros) → escribe **`BACKLOG.md`** en la raíz: contexto, stack y la lista de historias, con las hechas marcadas.
+2. **`/story`** (el "plan") de UNA historia de `BACKLOG.md` → escribe **`PLAN.md`** en la raíz: la historia en curso con sus criterios, el plan, lo que queda fuera y sugerencias. Se reemplaza en cada historia nueva; al cerrarla, se marca hecha en `BACKLOG.md`.
+3. **`/pair`** sobre `PLAN.md` → primero la lista de pruebas, y luego cada prueba en rojo antes del código mínimo. Nunca hace commit.
+
+`BACKLOG.md` y `PLAN.md` se leen antes de proponer o escribir código. Esta regla manda sobre lo que digan los skills (por ejemplo, que el backlog no se guarde en archivos).
+
 ## Documento maestro
 
 **`docs/AGENTS.md` tiene prioridad sobre el resto de la documentación.** Léelo antes de proponer diseño o código. Define arquitectura oficial, stack, patrones requeridos, modelo de entidades, convenciones de nombres y reglas para agentes de IA. Cualquier funcionalidad nueva debe, cuando aplique, actualizar también: `Architecture.md`, `DomainModel.md`, `DatabaseSchema.md`, `ApiSpecification.md`, `BusinessRules.md`, `Algorithms.md`, `Security.md` y `Roadmap.md` (y registrar decisiones relevantes en `Decisions.md`).
