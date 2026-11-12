@@ -1,23 +1,59 @@
-# web/
+# Web
 
-Directorio previsto para la **PWA** de 4adra: Angular, TypeScript, Angular Material y RxJS (`docs/AGENTS.md`). Es el único cliente (ADR-017): responsive para PC y celular, instalable desde el navegador.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
 
-Vacío intencionalmente. El scaffolding real (Angular CLI, manifest, service worker, login con Google, pantalla de perfil) es el **subproyecto 2** de la migración a Cloudflare y tendrá su propio spec en `docs/superpowers/specs/`.
+## Development server
 
-## Cómo se publicará
+To start a local development server, run:
 
-El build de producción se sirve como **Workers Static Assets** del mismo Worker que la API (`backend/wrangler.jsonc`, `assets.directory`), en `https://4adra.edier.me`. Al compartir el origen con `/api`, no hay CORS y la cookie de sesión de Better Auth funciona sin configuración extra. La PWA no necesita claves ni configuración de terceros en el bundle.
+```bash
+ng serve
+```
 
-## Reglas clave
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
-- No implementa cálculos financieros ni reglas de negocio: solo presenta lo que devuelve la API (`docs/AGENTS.md`, `docs/CodingStandards.md`).
-- Los servicios API encapsulan HTTP con rutas relativas (`/api/v1/...`). Los componentes no construyen URLs ni interpretan errores de dominio directamente.
-- El login usa el cliente de Better Auth (`signIn.social({ provider: 'google' })`, ver `docs/api/Auth.md`). Nunca se leen ni guardan tokens.
-- Organización por funcionalidad, separando presentación, datos y dominio local (sin replicar `domain/` del backend).
+## Code scaffolding
 
-## Referencias
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
-- `docs/CodingStandards.md` § "Angular Web".
-- `docs/api/openapi.yaml`: contrato HTTP consumido por el cliente API.
-- `docs/TestingGuide.md` § "Clientes": qué prueba la PWA y qué no.
-- `docs/UISpecification.md`: pantallas y navegación.
+```bash
+ng generate component component-name
+```
+
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+
+```bash
+ng generate --help
+```
+
+## Building
+
+To build the project run:
+
+```bash
+ng build
+```
+
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+
+## Running unit tests
+
+To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+
+```bash
+ng test
+```
+
+## Running end-to-end tests
+
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
