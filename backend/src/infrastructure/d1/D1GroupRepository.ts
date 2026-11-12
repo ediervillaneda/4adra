@@ -2,6 +2,7 @@ import { Group, GroupStatus } from '../../domain/group/Group';
 import { GroupId } from '../../domain/group/GroupId';
 import { GroupMember, GroupRepository, MemberGroup } from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
+import { Email } from '../../domain/user/Email';
 import { UserId } from '../../domain/user/UserId';
 import { fromIsoDate, toIsoDate } from './isoDate';
 
@@ -115,5 +116,17 @@ export class D1GroupRepository implements GroupRepository {
       role: row.role,
       joinedAt: fromIsoDate(row.joined_at),
     }));
+  }
+
+  async hasActiveMemberWithEmail(groupId: GroupId, email: Email): Promise<boolean> {
+    const row = await this.database
+      .prepare(
+        `SELECT 1 AS found FROM group_members m
+         JOIN users u ON u.id = m.user_id
+         WHERE m.group_id = ? AND m.status = 'ACTIVE' AND lower(u.email) = ?`,
+      )
+      .bind(groupId.toString(), email.toString())
+      .first();
+    return row !== null;
   }
 }

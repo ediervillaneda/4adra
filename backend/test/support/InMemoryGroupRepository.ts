@@ -2,6 +2,7 @@ import { Group } from '../../src/domain/group/Group';
 import { GroupId } from '../../src/domain/group/GroupId';
 import { GroupMember, GroupRepository, MemberGroup } from '../../src/domain/group/GroupRepository';
 import { MemberRole } from '../../src/domain/group/MemberRole';
+import { Email } from '../../src/domain/user/Email';
 import { UserId } from '../../src/domain/user/UserId';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
 
@@ -65,5 +66,18 @@ export class InMemoryGroupRepository implements GroupRepository {
       }
     }
     return members;
+  }
+
+  async hasActiveMemberWithEmail(groupId: GroupId, email: Email): Promise<boolean> {
+    for (const entry of this.memberships) {
+      if (entry.groupId !== groupId.toString() || entry.status !== 'ACTIVE') {
+        continue;
+      }
+      const user = await this.users.findById(UserId.fromString(entry.userId));
+      if (user?.email.toString() === email.toString()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

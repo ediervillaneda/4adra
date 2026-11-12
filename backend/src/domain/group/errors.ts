@@ -8,3 +8,12 @@ export class GroupNotFoundException extends DomainError {
     super('Grupo no encontrado.');
   }
 }
+
+/** El rol del actor en el grupo no permite la operación (matriz en docs/Security.md). */
+export class PermissionDeniedException extends DomainError {
+  readonly code = 'PERMISSION_DENIED';
+
+  constructor() {
+    super('No tienes permiso para hacer esto en el grupo.');
+  }
+}
