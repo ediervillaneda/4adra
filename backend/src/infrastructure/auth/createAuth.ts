@@ -16,6 +16,8 @@ interface AuthConfig {
    * No afecta a usuarios que ya existen.
    */
   isSignUpAllowed?: (email: string) => Promise<boolean>;
+  /** Orígenes extra aceptados además de baseURL (solo desarrollo, ver parseTrustedOrigins). */
+  trustedOrigins?: string[];
 }
 
 /**
@@ -36,6 +38,7 @@ export function createAuth(config: AuthConfig) {
     basePath: '/api/auth',
     secret: config.secret,
     baseURL: config.baseURL,
+    trustedOrigins: config.trustedOrigins ?? [],
     emailAndPassword: { enabled: config.emailAndPasswordEnabled ?? false },
     // Los tokens de Google se cifran en D1 (XChaCha20-Poly1305 con BETTER_AUTH_SECRET).
     account: { encryptOAuthTokens: true },

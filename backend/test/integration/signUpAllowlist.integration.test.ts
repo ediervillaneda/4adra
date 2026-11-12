@@ -74,4 +74,37 @@ describe('Registro solo por lista de acceso (integración)', () => {
 
     expect(response.status).toBe(200);
   });
+
+  it('shouldOnlyAcceptLocalDevOriginWhenTrusted', async () => {
+    const signInFrom = (trustedOrigins: string[]): Promise<Response> =>
+      createAuth({
+        database: env.DB,
+        secret: 'test-secret-at-least-32-characters-long',
+        baseURL: 'http://localhost:8787',
+        google: { clientId: 'test-client', clientSecret: 'test-secret' },
+        trustedOrigins,
+      }).handler(
+        new Request('http://localhost:8787/api/auth/sign-in/social', {
+          method: 'POST',
+          headers: {
+            origin: 'http://localhost:4200',
+            'content-type': 'application/json',
+            cookie: 'better-auth.session_token=previa',
+          },
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: '/',
+            errorCallbackURL: '/entrar',
+          }),
+        }),
+      );
+
+    const rejected = await signInFrom([]);
+    const accepted = await signInFrom(['http://localhost:4200']);
+    const body: { url?: string } = await accepted.json();
+
+    expect(rejected.status).toBe(403);
+    expect(accepted.status).toBe(200);
+    expect(body.url?.startsWith('https://accounts.google.com/')).toBe(true);
+  });
 });

@@ -3,6 +3,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { createApp } from './http/createApp';
 import { AppEnv } from './http/AppEnv';
 import { createAuth } from '../infrastructure/auth/createAuth';
+import { parseTrustedOrigins } from '../infrastructure/auth/parseTrustedOrigins';
 import { betterAuthSessionLookup } from '../infrastructure/auth/betterAuthSessionLookup';
 import { BetterAuthAuthenticationProvider } from '../infrastructure/auth/BetterAuthAuthenticationProvider';
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
@@ -22,6 +23,7 @@ export function composeApp(env: Env): Hono<AppEnv> {
     baseURL: env.BETTER_AUTH_URL,
     google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET },
     isSignUpAllowed: (email) => allowedEmails.isAllowed(Email.fromString(email)),
+    trustedOrigins: parseTrustedOrigins(env.TRUSTED_ORIGINS),
   });
 
   return createApp({
