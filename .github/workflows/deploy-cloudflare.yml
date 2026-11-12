@@ -1,7 +1,8 @@
 name: Deploy Cloudflare (Production)
 
-# Despliega a producción (https://4adra.edier.me) con cada push a main, que solo recibe PRs desde
-# release/* o hotfix/* (docs/Workflows.md). Publica el Worker `4adra` (API + PWA de web/) tras aplicar
+# Despliega a producción (https://4adra.edier.me) cuando se mergea un PR a main. main no acepta push
+# directo y solo admite el merge si los checks "Backend CI" y "Web CI" pasaron y la rama está al día
+# con main (protección de rama, docs/Workflows.md). Publica el Worker `4adra` (API + PWA de web/) tras aplicar
 # las migraciones de D1. Requiere los secrets CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID.
 
 on:

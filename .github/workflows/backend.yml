@@ -1,7 +1,8 @@
 name: Backend CI
 
-# Backend CI: valida el Worker (backend/) en cada PR y en cada push a main o develop que toque
-# backend/ o el contrato OpenAPI. En orden:
+# Backend CI: valida el Worker (backend/) en todos los PR, sin filtro de carpetas: el check "Backend CI"
+# es obligatorio para mergear a main (protección de rama). También corre en cada push a main o develop
+# que toque backend/ o el contrato OpenAPI. En orden:
 #   1. Formato (Prettier), lint (ESLint) y tipos (tsc).
 #   2. Pruebas unitarias con umbrales de cobertura.
 #   3. Migraciones D1 en limpio, pruebas de integración (runtime de Workers + D1 local) y de contrato.
@@ -17,10 +18,6 @@ on:
       - 'docs/api/openapi.yaml'
       - '.github/workflows/backend.yml'
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'docs/api/openapi.yaml'
-      - '.github/workflows/backend.yml'
 
 concurrency:
   group: backend-${{ github.ref }}
@@ -28,7 +25,8 @@ concurrency:
 
 jobs:
   ci:
-    name: Formato · Lint · Tipos · Pruebas · Migraciones · Integración · Contrato · OpenAPI · Build
+    # Este nombre es el check obligatorio de main: no cambiarlo sin actualizar la protección de rama.
+    name: Backend CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

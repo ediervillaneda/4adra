@@ -149,6 +149,22 @@ Revertir: `npx wrangler rollback` (ver `docs/Deployment.md`).
 | `CLOUDFLARE_ACCOUNT_ID` | `deploy-cloudflare.yml` | Cargado |
 
 
+## Protección de ramas
+
+| Regla | `main` | `develop` |
+|---|---|---|
+| Solo por Pull Request (sin push directo, force-push ni borrado) | Sí | Sí |
+| Checks obligatorios `Backend CI` y `Web CI` en verde | Sí | No (corren, pero no bloquean) |
+| Rama del PR al día con la base (*strict*) | Sí | No |
+| Aplica también a administradores | Sí | Sí |
+
+Por eso el deploy a producción (`deploy-cloudflare.yml`) solo ocurre al mergear un PR a `main` con todas las pruebas en verde. En los PR, `backend.yml` y `web.yml` corren siempre, sin filtro de carpetas, para que los checks obligatorios nunca queden esperando.
+
+```bash
+# Ver la protección actual de main:
+gh api repos/ediervillaneda/4adra/branches/main/protection --jq .required_status_checks
+```
+
 ## Permisos de repositorio
 
 Ningún workflow abre ni mergea PRs. `release.yml` declara `contents: write` para crear el Release, y el resto solo lee.

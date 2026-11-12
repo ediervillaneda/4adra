@@ -1,6 +1,7 @@
 name: Web CI
 
-# Web CI: valida la PWA (web/) en cada PR y en cada push a main o develop que toque web/.
+# Web CI: valida la PWA (web/) en todos los PR, sin filtro de carpetas: el check "Web CI" es obligatorio
+# para mergear a main (protección de rama). También corre en cada push a main o develop que toque web/.
 # En orden: lint (angular-eslint), pruebas con cobertura (Vitest, umbral 70 %), npm audit y build de
 # producción (web/dist/web/browser, los Static Assets del Worker). No despliega nada ni usa secrets.
 
@@ -11,9 +12,6 @@ on:
       - 'web/**'
       - '.github/workflows/web.yml'
   pull_request:
-    paths:
-      - 'web/**'
-      - '.github/workflows/web.yml'
 
 concurrency:
   group: web-${{ github.ref }}
@@ -21,7 +19,8 @@ concurrency:
 
 jobs:
   lint-test-build:
-    name: Lint · Pruebas · Build
+    # Este nombre es el check obligatorio de main: no cambiarlo sin actualizar la protección de rama.
+    name: Web CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
