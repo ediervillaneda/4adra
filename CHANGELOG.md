@@ -20,6 +20,11 @@ Ver `docs/Workflows.md`.
   - Quien lo crea queda como Owner.
   - Inicio lista los grupos con su rol y su moneda, y tiene un botón flotante "Crear grupo".
   - API: `POST` y `GET /api/v1/groups`. Base de datos: migración `0003_groups`, con las tablas `groups` y `group_members`.
+- **Ver un grupo y sus miembros** (pieza 2, historia #2):
+  - Cada grupo de Inicio abre su detalle (`/grupos/:groupId`), con nombre, descripción y moneda base.
+  - Lista los miembros activos en orden alfabético, con su foto, su nombre y su rol en español, sin correos.
+  - Un grupo inexistente o al que no perteneces muestra "Grupo no encontrado", sin revelar si existe.
+  - API: `GET /api/v1/groups/{groupId}` y `GET /api/v1/groups/{groupId}/members`, con `404 GROUP_NOT_FOUND`.
 
 ## [0.2.0] - 2026-11-11
 

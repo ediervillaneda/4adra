@@ -27,6 +27,9 @@ export const TEXTS = {
   },
   groups: {
     createTitle: 'Nuevo grupo',
+    membersTitle: 'Miembros',
+    notFoundTitle: 'Grupo no encontrado',
+    backHome: 'Volver al inicio',
     name: 'Nombre del grupo',
     description: 'Descripción (opcional)',
     defaultCurrency: 'Moneda base',

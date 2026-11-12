@@ -26,6 +26,16 @@ export interface ProfileChanges {
 
 export type MemberRole = 'OWNER' | 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
 
+/** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
+export interface GroupMember {
+  userId: string;
+  displayName: string;
+  photoUrl: string | null;
+  role: MemberRole;
+  status: 'ACTIVE';
+  joinedAt: string;
+}
+
 /** Grupo visto por uno de sus miembros (components/schemas/Group en openapi.yaml). */
 export interface GroupSummary {
   id: string;

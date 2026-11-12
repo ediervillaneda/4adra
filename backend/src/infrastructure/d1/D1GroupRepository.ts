@@ -1,6 +1,6 @@
 import { Group, GroupStatus } from '../../domain/group/Group';
 import { GroupId } from '../../domain/group/GroupId';
-import { GroupRepository, MemberGroup } from '../../domain/group/GroupRepository';
+import { GroupMember, GroupRepository, MemberGroup } from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
 import { UserId } from '../../domain/user/UserId';
 import { fromIsoDate, toIsoDate } from './isoDate';
@@ -16,6 +16,14 @@ interface MemberGroupRow {
   created_at: string;
   updated_at: string;
   role: MemberRole;
+}
+
+interface GroupMemberRow {
+  user_id: string;
+  display_name: string;
+  photo_url: string | null;
+  role: MemberRole;
+  joined_at: string;
 }
 
 function fromRow(row: MemberGroupRow): MemberGroup {
@@ -77,5 +85,35 @@ export class D1GroupRepository implements GroupRepository {
       .bind(userId.toString())
       .all<MemberGroupRow>();
     return results.map(fromRow);
+  }
+
+  async findForMember(groupId: GroupId, userId: UserId): Promise<MemberGroup | null> {
+    const row = await this.database
+      .prepare(
+        `SELECT g.*, m.role FROM groups g
+         JOIN group_members m ON m.group_id = g.id
+         WHERE g.id = ? AND m.user_id = ? AND m.status = 'ACTIVE'`,
+      )
+      .bind(groupId.toString(), userId.toString())
+      .first<MemberGroupRow>();
+    return row === null ? null : fromRow(row);
+  }
+
+  async listActiveMembers(groupId: GroupId): Promise<GroupMember[]> {
+    const { results } = await this.database
+      .prepare(
+        `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.joined_at FROM group_members m
+         JOIN users u ON u.id = m.user_id
+         WHERE m.group_id = ? AND m.status = 'ACTIVE'`,
+      )
+      .bind(groupId.toString())
+      .all<GroupMemberRow>();
+    return results.map((row) => ({
+      userId: UserId.fromString(row.user_id),
+      displayName: row.display_name,
+      photoUrl: row.photo_url,
+      role: row.role,
+      joinedAt: fromIsoDate(row.joined_at),
+    }));
   }
 }

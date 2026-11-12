@@ -28,6 +28,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grupos/:groupId',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/group-detail/group-detail.component').then(
+        (m) => m.GroupDetailComponent,
+      ),
+  },
+  {
     path: 'privacidad',
     loadComponent: () =>
       import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),

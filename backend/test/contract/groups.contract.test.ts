@@ -13,7 +13,7 @@ import { Email } from '../../src/domain/user/Email';
 import { InMemoryUserRepository } from '../support/InMemoryUserRepository';
 import { inMemoryGroupUseCases } from '../support/inMemoryGroupUseCases';
 
-function groupSchemaValidator(): ValidateFunction {
+function schemaValidator(schema: 'Group' | 'Membership'): ValidateFunction {
   const openapiPath = path.resolve(__dirname, '../../../docs/api/openapi.yaml');
   const openapiDocument = yaml.load(fs.readFileSync(openapiPath, 'utf8')) as Record<
     string,
@@ -21,9 +21,9 @@ function groupSchemaValidator(): ValidateFunction {
   >;
   const ajv = new Ajv({ strict: false });
   ajv.addSchema(openapiDocument, 'openapi.yaml');
-  const validate = ajv.getSchema('openapi.yaml#/components/schemas/Group');
+  const validate = ajv.getSchema(`openapi.yaml#/components/schemas/${schema}`);
   if (!validate) {
-    throw new Error('No se pudo resolver components/schemas/Group en openapi.yaml');
+    throw new Error(`No se pudo resolver components/schemas/${schema} en openapi.yaml`);
   }
   return validate;
 }
@@ -59,10 +59,14 @@ const executionContext = {
   props: {},
 };
 
-function request(app: Hono<AppEnv>, init: RequestInit = {}): Promise<Response> {
+function request(
+  app: Hono<AppEnv>,
+  init: RequestInit = {},
+  path = '/api/v1/groups',
+): Promise<Response> {
   return Promise.resolve(
     app.request(
-      '/api/v1/groups',
+      path,
       {
         ...init,
         headers: { cookie: 'better-auth.session_token=valid', 'content-type': 'application/json' },
@@ -75,13 +79,22 @@ function request(app: Hono<AppEnv>, init: RequestInit = {}): Promise<Response> {
 
 function expectValidGroup(validate: ValidateFunction, value: unknown): void {
   if (!validate(value)) {
-    throw new Error(`Respuesta no cumple el esquema Group: ${JSON.stringify(validate.errors)}`);
+    throw new Error(`Respuesta no cumple el esquema: ${JSON.stringify(validate.errors)}`);
   }
+}
+
+async function createCasa(app: Hono<AppEnv>): Promise<string> {
+  const response = await request(app, {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Casa', defaultCurrency: 'COP' }),
+  });
+  const body: { data: { id: string } } = await response.json();
+  return body.data.id;
 }
 
 describe('Contrato /api/v1/groups contra docs/api/openapi.yaml', () => {
   it('postGroupsResponseShouldMatchOpenApi', async () => {
-    const validate = groupSchemaValidator();
+    const validate = schemaValidator('Group');
 
     const response = await request(buildApp(), {
       method: 'POST',
@@ -94,7 +107,7 @@ describe('Contrato /api/v1/groups contra docs/api/openapi.yaml', () => {
   });
 
   it('getGroupsResponseShouldMatchOpenApi', async () => {
-    const validate = groupSchemaValidator();
+    const validate = schemaValidator('Group');
     const app = buildApp();
     await request(app, {
       method: 'POST',
@@ -108,6 +121,33 @@ describe('Contrato /api/v1/groups contra docs/api/openapi.yaml', () => {
     expect(body.data).toHaveLength(1);
     body.data.forEach((group) => {
       expectValidGroup(validate, group);
+    });
+  });
+
+  it('getGroupResponseShouldMatchOpenApi', async () => {
+    const validate = schemaValidator('Group');
+    const app = buildApp();
+    const groupId = await createCasa(app);
+
+    const response = await request(app, {}, `/api/v1/groups/${groupId}`);
+    const body: { data: unknown } = await response.json();
+
+    expect(response.status).toBe(200);
+    expectValidGroup(validate, body.data);
+  });
+
+  it('getGroupMembersResponseShouldMatchOpenApi', async () => {
+    const validate = schemaValidator('Membership');
+    const app = buildApp();
+    const groupId = await createCasa(app);
+
+    const response = await request(app, {}, `/api/v1/groups/${groupId}/members`);
+    const body: { data: unknown[] } = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    body.data.forEach((member) => {
+      expectValidGroup(validate, member);
     });
   });
 });

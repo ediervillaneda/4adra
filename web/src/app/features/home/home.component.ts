@@ -28,17 +28,17 @@ import { TEXTS } from '../../shared/texts';
     @if (groups(); as groups) {
       @if (groups.length > 0) {
         <h2 class="section-title">{{ texts.home.groupsTitle }}</h2>
-        <mat-list>
+        <mat-nav-list>
           @for (group of groups; track group.id) {
-            <mat-list-item data-testid="group-item">
+            <a mat-list-item data-testid="group-item" [routerLink]="['/grupos', group.id]">
               <mat-icon matListItemIcon>group</mat-icon>
               <span matListItemTitle>{{ group.name }}</span>
               <span matListItemLine
                 >{{ texts.groups.roles[group.role] }} · {{ group.defaultCurrency }}</span
               >
-            </mat-list-item>
+            </a>
           }
-        </mat-list>
+        </mat-nav-list>
         <a mat-fab extended class="fab" routerLink="/grupos/nuevo">
           <mat-icon>add</mat-icon>
           {{ texts.home.createGroup }}

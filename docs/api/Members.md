@@ -13,6 +13,8 @@ Describe las operaciones detalladas de miembros de un grupo. La membresía es la
 GET /api/v1/groups/{groupId}/members?status=ACTIVE&limit=100&pageToken=...
 ```
 
+**Implementado (pieza 2, historia #2).** Devuelve los miembros activos en orden alfabético por `displayName`, como en español (sin distinguir mayúsculas ni tildes), y desempata por `userId`. `displayName` y `photoUrl` salen del perfil del usuario. Si el grupo no existe o el actor no es miembro activo, responde `404 GROUP_NOT_FOUND`. Por ahora `status`, `limit` y `pageToken` se ignoran: solo se listan los miembros `ACTIVE`, sin paginación.
+
 Todo miembro activo puede consultar el listado. Respuesta `200`:
 
 ```json

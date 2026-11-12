@@ -36,8 +36,9 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 
 | Ruta | Pantalla | Estado |
 |---|---|---|
-| `/` | Inicio: lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace | Hecho (historia #1) |
+| `/` | Inicio: lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace. Cada grupo enlaza a su detalle | Hecho (historias #1 y #2) |
 | `/grupos/nuevo` | Crear grupo: nombre, descripción opcional y moneda base (preseleccionada con la del perfil); errores por campo | Hecho (historia #1) |
+| `/grupos/:groupId` | Detalle del grupo: nombre, descripción, moneda base y miembros activos en orden alfabético (foto de Google, nombre y rol en español, sin correos). Estados: cargando, contenido, "Grupo no encontrado" (grupo inexistente o ajeno, con enlace a Inicio) y error genérico. Todavía sin las pestañas Gastos, Balances y Liquidaciones | Hecho (historia #2) |
 
 No existe una pantalla separada de "Completar perfil": el perfil nace con COP, es y America/Bogota, y el aviso de Inicio lleva a `/perfil`. Tampoco existe "Registro": la primera entrada con Google crea la cuenta, siempre que el correo esté en la lista de acceso (ADR-018).
 

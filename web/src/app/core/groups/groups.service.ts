@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ApiErrorEnvelope,
   ApiSuccessEnvelope,
+  GroupMember,
   GroupSummary,
   NewGroupRequest,
 } from '../../shared/api';
@@ -16,9 +17,44 @@ export class GroupValidationError extends Error {
   }
 }
 
+/** El grupo no existe o no eres miembro (404 GROUP_NOT_FOUND); el backend no distingue los casos. */
+export class GroupNotFoundError extends Error {
+  constructor() {
+    super('GROUP_NOT_FOUND');
+  }
+}
+
+function toGroupNotFound(error: unknown): unknown {
+  return error instanceof HttpErrorResponse && error.status === 404
+    ? new GroupNotFoundError()
+    : error;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GroupsService {
   private readonly http = inject(HttpClient);
+
+  async getGroup(groupId: string): Promise<GroupSummary> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<ApiSuccessEnvelope<GroupSummary>>(`/api/v1/groups/${groupId}`),
+      );
+      return response.data;
+    } catch (error) {
+      throw toGroupNotFound(error);
+    }
+  }
+
+  async listMembers(groupId: string): Promise<GroupMember[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<ApiSuccessEnvelope<GroupMember[]>>(`/api/v1/groups/${groupId}/members`),
+      );
+      return response.data;
+    } catch (error) {
+      throw toGroupNotFound(error);
+    }
+  }
 
   async listGroups(): Promise<GroupSummary[]> {
     const response = await firstValueFrom(

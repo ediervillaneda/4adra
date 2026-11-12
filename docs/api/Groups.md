@@ -30,6 +30,8 @@ GET /api/v1/groups?status=ACTIVE&limit=25&pageToken=...
 GET /api/v1/groups/{groupId}
 ```
 
+**Implementado (pieza 2, historias #1 y #2).** `GET /groups/{groupId}` responde `200` con el mismo resumen que la lista (`id`, `name`, `description`, `defaultCurrency`, `status`, `role`, `createdAt`, `updatedAt`). Si el grupo no existe o el actor no es miembro activo, responde `404 GROUP_NOT_FOUND` con el mismo mensaje en los dos casos, para no revelar si el grupo existe. Por ahora `status`, `limit` y `pageToken` se ignoran: la lista devuelve todos los grupos activos del actor.
+
 Solo se devuelven grupos donde el actor tiene una membresía activa. La lista incluye resumen: `id`, `name`, `image`, `defaultCurrency`, `role`, `status`, `updatedAt` y, si procede, un resumen de balance del actor. No incluye gastos ni miembros completos.
 
 ## Editar y archivar

@@ -9,6 +9,7 @@ const STATUS_BY_CODE: Record<string, ContentfulStatusCode> = {
   UNAUTHENTICATED: 401,
   USER_DISABLED: 403,
   NOT_FOUND: 404,
+  GROUP_NOT_FOUND: 404,
   VALIDATION_ERROR: 400,
 };
 

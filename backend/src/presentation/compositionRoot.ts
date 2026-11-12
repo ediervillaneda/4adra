@@ -15,6 +15,8 @@ import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUser
 import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
 import { CreateGroupUseCase } from '../application/group/CreateGroupUseCase';
 import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
+import { GetGroupUseCase } from '../application/group/GetGroupUseCase';
+import { ListGroupMembersUseCase } from '../application/group/ListGroupMembersUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
@@ -48,6 +50,8 @@ export function composeApp(env: Env): Hono<AppEnv> {
       () => new Date(),
     ),
     listMyGroupsUseCase: new ListMyGroupsUseCase(groupRepository),
+    getGroupUseCase: new GetGroupUseCase(groupRepository),
+    listGroupMembersUseCase: new ListGroupMembersUseCase(groupRepository),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
   });

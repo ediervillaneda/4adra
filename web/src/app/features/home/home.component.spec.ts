@@ -103,6 +103,27 @@ describe('HomeComponent', () => {
     expect(element.textContent).not.toContain('Tus grupos aparecerán aquí');
   });
 
+  it('homeShouldLinkEachGroupToItsDetail', async () => {
+    const element = await render({
+      groups: [
+        groupOf({ id: 'grp_casa', name: 'Casa' }),
+        groupOf({ id: 'grp_viaje', name: 'Viaje' }),
+      ],
+    });
+
+    const links = Array.from(
+      element.querySelectorAll<HTMLAnchorElement>('a[data-testid="group-item"]'),
+    ).map((link) => [
+      link.querySelector('[matListItemTitle]')?.textContent?.trim(),
+      link.getAttribute('href'),
+    ]);
+
+    expect(links).toEqual([
+      ['Casa', '/grupos/grp_casa'],
+      ['Viaje', '/grupos/grp_viaje'],
+    ]);
+  });
+
   it('homeShouldShowEmptyStateWhenUserHasNoGroups', async () => {
     const element = await render({ groups: [] });
     const createLink = element.querySelector<HTMLAnchorElement>('a[href="/grupos/nuevo"]');
