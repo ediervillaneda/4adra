@@ -26,6 +26,11 @@ export const TEXTS = {
     acceptInvitation: 'Aceptar',
     declineInvitation: 'Rechazar',
     invitationAnswerError: 'No se pudo responder la invitación. Intenta de nuevo.',
+    closedInvitation: {
+      INVITATION_EXPIRED: 'Esta invitación ya venció.',
+      INVITATION_ALREADY_RESPONDED: 'Ya respondiste esta invitación.',
+      INVITATION_NOT_FOUND: 'Esta invitación ya no está disponible.',
+    } as Record<string, string>,
     createGroup: 'Crear grupo',
     reviewProfileHint: 'Revisa tu perfil: confirma tu moneda y zona horaria.',
     reviewProfileAction: 'Ir a mi perfil',

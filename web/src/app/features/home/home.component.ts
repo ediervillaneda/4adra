@@ -15,7 +15,11 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
 import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import { GroupsService } from '../../core/groups/groups.service';
-import { InvitationsService } from '../../core/invitations/invitations.service';
+import {
+  InvitationClosedError,
+  InvitationsService,
+} from '../../core/invitations/invitations.service';
+import { ApiErrorNotifier } from '../../core/http/api-error-notifier';
 import { GroupSummary, ReceivedInvitation } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
 
@@ -144,6 +148,7 @@ export class HomeComponent {
   private readonly currentProfile = inject(CurrentProfileStore);
   private readonly groupsService = inject(GroupsService);
   private readonly invitationsService = inject(InvitationsService);
+  private readonly errorNotifier = inject(ApiErrorNotifier);
   protected readonly texts = TEXTS;
   /** null mientras carga: así no parpadea el estado vacío. */
   protected readonly groups = signal<GroupSummary[] | null>(null);
@@ -178,9 +183,13 @@ export class HomeComponent {
       await (answer === 'accept'
         ? this.invitationsService.accept(invitationId)
         : this.invitationsService.decline(invitationId));
-    } catch {
-      this.failedInvitationId.set(invitationId);
-      return;
+    } catch (error) {
+      if (!(error instanceof InvitationClosedError)) {
+        this.failedInvitationId.set(invitationId);
+        return;
+      }
+      // Ya no se puede responder: se quita la tarjeta y el banner explica por qué.
+      this.errorNotifier.show(error.message);
     }
     this.invitations.update((invitations) =>
       invitations.filter((invitation) => invitation.invitationId !== invitationId),

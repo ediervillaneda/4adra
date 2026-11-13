@@ -7,7 +7,11 @@ import { AuthService, SessionState } from '../../core/auth/auth.service';
 import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
 import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import { GroupsService } from '../../core/groups/groups.service';
-import { InvitationsService } from '../../core/invitations/invitations.service';
+import {
+  InvitationClosedError,
+  InvitationsService,
+} from '../../core/invitations/invitations.service';
+import { ApiErrorNotifier } from '../../core/http/api-error-notifier';
 import { GroupSummary, ReceivedInvitation, UserProfile } from '../../shared/api';
 import { ANA_PROFILE } from '../../core/profile/profile.fixtures';
 
@@ -252,5 +256,20 @@ describe('HomeComponent', () => {
     expect(element.textContent).toContain('Tus grupos aparecerán aquí');
     expect(element.querySelector('[data-testid="group-item"]')).toBeNull();
     expect(createLink?.textContent).toContain('Crear grupo');
+  });
+
+  it('homeShouldRemoveClosedInvitationAndShowReason', async () => {
+    const accept = vi
+      .fn()
+      .mockRejectedValue(new InvitationClosedError('Esta invitación ya venció.'));
+    const element = await render({
+      invitations: [invitationOf({ invitationId: 'inv_playa', groupName: 'Playa' })],
+      accept,
+    });
+
+    await click(element, 'accept-invitation');
+
+    expect(element.querySelector('[data-testid="invitations-section"]')).toBeNull();
+    expect(TestBed.inject(ApiErrorNotifier).message()).toBe('Esta invitación ya venció.');
   });
 });
