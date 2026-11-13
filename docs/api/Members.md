@@ -68,6 +68,30 @@ Respuesta `201`:
 }
 ```
 
+## Mis invitaciones
+
+```http
+GET /api/v1/invitations
+```
+
+Lista las invitaciones `PENDING` y vigentes (`expiresAt` posterior al momento de la consulta) dirigidas al correo normalizado del actor. No incluye vencidas, respondidas, revocadas ni dirigidas a otros correos. Muestra el nombre de quien invita, nunca su correo. Sin invitaciones, `data` es una lista vacía.
+
+```json
+{
+  "data": [
+    {
+      "invitationId": "inv_123",
+      "groupId": "grp_123",
+      "groupName": "Viaje Guatemala",
+      "invitedByName": "Ana",
+      "role": "MEMBER",
+      "expiresAt": "2026-07-20T12:00:00Z"
+    }
+  ],
+  "meta": { "requestId": "req_123" }
+}
+```
+
 ## Aceptar o rechazar invitación
 
 ```http
@@ -75,7 +99,11 @@ POST /api/v1/invitations/{invitationId}/accept
 POST /api/v1/invitations/{invitationId}/decline
 ```
 
-El actor debe coincidir con el correo/identidad invitada. Al aceptar se crea o reactiva una membresía `ACTIVE`, se registra `MemberInvited`/`MemberJoined` y se envía notificación. Una invitación expirada, revocada o ya procesada no puede reutilizarse.
+El actor debe coincidir con el correo/identidad invitada; si no coincide, la respuesta es `404 INVITATION_NOT_FOUND`, sin revelar que la invitación existe. Al aceptar se crea una membresía `ACTIVE` con el rol ofrecido y la invitación pasa a `ACCEPTED`; si el actor ya es miembro activo del grupo, la invitación igual pasa a `ACCEPTED`, sin duplicar la membresía ni cambiar su rol. Al rechazar, la invitación pasa a `DECLINED`. Ambas responden `200` con la `Invitation` en su nuevo estado.
+
+El vencimiento se calcula con `expiresAt`; no se guarda como estado. Una invitación vencida responde `409 INVITATION_EXPIRED`, y una ya aceptada, rechazada o revocada responde `409 INVITATION_ALREADY_RESPONDED`. En ambos casos no cambia nada.
+
+Pendiente: reactivar una membresía `REMOVED` al aceptar llega con la remoción de miembros; el evento `MemberJoined` y la notificación, con la Fase 3.
 
 ## Cambiar rol
 
@@ -110,8 +138,9 @@ Estados de invitación: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`.
 
 | Código | Situación |
 |---|---|
-| `INVITATION_NOT_FOUND` | Invitación inexistente o no visible |
-| `INVITATION_EXPIRED` | Invitación vencida |
+| `INVITATION_NOT_FOUND` | Invitación inexistente o dirigida a otro correo (`404`) |
+| `INVITATION_EXPIRED` | Invitación vencida (`409`) |
+| `INVITATION_ALREADY_RESPONDED` | Invitación ya aceptada, rechazada o revocada (`409`) |
 | `MEMBER_ALREADY_ACTIVE` | Usuario ya pertenece al grupo |
 | `EMAIL_NOT_ALLOWED` | El correo invitado no está en la lista de acceso (`422`, ADR-018) |
 | `LAST_OWNER` | Operación dejaría al grupo sin Owner |

@@ -210,6 +210,28 @@ components:
           type: string
           format: date-time
 
+    ReceivedInvitation:
+      type: object
+      description: >
+        Invitación pendiente y vigente dirigida al correo del actor. Muestra el nombre de
+        quien invita, nunca su correo.
+      required: [invitationId, groupId, groupName, invitedByName, role, expiresAt]
+      properties:
+        invitationId:
+          type: string
+        groupId:
+          type: string
+        groupName:
+          type: string
+        invitedByName:
+          type: string
+        role:
+          type: string
+          enum: [ADMINISTRATOR, MEMBER, READ_ONLY]
+        expiresAt:
+          type: string
+          format: date-time
+
     SplitParticipant:
       type: object
       properties:
@@ -699,6 +721,24 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 
+  /invitations:
+    get:
+      summary: Lista las invitaciones pendientes y vigentes dirigidas al correo del actor
+      responses:
+        '200':
+          description: Invitaciones del actor (lista vacía si no tiene)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReceivedInvitation'
+        default:
+          $ref: '#/components/responses/Error'
+
   /invitations/{invitationId}/accept:
     post:
       summary: Acepta una invitación pendiente dirigida al actor
@@ -710,7 +750,26 @@ paths:
             type: string
       responses:
         '200':
-          description: Membresía creada o reactivada
+          description: Invitación aceptada; el actor queda como miembro activo (si ya lo era, conserva su rol)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Invitation'
+        '404':
+          description: INVITATION_NOT_FOUND (inexistente o dirigida a otro correo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: INVITATION_EXPIRED o INVITATION_ALREADY_RESPONDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
@@ -726,6 +785,25 @@ paths:
       responses:
         '200':
           description: Invitación rechazada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Invitation'
+        '404':
+          description: INVITATION_NOT_FOUND (inexistente o dirigida a otro correo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: INVITATION_EXPIRED o INVITATION_ALREADY_RESPONDED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
