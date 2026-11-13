@@ -17,3 +17,30 @@ export class MemberAlreadyActiveException extends DomainError {
     super('Esa persona ya es miembro del grupo.');
   }
 }
+
+/** La invitación no existe o no está dirigida al correo del actor; no se distingue para no revelar su existencia. */
+export class InvitationNotFoundException extends DomainError {
+  readonly code = 'INVITATION_NOT_FOUND';
+
+  constructor() {
+    super('Invitación no encontrada.');
+  }
+}
+
+/** La invitación llegó a su vencimiento sin respuesta. */
+export class InvitationExpiredException extends DomainError {
+  readonly code = 'INVITATION_EXPIRED';
+
+  constructor() {
+    super('La invitación ya venció.');
+  }
+}
+
+/** La invitación ya fue aceptada, rechazada o revocada. */
+export class InvitationAlreadyRespondedException extends DomainError {
+  readonly code = 'INVITATION_ALREADY_RESPONDED';
+
+  constructor() {
+    super('La invitación ya fue respondida.');
+  }
+}

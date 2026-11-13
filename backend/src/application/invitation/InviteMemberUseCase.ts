@@ -12,6 +12,7 @@ import {
 } from '../../domain/invitation/errors';
 import { validateNewInvitation } from '../../domain/invitation/NewInvitation';
 import { InvitationView } from './InvitationView';
+import { toInvitationView } from './toInvitationView';
 
 export interface InviteMemberCommand {
   actor: AuthenticatedActor;
@@ -21,17 +22,6 @@ export interface InviteMemberCommand {
 }
 
 const ROLES_THAT_INVITE: readonly MemberRole[] = ['OWNER', 'ADMINISTRATOR'];
-
-function toInvitationView(invitation: Invitation): InvitationView {
-  return {
-    invitationId: invitation.id,
-    groupId: invitation.groupId.toString(),
-    email: invitation.email.toString(),
-    role: invitation.role,
-    status: invitation.status,
-    expiresAt: invitation.expiresAt.toISOString(),
-  };
-}
 
 /** Invita un correo a un grupo; si ya tiene una invitación pendiente, devuelve esa (docs/api/Members.md). */
 export class InviteMemberUseCase {
