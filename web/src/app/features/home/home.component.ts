@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  PendingTasks,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +15,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
 import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import { GroupsService } from '../../core/groups/groups.service';
-import { GroupSummary } from '../../shared/api';
+import { InvitationsService } from '../../core/invitations/invitations.service';
+import { GroupSummary, ReceivedInvitation } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
 
 @Component({
@@ -24,6 +32,45 @@ import { TEXTS } from '../../shared/texts';
           <a mat-button routerLink="/perfil">{{ texts.home.reviewProfileAction }}</a>
         </mat-card-actions>
       </mat-card>
+    }
+    @if (invitations().length > 0) {
+      <section data-testid="invitations-section">
+        <h2 class="section-title">{{ texts.home.invitationsTitle }}</h2>
+        @for (invitation of invitations(); track invitation.invitationId) {
+          <mat-card appearance="outlined" class="invitation" data-testid="invitation-item">
+            <mat-card-header>
+              <mat-icon mat-card-avatar>mail</mat-icon>
+              <mat-card-title>{{ invitation.groupName }}</mat-card-title>
+              <mat-card-subtitle>{{
+                texts.home.invitedBy(invitation.invitedByName, texts.groups.roles[invitation.role])
+              }}</mat-card-subtitle>
+            </mat-card-header>
+            @if (failedInvitationId() === invitation.invitationId) {
+              <mat-card-content>
+                <p class="answer-error" role="alert">{{ texts.home.invitationAnswerError }}</p>
+              </mat-card-content>
+            }
+            <mat-card-actions align="end">
+              <button
+                mat-button
+                type="button"
+                data-testid="decline-invitation"
+                (click)="answer(invitation.invitationId, 'decline')"
+              >
+                {{ texts.home.declineInvitation }}
+              </button>
+              <button
+                mat-flat-button
+                type="button"
+                data-testid="accept-invitation"
+                (click)="answer(invitation.invitationId, 'accept')"
+              >
+                {{ texts.home.acceptInvitation }}
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+      </section>
     }
     @if (groups(); as groups) {
       @if (groups.length > 0) {
@@ -59,6 +106,12 @@ import { TEXTS } from '../../shared/texts';
     .hint {
       margin-bottom: 24px;
     }
+    .invitation {
+      margin-bottom: 12px;
+    }
+    .answer-error {
+      color: var(--mat-sys-error);
+    }
     .section-title {
       font: var(--mat-sys-title-medium);
     }
@@ -90,9 +143,14 @@ export class HomeComponent {
   private readonly session = inject(AuthService).session;
   private readonly currentProfile = inject(CurrentProfileStore);
   private readonly groupsService = inject(GroupsService);
+  private readonly invitationsService = inject(InvitationsService);
   protected readonly texts = TEXTS;
   /** null mientras carga: así no parpadea el estado vacío. */
   protected readonly groups = signal<GroupSummary[] | null>(null);
+  protected readonly invitations = signal<ReceivedInvitation[]>([]);
+  /** La invitación cuya última respuesta falló: su tarjeta muestra el error. */
+  protected readonly failedInvitationId = signal<string | null>(null);
+  private readonly pendingTasks = inject(PendingTasks);
   protected readonly showReviewHint = !inject(ProfileReviewFlag).isReviewed();
   protected readonly greeting = computed(() => {
     const state = this.session();
@@ -105,6 +163,35 @@ export class HomeComponent {
   constructor() {
     void this.currentProfile.load();
     void this.loadGroups();
+    // PendingTasks: whenStable (y la app) esperan a que lleguen las invitaciones.
+    void this.pendingTasks.run(() => this.loadInvitations());
+  }
+
+  protected answer(invitationId: string, answer: 'accept' | 'decline'): void {
+    // PendingTasks: whenStable (y la app) esperan la respuesta y la recarga de grupos.
+    void this.pendingTasks.run(() => this.sendAnswer(invitationId, answer));
+  }
+
+  private async sendAnswer(invitationId: string, answer: 'accept' | 'decline'): Promise<void> {
+    this.failedInvitationId.set(null);
+    try {
+      await (answer === 'accept'
+        ? this.invitationsService.accept(invitationId)
+        : this.invitationsService.decline(invitationId));
+    } catch {
+      this.failedInvitationId.set(invitationId);
+      return;
+    }
+    this.invitations.update((invitations) =>
+      invitations.filter((invitation) => invitation.invitationId !== invitationId),
+    );
+    if (answer === 'accept') {
+      await this.loadGroups();
+    }
+  }
+
+  private async loadInvitations(): Promise<void> {
+    this.invitations.set(await this.invitationsService.listMyInvitations());
   }
 
   private async loadGroups(): Promise<void> {

@@ -46,6 +46,16 @@ export interface Invitation {
   expiresAt: string;
 }
 
+/** Invitación pendiente y vigente para quien inició sesión (components/schemas/ReceivedInvitation). */
+export interface ReceivedInvitation {
+  invitationId: string;
+  groupId: string;
+  groupName: string;
+  invitedByName: string;
+  role: InvitableRole;
+  expiresAt: string;
+}
+
 /** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
 export interface GroupMember {
   userId: string;
