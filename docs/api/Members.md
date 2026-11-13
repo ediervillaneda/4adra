@@ -99,7 +99,7 @@ POST /api/v1/invitations/{invitationId}/accept
 POST /api/v1/invitations/{invitationId}/decline
 ```
 
-El actor debe coincidir con el correo/identidad invitada; si no coincide, la respuesta es `404 INVITATION_NOT_FOUND`, sin revelar que la invitación existe. Al aceptar se crea una membresía `ACTIVE` con el rol ofrecido y la invitación pasa a `ACCEPTED`; si el actor ya es miembro activo del grupo, la invitación igual pasa a `ACCEPTED`, sin duplicar la membresía ni cambiar su rol. Al rechazar, la invitación pasa a `DECLINED`. Ambas responden `200` con la `Invitation` en su nuevo estado.
+El actor debe coincidir con el correo/identidad invitada; si no coincide, la respuesta es `404 INVITATION_NOT_FOUND`, sin revelar que la invitación existe. Al aceptar se crea una membresía `ACTIVE` con el rol ofrecido (y el perfil del actor, si aún no existe) y la invitación pasa a `ACCEPTED`; si el actor ya es miembro activo del grupo, la invitación igual pasa a `ACCEPTED`, sin duplicar la membresía ni cambiar su rol. Al rechazar, la invitación pasa a `DECLINED`. Ambas responden `200` con la `Invitation` en su nuevo estado.
 
 El vencimiento se calcula con `expiresAt`; no se guarda como estado. Una invitación vencida responde `409 INVITATION_EXPIRED`, y una ya aceptada, rechazada o revocada responde `409 INVITATION_ALREADY_RESPONDED`. En ambos casos no cambia nada.
 

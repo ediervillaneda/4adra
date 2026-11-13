@@ -29,7 +29,8 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] `GetGroup` y `ListGroupMembers` (solo para miembros activos; si no, `GROUP_NOT_FOUND`).
 - [ ] `ArchiveGroup`.
 - [x] `InviteMember` (Owner/Administrator; solo correos de la lista de acceso; reinvitar devuelve la pendiente vigente).
-- [ ] `AcceptInvitation`, `DeclineInvitation`, `ChangeMemberRole`, `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
+- [x] `ListMyInvitations`, `AcceptInvitation`, `DeclineInvitation` (solo el destinatario; una invitación ajena es `INVITATION_NOT_FOUND`; aceptar crea el perfil si falta y no duplica una membresía activa).
+- [ ] `ChangeMemberRole`, `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
 - [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`).
 - [ ] `CalculateBalances` (recálculo idempotente, ciclo `BalanceDirty` → `BalanceRecalculated`, `docs/Algorithms.md`).
 - [ ] `GenerateSettlementSuggestions`, `CreateSettlement`, `ConfirmSettlement`, `CancelSettlement`, `RejectSettlement`.
@@ -40,7 +41,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 - [x] `D1UserRepository`, `D1AuditLogWriter` (Fase 0).
 - [x] `D1GroupRepository` (alta atómica del grupo con su Owner, listado por membresía, consulta de un grupo para un miembro y listado de miembros activos; migración `0003_groups`).
-- [x] `D1InvitationRepository` (migración `0004_invitations`).
+- [x] `D1InvitationRepository` (migración `0004_invitations`; aceptar cierra la invitación y crea la membresía en un solo `db.batch`).
 - [ ] `D1MembershipRepository`, `D1ExpenseRepository` (gasto + splits en un solo `db.batch`), `D1SettlementRepository`, `D1BalanceRepository`, con sus migraciones SQL (`docs/examples/D1Schema.sql`).
 - [x] ~~IDs deterministas `{groupId}_{userId}` para `groupMembers` (ADR-010)~~: en D1 lo reemplaza `UNIQUE (group_id, user_id)` en `group_members`.
 - [x] `BetterAuthAuthenticationProvider` (sesión por cookie, Google) — Fase 0.
@@ -62,7 +63,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] Ver un grupo y sus miembros con su rol (`/grupos/:groupId`).
 - [ ] Archivar grupos.
 - [x] Invitar miembro (`/grupos/:groupId/invitar`).
-- [ ] Aceptar/rechazar invitación.
+- [x] Aceptar/rechazar invitación (sección "Invitaciones" en Inicio).
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
 - [ ] Ver balances del grupo.
 - [ ] Ver sugerencias de liquidación y confirmar una liquidación.

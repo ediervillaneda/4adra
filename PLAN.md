@@ -6,11 +6,11 @@
 Como invitado, quiero ver mis invitaciones pendientes y aceptarlas o rechazarlas, para decidir si entro al grupo.
 
 ## Criterios de aceptación
-- [ ] Dado que tengo invitaciones pendientes y vigentes dirigidas a mi correo, cuando abro Inicio, entonces las veo en una sección \"Invitaciones\" con el nombre del grupo, quién me invitó y el rol que me ofrecen. Si no tengo ninguna, la sección no aparece. No veo invitaciones vencidas, aceptadas ni rechazadas, ni las dirigidas a otros correos.
-- [ ] Dado que tengo una invitación pendiente y vigente, cuando la acepto, entonces quedo como miembro activo del grupo con el rol ofrecido, el grupo aparece en mi lista de Inicio, y la invitación deja de aparecer como pendiente.
-- [ ] Dado que tengo una invitación pendiente y vigente, cuando la rechazo, entonces desaparece de mi lista, no entro al grupo, y el grupo no revela nada más de mí.
-- [ ] Dado que la invitación venció, ya fue respondida, o no es para mi correo, cuando intento aceptarla o rechazarla (por ejemplo desde la API), entonces recibo un error claro y no cambia nada. Una invitación ajena responde como \"no encontrada\", sin revelar que existe.
-- [ ] Dado que ya soy miembro activo del grupo por otra vía, cuando acepto una invitación pendiente de ese grupo, entonces la invitación se cierra sin duplicar mi membresía y mi rol actual no cambia.
+- [x] Dado que tengo invitaciones pendientes y vigentes dirigidas a mi correo, cuando abro Inicio, entonces las veo en una sección \"Invitaciones\" con el nombre del grupo, quién me invitó y el rol que me ofrecen. Si no tengo ninguna, la sección no aparece. No veo invitaciones vencidas, aceptadas ni rechazadas, ni las dirigidas a otros correos.
+- [x] Dado que tengo una invitación pendiente y vigente, cuando la acepto, entonces quedo como miembro activo del grupo con el rol ofrecido, el grupo aparece en mi lista de Inicio, y la invitación deja de aparecer como pendiente.
+- [x] Dado que tengo una invitación pendiente y vigente, cuando la rechazo, entonces desaparece de mi lista, no entro al grupo, y el grupo no revela nada más de mí.
+- [x] Dado que la invitación venció, ya fue respondida, o no es para mi correo, cuando intento aceptarla o rechazarla (por ejemplo desde la API), entonces recibo un error claro y no cambia nada. Una invitación ajena responde como \"no encontrada\", sin revelar que existe.
+- [x] Dado que ya soy miembro activo del grupo por otra vía, cuando acepto una invitación pendiente de ese grupo, entonces la invitación se cierra sin duplicar mi membresía y mi rol actual no cambia.
 
 ## Plan
 - Backend: casos de uso para listar las invitaciones pendientes y vigentes del actor (por su correo normalizado), aceptar y rechazar. Aceptar inserta la membresía activa y cierra la invitación en un solo `db.batch`; `UNIQUE (group_id, user_id)` protege contra doble aceptación concurrente. Vencimiento evaluado con reloj inyectado. Auditoría de ambas operaciones.
