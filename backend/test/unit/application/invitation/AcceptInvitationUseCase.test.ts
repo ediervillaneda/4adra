@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { AcceptInvitationUseCase } from '../../../../src/application/invitation/AcceptInvitationUseCase';
+import { AuthenticatedActor } from '../../../../src/domain/auth/AuthenticatedActor';
 import { GroupId } from '../../../../src/domain/group/GroupId';
+import { Email } from '../../../../src/domain/user/Email';
+import { UserId } from '../../../../src/domain/user/UserId';
 import {
   InvitationAlreadyRespondedException,
   InvitationExpiredException,
@@ -12,9 +15,9 @@ const casa = GroupId.fromString('grp_casa');
 
 describe('AcceptInvitationUseCase', () => {
   it('shouldJoinGroupWithOfferedRoleAndMarkInvitationAccepted', async () => {
-    const { groups, invitations, seedInvitation, statusOf } = invitationScenario();
+    const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
     seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', role: 'ADMINISTRATOR' });
-    const useCase = new AcceptInvitationUseCase(invitations, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
 
     const view = await useCase.execute({ actor: juan, invitationId: 'inv_casa' });
 
@@ -33,9 +36,9 @@ describe('AcceptInvitationUseCase', () => {
   it.each(['inv_inexistente', 'inv_eva'])(
     'shouldThrowInvitationNotFoundWhenInvitationIsMissingOrForAnotherEmail (%s)',
     async (invitationId) => {
-      const { groups, invitations, seedInvitation, statusOf } = invitationScenario();
+      const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
       seedInvitation({ id: 'inv_eva', groupId: 'grp_casa', email: 'eva@example.com' });
-      const useCase = new AcceptInvitationUseCase(invitations, () => NOW);
+      const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
 
       await expect(useCase.execute({ actor: juan, invitationId })).rejects.toBeInstanceOf(
         InvitationNotFoundException,
@@ -46,9 +49,9 @@ describe('AcceptInvitationUseCase', () => {
   );
 
   it('shouldThrowInvitationExpiredAndChangeNothing', async () => {
-    const { groups, invitations, seedInvitation, statusOf } = invitationScenario();
+    const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
     seedInvitation({ id: 'inv_casa', createdAt: new Date('2026-11-06T12:00:00.000Z') });
-    const useCase = new AcceptInvitationUseCase(invitations, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
 
     await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
       InvitationExpiredException,
@@ -60,9 +63,9 @@ describe('AcceptInvitationUseCase', () => {
   it.each(['ACCEPTED', 'DECLINED', 'REVOKED'] as const)(
     'shouldThrowInvitationAlreadyRespondedAndChangeNothing (%s)',
     async (status) => {
-      const { groups, invitations, seedInvitation, statusOf } = invitationScenario();
+      const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
       seedInvitation({ id: 'inv_casa', status });
-      const useCase = new AcceptInvitationUseCase(invitations, () => NOW);
+      const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
 
       await expect(
         useCase.execute({ actor: juan, invitationId: 'inv_casa' }),
@@ -73,10 +76,10 @@ describe('AcceptInvitationUseCase', () => {
   );
 
   it('shouldCloseInvitationKeepingRoleWhenActorIsAlreadyActiveMember', async () => {
-    const { groups, invitations, seedInvitation, joinAs, statusOf } = invitationScenario();
+    const { users, groups, invitations, seedInvitation, joinAs, statusOf } = invitationScenario();
     joinAs('grp_casa', 'MEMBER');
     seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', role: 'ADMINISTRATOR' });
-    const useCase = new AcceptInvitationUseCase(invitations, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
 
     const view = await useCase.execute({ actor: juan, invitationId: 'inv_casa' });
 
@@ -86,5 +89,22 @@ describe('AcceptInvitationUseCase', () => {
       (member) => member.userId.toString() === 'usr_juan',
     );
     expect(juanMemberships.map((member) => member.role)).toEqual(['MEMBER']);
+  });
+
+  it('shouldCreateActorProfileWhenMissingBeforeJoining', async () => {
+    const { users, groups, invitations, seedInvitation } = invitationScenario();
+    const lia: AuthenticatedActor = {
+      userId: UserId.fromString('usr_lia'),
+      email: Email.fromString('lia@example.com'),
+      displayName: 'Lía',
+      photoUrl: null,
+    };
+    seedInvitation({ id: 'inv_lia', groupId: 'grp_casa', email: 'lia@example.com' });
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+
+    await useCase.execute({ actor: lia, invitationId: 'inv_lia' });
+
+    expect((await users.findById(lia.userId))?.displayName).toBe('Lía');
+    expect((await groups.findForMember(casa, lia.userId))?.role).toBe('MEMBER');
   });
 });

@@ -37,6 +37,7 @@ interface SeededInvitation {
 }
 
 export interface InvitationScenario {
+  users: InMemoryUserRepository;
   groups: InMemoryGroupRepository;
   invitations: InMemoryInvitationRepository;
   seedInvitation: (seed: SeededInvitation) => void;
@@ -85,6 +86,7 @@ export function invitationScenario(): InvitationScenario {
   const invitations = new InMemoryInvitationRepository(groups, users);
 
   return {
+    users,
     groups,
     invitations,
     seedInvitation: (seed): void => {

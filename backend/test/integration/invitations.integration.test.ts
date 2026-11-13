@@ -141,6 +141,18 @@ describe('Invitaciones recibidas (Worker + D1 + Better Auth)', () => {
     expect(await myInvitations(juan)).toEqual([]);
   });
 
+  it('shouldJoinGroupWhenAcceptingWithoutPriorProfile', async () => {
+    const { cookie: ana } = await signIn('ana.sin-perfil@example.com', 'Ana');
+    const juan = await sessionCookieFor('juan.sin-perfil@example.com', 'Juan');
+    const casa = await createGroupAs(ana, 'Casa');
+    const invitationId = await invite(ana, casa, 'juan.sin-perfil@example.com', 'MEMBER');
+
+    const response = await respond(juan, invitationId, 'accept');
+
+    expect(response.status).toBe(200);
+    expect(await myGroupIds(juan)).toEqual([casa]);
+  });
+
   it('shouldReturn409AlreadyRespondedOnSecondAcceptKeepingOneMembership', async () => {
     const { cookie: ana } = await signIn('ana.doble@example.com', 'Ana');
     const { cookie: juan, userId } = await signIn('juan.doble@example.com', 'Juan');

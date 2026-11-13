@@ -43,7 +43,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
       now,
     ),
     listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitations, now),
-    acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, now),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, users, now),
     declineInvitationUseCase: new DeclineInvitationUseCase(invitations, now),
   };
 }

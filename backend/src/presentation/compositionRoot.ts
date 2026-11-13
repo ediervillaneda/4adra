@@ -66,7 +66,11 @@ export function composeApp(env: Env): Hono<AppEnv> {
       () => new Date(),
     ),
     listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitationRepository, () => new Date()),
-    acceptInvitationUseCase: new AcceptInvitationUseCase(invitationRepository, () => new Date()),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(
+      invitationRepository,
+      userRepository,
+      () => new Date(),
+    ),
     declineInvitationUseCase: new DeclineInvitationUseCase(invitationRepository, () => new Date()),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),

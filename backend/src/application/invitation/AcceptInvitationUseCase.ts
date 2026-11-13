@@ -1,5 +1,7 @@
 import { AuthenticatedActor } from '../../domain/auth/AuthenticatedActor';
 import { InvitationRepository } from '../../domain/invitation/InvitationRepository';
+import { UserRepository } from '../../domain/user/UserRepository';
+import { createUserFromActor } from '../user/createUserFromActor';
 import { findInvitationForActor } from './findInvitationForActor';
 import { InvitationView } from './InvitationView';
 import { toInvitationView } from './toInvitationView';
@@ -13,6 +15,7 @@ export interface RespondInvitationCommand {
 export class AcceptInvitationUseCase {
   constructor(
     private readonly invitationRepository: InvitationRepository,
+    private readonly userRepository: UserRepository,
     private readonly now: () => Date,
   ) {}
 
@@ -24,6 +27,10 @@ export class AcceptInvitationUseCase {
     );
     const now = this.now();
     const accepted = invitation.accept(now);
+    // La membresía exige el perfil; quien acepta por la API sin pasar por GET /me aún no lo tiene.
+    if ((await this.userRepository.findById(command.actor.userId)) === null) {
+      await this.userRepository.save(createUserFromActor(command.actor, now));
+    }
     await this.invitationRepository.saveAccepted(accepted, command.actor.userId, now);
     return toInvitationView(accepted);
   }
