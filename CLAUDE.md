@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del repositorio
 
-**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.2.0 (ver `CHANGELOG.md`); está en curso la **pieza 2 de 4 (grupos y miembros)**, con una rama `feature/*` por historia, desde `develop`:
+**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.3.0 (ver `CHANGELOG.md`); está en curso la **pieza 2 de 4 (grupos y miembros)**, con una rama `feature/*` por historia, desde `develop`:
 
 - **`backend/`**: Worker real (`4adra`) con Hono + D1 + Better Auth (Google). `GET`/`PATCH /api/v1/me`, `POST`/`GET /api/v1/groups`, `GET /api/v1/groups/{groupId}` (y `/members`), `POST /api/v1/groups/{groupId}/members/invitations`, `GET /api/v1/invitations`, `POST /api/v1/invitations/{invitationId}/accept|decline`, `POST /api/v1/groups/{groupId}/members/invite-link`, `GET /api/v1/invite-links/{code}` y `POST /api/v1/invite-links/{code}/join` funcionan de punta a punta, con pruebas unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
 - **`web/`**: PWA en Angular 22 (ADR-019). Incluye login con Google, aviso de invitación, perfil editable, política de privacidad, crear un grupo y verlo en Inicio, ver su detalle con los miembros, invitar por correo, ver y responder invitaciones en Inicio, compartir un enlace de invitación y unirse con él, y es instalable y funciona sin conexión. El Worker la sirve como Static Assets.
