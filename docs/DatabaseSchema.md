@@ -54,6 +54,12 @@ El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batc
 |---|---|---|
 | `invitations` | FK `group_id` → `groups` e `invited_by` → `users`; `CHECK` de rol (`ADMINISTRATOR`/`MEMBER`/`READ_ONLY`) y de estado; índices `(group_id, status)` y `(email, status)` | Correo normalizado; `expires_at` = `created_at` + 7 días (ADR-011). Una invitación nunca se borra: conserva su estado final |
 
+## Enlaces de invitación (migración `0005_invite_links`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `invite_links` | FK `group_id` → `groups` y `created_by` → `users`; `code_hash` `UNIQUE`; índice único parcial `(group_id) WHERE replaced_at IS NULL` | Solo el hash SHA-256 del código (128 bits aleatorios); el código nunca se guarda. `expires_at` = `created_at` + 7 días. Crear otro enlace marca el anterior con `replaced_at` en el mismo `db.batch`; un enlace nunca se borra |
+
 ## Tablas previstas (se crean en la fase que las implemente)
 
 | Tabla | Claves e integridad | Notas |
@@ -76,6 +82,7 @@ El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batc
 - `idx_audit_logs_entity (entity, entity_id)`
 - `idx_group_members_user_status (user_id, status)` (`0003`)
 - `idx_invitations_group_status (group_id, status)`, `idx_invitations_email_status (email, status)` (`0004`)
+- `idx_invite_links_current_per_group (group_id) WHERE replaced_at IS NULL`, único (`0005`)
 
 **Previstos:**
 

@@ -6,9 +6,9 @@
 Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo.
 
 ## Criterios de aceptación
-- [ ] Dado que soy Owner o Administrator de un grupo, cuando pido el enlace de invitación, entonces veo un enlace que puedo copiar o compartir, válido por 7 días y para varias personas. Si pido uno nuevo, el anterior deja de servir. Si soy Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
-- [ ] Dado que tengo acceso a 4adra y abro un enlace vigente, cuando entro con Google (si no tenía sesión) y confirmo "Unirme" en la pantalla que dice a qué grupo me invitan, entonces quedo como Miembro del grupo y lo veo en Inicio. Si ya era miembro activo, entro al grupo sin duplicar mi membresía y sin cambiar mi rol.
-- [ ] Dado que el enlace venció, fue reemplazado o no existe, cuando lo abro, entonces veo un mensaje claro y no entro a ningún grupo. Si mi correo no está en la lista de acceso de 4adra, veo "Necesitas una invitación", como hoy.
+- [x] Dado que soy Owner o Administrator de un grupo, cuando pido el enlace de invitación, entonces veo un enlace que puedo copiar o compartir, válido por 7 días y para varias personas. Si pido uno nuevo, el anterior deja de servir. Si soy Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
+- [x] Dado que tengo acceso a 4adra y abro un enlace vigente, cuando entro con Google (si no tenía sesión) y confirmo "Unirme" en la pantalla que dice a qué grupo me invitan, entonces quedo como Miembro del grupo y lo veo en Inicio. Si ya era miembro activo, entro al grupo sin duplicar mi membresía y sin cambiar mi rol.
+- [x] Dado que el enlace venció, fue reemplazado o no existe, cuando lo abro, entonces veo un mensaje claro y no entro a ningún grupo. Si mi correo no está en la lista de acceso de 4adra, veo "Necesitas una invitación", como hoy.
 
 ## Plan
 - Base de datos: una migración nueva con los enlaces de cada grupo: el **hash (SHA-256) de un código aleatorio** imposible de adivinar (el código nunca se guarda), quién lo creó, cuándo vence y si fue reemplazado. Un solo enlace vigente por grupo.
@@ -26,3 +26,9 @@ Como Owner o Administrator, quiero compartir un enlace de invitación, para suma
 
 ## Sugerencias (tú decides)
 - Las tres sugerencias de `/story` quedaron aprobadas e incorporadas al plan: guardar solo el hash del código, extraer el chequeo de Owner o Administrator y el botón "Compartir" nativo.
+
+## Decisiones durante `/pair`
+- El diálogo crea el enlace solo al pulsar "Crear enlace" y avisa antes que el anterior deja de servir: como solo se guarda el hash, el código no se puede volver a mostrar, y crearlo al abrir mataría el enlace ya compartido.
+- La auditoría enmascara el código en la ruta (`/invite-links/***/join`).
+- `?volver=` se valida resolviendo la ruta contra el mismo origen (rechaza `//`, `/\` y `/<tab>/`), también en el callback de error y en `/entrar` con sesión.
+- Queda para la #7: unirse con una membresía `REMOVED` (hoy no ocurre).

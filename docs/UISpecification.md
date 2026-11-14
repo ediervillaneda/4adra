@@ -27,7 +27,7 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 | Ruta | Pantalla | Estado |
 |---|---|---|
 | `/` | Inicio: saludo, estado vacío "Tus grupos aparecerán aquí" y aviso "Revisa tu perfil" hasta el primer guardado | Hecho |
-| `/entrar` | Login con "Continuar con Google" y mensajes `NOT_INVITED` / error genérico | Hecho |
+| `/entrar` | Login con "Continuar con Google" y mensajes `NOT_INVITED` / error genérico. Con `?volver=<ruta>` (la pone el guard al pedir una ruta privada sin sesión), Google regresa a esa ruta, también al reintentar después de un error; solo se aceptan rutas del mismo origen. Con sesión, `/entrar?volver=` lleva directo a esa ruta | Hecho (`volver`: historia #5) |
 | `/perfil` | Mi perfil: nombre, moneda, idioma y zona horaria (`PATCH /me`), foto de Google en solo lectura y cierre de sesión | Hecho |
 | `/privacidad` | Política de privacidad (pública, contacto `privacidad@edier.me`) | Hecho |
 | `**` | No encontrado | Hecho |
@@ -38,7 +38,8 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 |---|---|---|
 | `/` | Inicio: sección "Invitaciones" (solo si hay pendientes y vigentes) con una tarjeta por invitación: grupo, "Te invita …" y rol, y botones Aceptar y Rechazar, deshabilitados mientras llega la respuesta. Aceptar quita la tarjeta y recarga los grupos; rechazar la quita. Si la invitación ya venció, ya fue respondida o no está disponible, se quita y el aviso global explica por qué; otro fallo deja la tarjeta con un error. Si no se pueden cargar las invitaciones, un aviso lo dice. Debajo, la lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace. Cada grupo enlaza a su detalle | Hecho (historias #1, #2 y #4) |
 | `/grupos/nuevo` | Crear grupo: nombre, descripción opcional y moneda base (preseleccionada con la del perfil); errores por campo | Hecho (historia #1) |
-| `/grupos/:groupId` | Detalle del grupo: nombre, descripción, moneda base y miembros activos en orden alfabético (foto de Google, nombre y rol en español, sin correos). Estados: cargando, contenido, "Grupo no encontrado" (grupo inexistente o ajeno, con enlace a Inicio) y error genérico. Owner y Administrator ven el botón "Invitar". Todavía sin las pestañas Gastos, Balances y Liquidaciones | Hecho (historias #2 y #3) |
+| `/grupos/:groupId` | Detalle del grupo: nombre, descripción, moneda base y miembros activos en orden alfabético (foto de Google, nombre y rol en español, sin correos). Estados: cargando, contenido, "Grupo no encontrado" (grupo inexistente o ajeno, con enlace a Inicio) y error genérico. Owner y Administrator ven los botones "Invitar" y "Compartir enlace". "Compartir enlace" abre un diálogo que avisa "Si creas uno nuevo, el anterior deja de servir" y solo crea el enlace al pulsar "Crear enlace" (el código no se puede volver a mostrar). Después muestra la URL con "Copiar" ("Enlace copiado" o "No se pudo copiar…") y, donde el navegador lo permite, "Compartir" con la hoja nativa. Todavía sin las pestañas Gastos, Balances y Liquidaciones | Hecho (historias #2, #3 y #5) |
+| `/unirse/:code` | Enlace de invitación (requiere sesión; sin ella, pasa por `/entrar?volver=`): "Te invitan a «…»" con el botón "Unirme", que entra como Miembro y abre el grupo. Un enlace inexistente o reemplazado dice "Este enlace ya no sirve…" y uno vencido "Este enlace ya venció…", sin botón | Hecho (historia #5) |
 | `/grupos/:groupId/invitar` | Invitar a alguien: correo y rol (Administrador, Miembro o Solo lectura, Miembro por omisión). Muestra "Invitación enviada" en la misma pantalla, o el motivo del rechazo (correo fuera de la lista de acceso, o ya es miembro); otros errores van al aviso global | Hecho (historia #3) |
 
 No existe una pantalla separada de "Completar perfil": el perfil nace con COP, es y America/Bogota, y el aviso de Inicio lleva a `/perfil`. Tampoco existe "Registro": la primera entrada con Google crea la cuenta, siempre que el correo esté en la lista de acceso (ADR-018).
@@ -132,6 +133,8 @@ Convención de columnas: **Estados** asume siempre `Loading/Content/Empty/Error`
 | Archivar grupo (confirmación) | — | `POST /groups/{groupId}/archive` | Owner | Confirmar archivado (irreversible desde UI) |
 | Miembros del grupo | `Empty` improbable (siempre ≥1) | `GET /groups/{groupId}/members` | Miembro activo | Ver roles; invitar (Owner/Administrator); cambiar rol/remover (Owner) |
 | Invitar miembro | — | `POST /groups/{groupId}/members/invitations` | Owner, Administrator | Correo + rol |
+| Compartir enlace (diálogo en el detalle) | Antes de crear: aviso de reemplazo | `POST /groups/{groupId}/members/invite-link` | Owner, Administrator | Crear enlace, copiar, compartir |
+| Unirse con enlace (`/unirse/:code`) | Enlace vencido o que ya no sirve: mensaje sin botón | `GET /invite-links/{code}`, `POST /invite-links/{code}/join` | Usuario autenticado en la lista de acceso | Unirme |
 | Invitación recibida (tarjeta en Inicio) | Sin invitaciones: la sección no aparece | `GET /invitations`, `POST /invitations/{id}/accept\|decline` | Destinatario de la invitación | Aceptar / rechazar |
 | Abandonar grupo (confirmación) | `Error` si `OUTSTANDING_BALANCE`/`LAST_OWNER` | `POST /groups/{groupId}/leave` | Miembro activo, no último Owner, balance en cero | Confirmar salida |
 

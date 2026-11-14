@@ -37,6 +37,12 @@ Ver `docs/Workflows.md`.
   - Rechazar la quita sin sumarte al grupo.
   - Si la invitación ya venció o ya fue respondida, se quita de Inicio y un aviso explica por qué.
   - API: `GET /api/v1/invitations` y `POST /api/v1/invitations/{invitationId}/accept|decline`, con `404 INVITATION_NOT_FOUND` (también para invitaciones ajenas), `409 INVITATION_EXPIRED` y el código nuevo `409 INVITATION_ALREADY_RESPONDED`. Sin migración: el vencimiento se calcula con `expires_at`.
+- **Compartir un enlace de invitación** (pieza 2, historia #5):
+  - Owner y Administrator ven "Compartir enlace" en el detalle del grupo. El diálogo crea un enlace válido 7 días para varias personas, con "Copiar" y, en el celular, "Compartir" con la hoja nativa. Crear otro deja sin servir el anterior, y el diálogo lo avisa antes.
+  - Quien lo abre ve "Te invitan a «…»" y entra como Miembro con "Unirme". Si ya era miembro, conserva su rol. Un enlace vencido o reemplazado muestra un mensaje claro.
+  - El login con Google vuelve al enlace (`?volver=`), solo con rutas del mismo origen.
+  - Seguridad: solo se guarda el hash SHA-256 del código, y la auditoría lo enmascara.
+  - API: `POST /api/v1/groups/{groupId}/members/invite-link`, `GET /api/v1/invite-links/{code}` y `POST /api/v1/invite-links/{code}/join`, con los códigos nuevos `404 INVITE_LINK_NOT_FOUND` y `409 INVITE_LINK_EXPIRED`. Base de datos: migración `0005_invite_links`.
 
 ## [0.2.0] - 2026-11-11
 

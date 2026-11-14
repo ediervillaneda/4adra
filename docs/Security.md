@@ -68,6 +68,8 @@ Los secretos y claves externas nunca van en el repositorio, el cliente, los logs
 - **Local:** `backend/.dev.vars`, ignorado por git. Solo `backend/.dev.vars.example` va al repositorio, y sin valores.
 - **CI:** `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` como secrets de GitHub Actions. El token usa permisos mínimos (Workers Scripts Edit, D1 Edit y la zona `edier.me`).
 
+El código de un enlace de invitación es un secreto: en D1 solo se guarda su hash SHA-256, y la auditoría lo enmascara en la ruta (`/invite-links/***/join`).
+
 Rotar `BETTER_AUTH_SECRET` invalida todas las sesiones. Hacerlo de inmediato ante una sospecha de filtración, y revocar en el acto cualquier token expuesto.
 
 Auditar actor, fecha, operación, entidad, resultado, request ID y cambios relevantes; enmascarar PII. Aplicar rate limiting por usuario, IP y grupo. Alertar ante fallos repetidos de autenticación, escalamiento de privilegios, exportaciones masivas y mutaciones anómalas.
