@@ -70,8 +70,12 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups/{groupId}/archive` | Archiva grupo |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |
+| `GET /invitations` | Lista las invitaciones pendientes y vigentes dirigidas al correo del actor |
 | `POST /invitations/{invitationId}/accept` | Acepta una invitación pendiente dirigida al actor |
 | `POST /invitations/{invitationId}/decline` | Rechaza una invitación pendiente dirigida al actor |
+| `POST /groups/{groupId}/members/invite-link` | Crea el enlace de invitación del grupo y reemplaza el anterior (Owner/Administrator) |
+| `GET /invite-links/{code}` | Muestra a qué grupo invita un enlace vigente |
+| `POST /invite-links/{code}/join` | El actor entra como Member al grupo del enlace |
 | `PATCH /groups/{groupId}/members/{userId}` | Cambia rol o estado |
 | `DELETE /groups/{groupId}/members/{userId}` | Remueve membresía (Owner/Administrator) |
 | `POST /groups/{groupId}/leave` | El actor abandona el grupo (si no es el último Owner y no tiene deuda pendiente) |

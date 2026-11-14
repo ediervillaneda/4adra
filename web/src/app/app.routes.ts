@@ -20,6 +20,36 @@ export const routes: Routes = [
       import('./features/profile/profile.component').then((m) => m.ProfileComponent),
   },
   {
+    path: 'grupos/nuevo',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/create-group/create-group.component').then(
+        (m) => m.CreateGroupComponent,
+      ),
+  },
+  {
+    path: 'grupos/:groupId/invitar',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/invite-member/invite-member.component').then(
+        (m) => m.InviteMemberComponent,
+      ),
+  },
+  {
+    path: 'grupos/:groupId',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/group-detail/group-detail.component').then(
+        (m) => m.GroupDetailComponent,
+      ),
+  },
+  {
+    path: 'unirse/:code',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/invite-links/join-group.component').then((m) => m.JoinGroupComponent),
+  },
+  {
     path: 'privacidad',
     loadComponent: () =>
       import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),

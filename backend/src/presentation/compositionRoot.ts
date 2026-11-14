@@ -9,14 +9,32 @@ import { BetterAuthAuthenticationProvider } from '../infrastructure/auth/BetterA
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
 import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
 import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRepository';
+import { D1GroupRepository } from '../infrastructure/d1/D1GroupRepository';
+import { D1InvitationRepository } from '../infrastructure/d1/D1InvitationRepository';
+import { D1InviteLinkRepository } from '../infrastructure/d1/D1InviteLinkRepository';
+import { generateInviteCode, hashInviteCode } from '../infrastructure/crypto/inviteCode';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
+import { CreateGroupUseCase } from '../application/group/CreateGroupUseCase';
+import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
+import { GetGroupUseCase } from '../application/group/GetGroupUseCase';
+import { ListGroupMembersUseCase } from '../application/group/ListGroupMembersUseCase';
+import { InviteMemberUseCase } from '../application/invitation/InviteMemberUseCase';
+import { ListMyInvitationsUseCase } from '../application/invitation/ListMyInvitationsUseCase';
+import { AcceptInvitationUseCase } from '../application/invitation/AcceptInvitationUseCase';
+import { DeclineInvitationUseCase } from '../application/invitation/DeclineInvitationUseCase';
+import { CreateInviteLinkUseCase } from '../application/invitation/CreateInviteLinkUseCase';
+import { GetInviteLinkUseCase } from '../application/invitation/GetInviteLinkUseCase';
+import { JoinGroupWithInviteLinkUseCase } from '../application/invitation/JoinGroupWithInviteLinkUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
   const allowedEmails = new D1AllowedEmailRepository(env.DB);
   const userRepository = new D1UserRepository(env.DB);
+  const groupRepository = new D1GroupRepository(env.DB);
+  const invitationRepository = new D1InvitationRepository(env.DB);
+  const inviteLinkRepository = new D1InviteLinkRepository(env.DB);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -35,6 +53,49 @@ export function composeApp(env: Env): Hono<AppEnv> {
     ),
     updateCurrentUserProfileUseCase: new UpdateCurrentUserProfileUseCase(
       userRepository,
+      () => new Date(),
+    ),
+    createGroupUseCase: new CreateGroupUseCase(
+      groupRepository,
+      userRepository,
+      () => uuidv7(),
+      () => new Date(),
+    ),
+    listMyGroupsUseCase: new ListMyGroupsUseCase(groupRepository),
+    getGroupUseCase: new GetGroupUseCase(groupRepository),
+    listGroupMembersUseCase: new ListGroupMembersUseCase(groupRepository),
+    inviteMemberUseCase: new InviteMemberUseCase(
+      groupRepository,
+      allowedEmails,
+      invitationRepository,
+      () => uuidv7(),
+      () => new Date(),
+    ),
+    listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitationRepository, () => new Date()),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(
+      invitationRepository,
+      userRepository,
+      () => new Date(),
+    ),
+    declineInvitationUseCase: new DeclineInvitationUseCase(invitationRepository, () => new Date()),
+    createInviteLinkUseCase: new CreateInviteLinkUseCase(
+      groupRepository,
+      inviteLinkRepository,
+      () => uuidv7(),
+      generateInviteCode,
+      hashInviteCode,
+      () => new Date(),
+    ),
+    getInviteLinkUseCase: new GetInviteLinkUseCase(
+      inviteLinkRepository,
+      hashInviteCode,
+      () => new Date(),
+    ),
+    joinGroupWithInviteLinkUseCase: new JoinGroupWithInviteLinkUseCase(
+      inviteLinkRepository,
+      groupRepository,
+      userRepository,
+      hashInviteCode,
       () => new Date(),
     ),
     authHandler: (request) => auth.handler(request),

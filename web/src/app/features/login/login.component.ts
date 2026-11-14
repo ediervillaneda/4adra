@@ -52,12 +52,11 @@ import { TEXTS } from '../../shared/texts';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   protected readonly texts = TEXTS;
-  protected readonly errorMessage = this.messageFor(
-    inject(ActivatedRoute).snapshot.queryParamMap.get('error'),
-  );
+  private readonly queryParams = inject(ActivatedRoute).snapshot.queryParamMap;
+  protected readonly errorMessage = this.messageFor(this.queryParams.get('error'));
 
   protected signIn(): void {
-    void this.auth.signInWithGoogle();
+    void this.auth.signInWithGoogle(this.queryParams.get('volver'));
   }
 
   private messageFor(error: string | null): string | null {

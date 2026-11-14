@@ -13,6 +13,7 @@ import { Email } from '../../../../src/domain/user/Email';
 import { SessionCredential } from '../../../../src/domain/auth/SessionCredential';
 import { UnauthenticatedException } from '../../../../src/domain/auth/errors';
 import { executionContextFake } from './executionContextFake';
+import { inMemoryGroupUseCases } from '../../../support/inMemoryGroupUseCases';
 
 class InMemoryUserRepository implements UserRepository {
   findById(): Promise<User | null> {
@@ -57,6 +58,7 @@ function buildApp(overrides: Partial<AppDependencies> = {}): Hono<AppEnv> {
       new InMemoryUserRepository(),
       () => new Date('2026-11-11T18:00:00Z'),
     ),
+    ...inMemoryGroupUseCases(),
     authHandler: () => Promise.resolve(new Response('auth', { status: 200 })),
     generateRequestId: () => 'req_1',
     ...overrides,

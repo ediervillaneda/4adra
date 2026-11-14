@@ -24,12 +24,18 @@ Las versiones exactas se fijan en los archivos del repositorio (`package.json`, 
 2. Instalar dependencias usando el lockfile.
 3. cd backend && cp .dev.vars.example .dev.vars (completar BETTER_AUTH_SECRET; GOOGLE_* para login real).
 4. npm run db:migrate:local (D1 local).
-5. npm test, npm run test:integration, npm run test:contract, npm run lint, npm run typecheck.
-6. npm run dev → http://localhost:8787 (API y login; sirve la PWA si web/ ya está compilada).
-7. En otra terminal: cd web && npm ci && npm start → http://localhost:4200 (proxy de /api → 8787).
+5. Agregar tu correo a la lista de acceso local (ADR-018), o el login responde "Necesitas una invitación":
+   npx wrangler d1 execute 4adra-db --local --command "INSERT INTO allowed_emails (email, created_at) VALUES ('tu-correo@gmail.com', strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+6. npm test, npm run test:integration, npm run test:contract, npm run lint, npm run typecheck.
+7. npm run dev → http://localhost:8787 (API y login; sirve la PWA si web/ ya está compilada).
+8. En otra terminal: cd web && npm ci && npm start → http://localhost:4200 (proxy de /api → 8787).
 ```
 
-Para el login con Google desde `localhost:4200`, `backend/.dev.vars` debe tener `TRUSTED_ORIGINS=http://localhost:4200`, y el cliente OAuth debe autorizar ese origen. Detén `wrangler dev` con Ctrl+C antes de abrir otra instancia: dos instancias en el puerto 8787 hacen que todo deje de responder.
+La lista de acceso de la base local es independiente de la de producción: hay que cargarla en cada equipo, y el correo va en minúsculas.
+
+`npm run dev` ejecuta `wrangler dev --infer-origin-from-routes=false`. Sin esa opción, wrangler toma el dominio de producción de `wrangler.jsonc` (`4adra.edier.me`) como origen de las peticiones locales, y Better Auth rechaza el login con `INVALID_ORIGIN`. Por eso conviene usar siempre `npm run dev` y no `npx wrangler dev`.
+
+Para el login con Google desde `localhost:4200`, `backend/.dev.vars` debe tener `TRUSTED_ORIGINS=http://localhost:4200`, y el cliente OAuth debe autorizar ese origen. Detén `wrangler dev` con Ctrl+C antes de abrir otra instancia: dos instancias en el puerto 8787 hacen que todo deje de responder. Si la app local se queda en "Cargando…", revisa con `netstat -ano | findstr :8787` que haya una sola instancia escuchando.
 
 No copiar secretos de producción a archivos locales. Para login real en local, usar el cliente OAuth de Google con `http://localhost:8787` autorizado (ver `Deployment.md`).
 

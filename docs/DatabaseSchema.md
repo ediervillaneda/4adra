@@ -39,14 +39,33 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 
 `audit_logs` tiene los triggers `audit_logs_no_update` y `audit_logs_no_delete` (`RAISE(ABORT, 'audit_logs es inmutable')`). Así la base misma impide alterar la auditoría (ADR-006).
 
+## Grupos y membresías (migración `0003_groups`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `groups` | FK `created_by` → `users`; `CHECK` sobre la longitud del nombre (1 a 120), la descripción (hasta 500) y la moneda (COP, USD, EUR, MXN o GTQ) | Estado `ACTIVE`/`ARCHIVED`; `version` para `If-Match`. El perfil de cálculo se agrega con los gastos |
+| `group_members` | `UNIQUE (group_id, user_id)`; FK a `groups` y `users`; índice `(user_id, status)` | Rol `OWNER`/`ADMINISTRATOR`/`MEMBER`/`READ_ONLY`; estado `ACTIVE`/`REMOVED`. Reemplaza el ID determinista de ADR-010 |
+
+El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batch`.
+
+## Invitaciones (migración `0004_invitations`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `invitations` | FK `group_id` → `groups` e `invited_by` → `users`; `CHECK` de rol (`ADMINISTRATOR`/`MEMBER`/`READ_ONLY`) y de estado; índices `(group_id, status)` y `(email, status)` | Correo normalizado; `expires_at` = `created_at` + 7 días (ADR-011). Una invitación nunca se borra: conserva su estado final |
+
+## Enlaces de invitación (migración `0005_invite_links`, pieza 2)
+
+| Tabla | Claves e integridad | Notas |
+|---|---|---|
+| `invite_links` | FK `group_id` → `groups` y `created_by` → `users`; `code_hash` `UNIQUE`; índice único parcial `(group_id) WHERE replaced_at IS NULL` | Solo el hash SHA-256 del código (128 bits aleatorios); el código nunca se guarda. `expires_at` = `created_at` + 7 días. Crear otro enlace marca el anterior con `replaced_at` en el mismo `db.batch`; un enlace nunca se borra |
+
 ## Tablas previstas (se crean en la fase que las implemente)
 
 | Tabla | Claves e integridad | Notas |
 |---|---|---|
 | `calculation_profiles` | PK `(id, version)` | Versiones publicadas inmutables (trigger), ADR-005 |
-| `groups` | FK `owner_id` → `users`; FK `(calculation_profile_id, calculation_profile_version)` | Moneda por defecto; estado soft delete |
-| `group_members` | `UNIQUE (group_id, user_id)` | Reemplaza el ID determinista de ADR-010; rol `OWNER`/`ADMINISTRATOR`/`MEMBER`/`READ_ONLY` |
-| `invitations` | FK `group_id`; índices `(group_id, status)`, `(email, status)` | Una invitación aceptada o rechazada no se borra: conserva su estado final |
+| `groups` (columnas pendientes) | FK `(calculation_profile_id, calculation_profile_version)` | Se agregan con los gastos (pieza 3) |
 | `categories` | — | Catálogo global gestionado por la plataforma |
 | `exchange_rates` | Índice `(from_currency, to_currency, captured_at)` | Una tasa usada no cambia (triggers) |
 | `expenses` | FK `group_id`, `paid_by`, `category_id`, `created_by` | Exactamente un pagador; tasa y versión de perfil congeladas al crear |
@@ -61,6 +80,9 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 **Existentes:**
 - `session_userId_idx`, `account_userId_idx`, `verification_identifier_idx`
 - `idx_audit_logs_entity (entity, entity_id)`
+- `idx_group_members_user_status (user_id, status)` (`0003`)
+- `idx_invitations_group_status (group_id, status)`, `idx_invitations_email_status (email, status)` (`0004`)
+- `idx_invite_links_current_per_group (group_id) WHERE replaced_at IS NULL`, único (`0005`)
 
 **Previstos:**
 
@@ -68,8 +90,6 @@ El esquema completo de referencia está en [`docs/examples/D1Schema.sql`](exampl
 |---|---|
 | `expenses` | `(group_id, expense_date)`, `(group_id, category_id)`, `(group_id, paid_by)`, `(group_id, status)` |
 | `settlements` | `(group_id, status)`, `(from_user, status)`, `(to_user, status)` |
-| `group_members` | `(user_id, status)` (el `UNIQUE (group_id, user_id)` ya indexa la otra consulta) |
-| `invitations` | `(group_id, status)`, `(email, status)` |
 
 ## Atomicidad
 

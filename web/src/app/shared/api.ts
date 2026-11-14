@@ -24,6 +24,90 @@ export interface ProfileChanges {
   timeZone: string;
 }
 
+export type MemberRole = 'OWNER' | 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
+
+/** Roles que se pueden asignar al invitar; `OWNER` no (docs/api/Members.md). */
+export const INVITABLE_ROLES = ['ADMINISTRATOR', 'MEMBER', 'READ_ONLY'] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+/** Cuerpo de POST /api/v1/groups/{groupId}/members/invitations. */
+export interface InvitationRequest {
+  email: string;
+  role: InvitableRole;
+}
+
+/** components/schemas/Invitation en openapi.yaml. */
+export interface Invitation {
+  invitationId: string;
+  groupId: string;
+  email: string;
+  role: InvitableRole;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'REVOKED';
+  expiresAt: string;
+}
+
+/** Invitación pendiente y vigente para quien inició sesión (components/schemas/ReceivedInvitation). */
+export interface ReceivedInvitation {
+  invitationId: string;
+  groupId: string;
+  groupName: string;
+  invitedByName: string;
+  role: InvitableRole;
+  expiresAt: string;
+}
+
+/** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
+export interface GroupMember {
+  userId: string;
+  displayName: string;
+  photoUrl: string | null;
+  role: MemberRole;
+  status: 'ACTIVE';
+  joinedAt: string;
+}
+
+/** Grupo visto por uno de sus miembros (components/schemas/Group en openapi.yaml). */
+export interface GroupSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  defaultCurrency: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  role: MemberRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Cuerpo de POST /api/v1/groups. */
+export interface NewGroupRequest {
+  name: string;
+  description: string | null;
+  defaultCurrency: string;
+}
+
+/** Enlace recién creado; el código solo llega aquí (components/schemas/InviteLink). */
+export interface InviteLink {
+  groupId: string;
+  code: string;
+  expiresAt: string;
+}
+
+/** A qué grupo invita un enlace vigente (components/schemas/InviteLinkPreview). */
+export interface InviteLinkPreview {
+  groupId: string;
+  groupName: string;
+  expiresAt: string;
+}
+
+/** Membresía después de unirse con un enlace (components/schemas/JoinedMembership). */
+export interface JoinedMembership {
+  groupId: string;
+  userId: string;
+  role: MemberRole;
+  status: 'ACTIVE';
+  joinedAt: string;
+}
+
 export interface ApiSuccessEnvelope<T> {
   data: T;
   meta: { requestId: string };
