@@ -37,6 +37,9 @@ import { TEXTS } from '../../shared/texts';
         </mat-card-actions>
       </mat-card>
     }
+    @if (invitationsLoadFailed()) {
+      <p class="answer-error" role="alert">{{ texts.home.invitationsLoadError }}</p>
+    }
     @if (invitations().length > 0) {
       <section data-testid="invitations-section">
         <h2 class="section-title">{{ texts.home.invitationsTitle }}</h2>
@@ -49,7 +52,7 @@ import { TEXTS } from '../../shared/texts';
                 texts.home.invitedBy(invitation.invitedByName, texts.groups.roles[invitation.role])
               }}</mat-card-subtitle>
             </mat-card-header>
-            @if (failedInvitationId() === invitation.invitationId) {
+            @if (failedInvitationIds().has(invitation.invitationId)) {
               <mat-card-content>
                 <p class="answer-error" role="alert">{{ texts.home.invitationAnswerError }}</p>
               </mat-card-content>
@@ -59,6 +62,7 @@ import { TEXTS } from '../../shared/texts';
                 mat-button
                 type="button"
                 data-testid="decline-invitation"
+                [disabled]="answeringInvitationIds().has(invitation.invitationId)"
                 (click)="answer(invitation.invitationId, 'decline')"
               >
                 {{ texts.home.declineInvitation }}
@@ -67,6 +71,7 @@ import { TEXTS } from '../../shared/texts';
                 mat-flat-button
                 type="button"
                 data-testid="accept-invitation"
+                [disabled]="answeringInvitationIds().has(invitation.invitationId)"
                 (click)="answer(invitation.invitationId, 'accept')"
               >
                 {{ texts.home.acceptInvitation }}
@@ -153,8 +158,11 @@ export class HomeComponent {
   /** null mientras carga: así no parpadea el estado vacío. */
   protected readonly groups = signal<GroupSummary[] | null>(null);
   protected readonly invitations = signal<ReceivedInvitation[]>([]);
-  /** La invitación cuya última respuesta falló: su tarjeta muestra el error. */
-  protected readonly failedInvitationId = signal<string | null>(null);
+  protected readonly invitationsLoadFailed = signal(false);
+  /** Invitaciones con una respuesta en curso: sus botones quedan deshabilitados. */
+  protected readonly answeringInvitationIds = signal<ReadonlySet<string>>(new Set());
+  /** Invitaciones cuya última respuesta falló: su tarjeta muestra el error. */
+  protected readonly failedInvitationIds = signal<ReadonlySet<string>>(new Set());
   private readonly pendingTasks = inject(PendingTasks);
   protected readonly showReviewHint = !inject(ProfileReviewFlag).isReviewed();
   protected readonly greeting = computed(() => {
@@ -173,23 +181,29 @@ export class HomeComponent {
   }
 
   protected answer(invitationId: string, answer: 'accept' | 'decline'): void {
+    if (this.answeringInvitationIds().has(invitationId)) {
+      return;
+    }
     // PendingTasks: whenStable (y la app) esperan la respuesta y la recarga de grupos.
     void this.pendingTasks.run(() => this.sendAnswer(invitationId, answer));
   }
 
   private async sendAnswer(invitationId: string, answer: 'accept' | 'decline'): Promise<void> {
-    this.failedInvitationId.set(null);
+    this.answeringInvitationIds.update((ids) => withId(ids, invitationId));
+    this.failedInvitationIds.update((ids) => withoutId(ids, invitationId));
     try {
       await (answer === 'accept'
         ? this.invitationsService.accept(invitationId)
         : this.invitationsService.decline(invitationId));
     } catch (error) {
       if (!(error instanceof InvitationClosedError)) {
-        this.failedInvitationId.set(invitationId);
+        this.failedInvitationIds.update((ids) => withId(ids, invitationId));
         return;
       }
       // Ya no se puede responder: se quita la tarjeta y el banner explica por qué.
       this.errorNotifier.show(error.message);
+    } finally {
+      this.answeringInvitationIds.update((ids) => withoutId(ids, invitationId));
     }
     this.invitations.update((invitations) =>
       invitations.filter((invitation) => invitation.invitationId !== invitationId),
@@ -200,10 +214,24 @@ export class HomeComponent {
   }
 
   private async loadInvitations(): Promise<void> {
-    this.invitations.set(await this.invitationsService.listMyInvitations());
+    try {
+      this.invitations.set(await this.invitationsService.listMyInvitations());
+    } catch {
+      this.invitationsLoadFailed.set(true);
+    }
   }
 
   private async loadGroups(): Promise<void> {
     this.groups.set(await this.groupsService.listGroups());
   }
+}
+
+function withId(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  return new Set(ids).add(id);
+}
+
+function withoutId(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  const next = new Set(ids);
+  next.delete(id);
+  return next;
 }

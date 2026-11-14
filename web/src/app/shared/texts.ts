@@ -26,6 +26,8 @@ export const TEXTS = {
     acceptInvitation: 'Aceptar',
     declineInvitation: 'Rechazar',
     invitationAnswerError: 'No se pudo responder la invitación. Intenta de nuevo.',
+    invitationsLoadError:
+      'No se pudieron cargar tus invitaciones. Recarga la página para intentarlo de nuevo.',
     closedInvitation: {
       INVITATION_EXPIRED: 'Esta invitación ya venció.',
       INVITATION_ALREADY_RESPONDED: 'Ya respondiste esta invitación.',

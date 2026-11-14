@@ -21,6 +21,7 @@ interface RenderOptions {
   groups?: GroupSummary[];
   invitations?: ReceivedInvitation[];
   listGroups?: () => Promise<GroupSummary[]>;
+  listMyInvitations?: () => Promise<ReceivedInvitation[]>;
   accept?: (invitationId: string) => Promise<unknown>;
   decline?: (invitationId: string) => Promise<unknown>;
 }
@@ -79,7 +80,9 @@ async function render(options: RenderOptions = {}): Promise<HTMLElement> {
       {
         provide: InvitationsService,
         useValue: {
-          listMyInvitations: () => Promise.resolve(options.invitations ?? []),
+          listMyInvitations:
+            options.listMyInvitations ??
+            ((): Promise<ReceivedInvitation[]> => Promise.resolve(options.invitations ?? [])),
           accept: options.accept,
           decline: options.decline,
         },
@@ -271,5 +274,60 @@ describe('HomeComponent', () => {
 
     expect(element.querySelector('[data-testid="invitations-section"]')).toBeNull();
     expect(TestBed.inject(ApiErrorNotifier).message()).toBe('Esta invitación ya venció.');
+  });
+
+  it('homeShouldDisableAnswerButtonsWhileAnswerIsInFlight', async () => {
+    let finish: (value: unknown) => void = () => undefined;
+    const accept = vi.fn(() => new Promise((resolve) => (finish = resolve)));
+    const element = await render({
+      invitations: [invitationOf({ invitationId: 'inv_playa', groupName: 'Playa' })],
+      accept,
+    });
+
+    element.querySelector<HTMLButtonElement>('[data-testid="accept-invitation"]')?.click();
+    fixture.detectChanges();
+    const buttons = Array.from(
+      element.querySelectorAll<HTMLButtonElement>(
+        '[data-testid="accept-invitation"], [data-testid="decline-invitation"]',
+      ),
+    );
+    buttons.forEach((button) => button.click());
+
+    expect(buttons.map((button) => button.disabled)).toEqual([true, true]);
+    expect(accept).toHaveBeenCalledTimes(1);
+    finish(undefined);
+    await fixture.whenStable();
+  });
+
+  it('homeShouldKeepErrorOnOneCardWhenAnsweringAnother', async () => {
+    const element = await render({
+      invitations: [
+        invitationOf({ invitationId: 'inv_playa', groupName: 'Playa' }),
+        invitationOf({ invitationId: 'inv_casa', groupName: 'Casa' }),
+      ],
+      accept: vi.fn().mockRejectedValue(new Error('500')),
+      decline: vi.fn().mockResolvedValue(undefined),
+    });
+    await click(element, 'accept-invitation');
+
+    const casaCard = element.querySelectorAll('[data-testid="invitation-item"]')[1];
+    casaCard?.querySelector<HTMLButtonElement>('[data-testid="decline-invitation"]')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const items = Array.from(element.querySelectorAll('[data-testid="invitation-item"]'));
+    expect(items).toHaveLength(1);
+    expect(items[0]?.textContent).toContain('Playa');
+    expect(items[0]?.textContent).toContain('No se pudo responder la invitación.');
+  });
+
+  it('homeShouldTellWhenInvitationsCannotBeLoadedAndStillListGroups', async () => {
+    const element = await render({
+      listMyInvitations: () => Promise.reject(new Error('offline')),
+      groups: [groupOf({ id: 'grp_casa', name: 'Casa' })],
+    });
+
+    expect(element.textContent).toContain('No se pudieron cargar tus invitaciones.');
+    expect(element.querySelector('[data-testid="group-item"]')?.textContent).toContain('Casa');
   });
 });
