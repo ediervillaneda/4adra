@@ -1,9 +1,7 @@
 import { AuthenticatedActor } from '../../domain/auth/AuthenticatedActor';
 import { AllowedEmailRepository } from '../../domain/access/AllowedEmailRepository';
-import { GroupNotFoundException, PermissionDeniedException } from '../../domain/group/errors';
 import { GroupId } from '../../domain/group/GroupId';
 import { GroupRepository } from '../../domain/group/GroupRepository';
-import { MemberRole } from '../../domain/group/MemberRole';
 import { Invitation } from '../../domain/invitation/Invitation';
 import { InvitationRepository } from '../../domain/invitation/InvitationRepository';
 import {
@@ -13,6 +11,7 @@ import {
 import { validateNewInvitation } from '../../domain/invitation/NewInvitation';
 import { InvitationView } from './InvitationView';
 import { toInvitationView } from './toInvitationView';
+import { findGroupWhereActorInvites } from '../group/findGroupWhereActorInvites';
 
 export interface InviteMemberCommand {
   actor: AuthenticatedActor;
@@ -20,8 +19,6 @@ export interface InviteMemberCommand {
   /** Carga no confiable (cuerpo JSON). */
   input: unknown;
 }
-
-const ROLES_THAT_INVITE: readonly MemberRole[] = ['OWNER', 'ADMINISTRATOR'];
 
 /** Invita un correo a un grupo; si ya tiene una invitación pendiente, devuelve esa (docs/api/Members.md). */
 export class InviteMemberUseCase {
@@ -37,13 +34,7 @@ export class InviteMemberUseCase {
     const { email, role } = validateNewInvitation(command.input);
     const groupId = GroupId.fromString(command.groupId);
 
-    const memberGroup = await this.groupRepository.findForMember(groupId, command.actor.userId);
-    if (memberGroup === null) {
-      throw new GroupNotFoundException();
-    }
-    if (!ROLES_THAT_INVITE.includes(memberGroup.role)) {
-      throw new PermissionDeniedException();
-    }
+    await findGroupWhereActorInvites(this.groupRepository, groupId, command.actor.userId);
     if (!(await this.allowedEmailRepository.isAllowed(email))) {
       throw new EmailNotAllowedException();
     }

@@ -105,6 +105,83 @@ El vencimiento se calcula con `expiresAt`; no se guarda como estado. Una invitac
 
 Pendiente: reactivar una membresía `REMOVED` al aceptar llega con la remoción de miembros; el evento `MemberJoined` y la notificación, con la Fase 3.
 
+## Enlace de invitación
+
+Un enlace sirve para que varias personas entren al grupo sin invitarlas una por una. Cada grupo tiene como máximo un enlace vigente. Quien entra por el enlace queda siempre como `MEMBER`. El enlace no da acceso a 4adra: solo puede usarlo quien ya está en la lista de acceso (ADR-018), porque las tres operaciones exigen sesión.
+
+El código del enlace es aleatorio (al menos 128 bits) y en D1 solo se guarda su hash SHA-256. El código en claro aparece solo en la respuesta de creación. La PWA arma la URL a partir del código (`/unirse/{code}`).
+
+### Crear el enlace
+
+```http
+POST /api/v1/groups/{groupId}/members/invite-link
+```
+
+Sin cuerpo. Solo Owner y Administrator. Crea un enlace nuevo, que vence 7 días después (`expiresAt = createdAt + 7 días`), y marca el anterior como reemplazado: desde ese momento el anterior responde `404 INVITE_LINK_NOT_FOUND`. Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`; Member y ReadOnly reciben `403 PERMISSION_DENIED`.
+
+Respuesta `201`:
+
+```json
+{
+  "data": {
+    "groupId": "grp_123",
+    "code": "Hq3vX0b9r2kTqWm1Yp8sLA",
+    "expiresAt": "2026-07-20T12:00:00Z"
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+### Consultar un enlace
+
+```http
+GET /api/v1/invite-links/{code}
+```
+
+Cualquier usuario con sesión. Responde solo el nombre del grupo y el vencimiento, para mostrar "Te invitan a «…»". No revela miembros, moneda ni descripción.
+
+Respuesta `200`:
+
+```json
+{
+  "data": {
+    "groupId": "grp_123",
+    "groupName": "Viaje Guatemala",
+    "expiresAt": "2026-07-20T12:00:00Z"
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+### Unirse con el enlace
+
+```http
+POST /api/v1/invite-links/{code}/join
+```
+
+Sin cuerpo. Crea el perfil del actor si aún no existe y una membresía `ACTIVE` con rol `MEMBER`. Si el actor ya es miembro activo, no duplica la membresía ni cambia su rol, y responde igual. Una cuenta deshabilitada recibe `403 USER_DISABLED`.
+
+Respuesta `200`, con la membresía del actor:
+
+```json
+{
+  "data": {
+    "groupId": "grp_123",
+    "userId": "usr_juan",
+    "role": "MEMBER",
+    "status": "ACTIVE",
+    "joinedAt": "2026-07-14T09:30:00Z"
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+### Errores del enlace
+
+Consultar y unirse responden lo mismo ante un enlace inválido: `404 INVITE_LINK_NOT_FOUND` si el código no existe, fue reemplazado o el grupo ya no está activo, y `409 INVITE_LINK_EXPIRED` si venció. En ningún caso cambia nada.
+
+Pendiente: reactivar una membresía `REMOVED` al unirse llega con la remoción de miembros (historia #7). Anular un enlace sin crear otro, limitar sus usos o ver quién entró por él quedan fuera.
+
 ## Cambiar rol
 
 ```http
@@ -141,6 +218,8 @@ Estados de invitación: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`.
 | `INVITATION_NOT_FOUND` | Invitación inexistente o dirigida a otro correo (`404`) |
 | `INVITATION_EXPIRED` | Invitación vencida (`409`) |
 | `INVITATION_ALREADY_RESPONDED` | Invitación ya aceptada, rechazada o revocada (`409`) |
+| `INVITE_LINK_NOT_FOUND` | Enlace inexistente, reemplazado o de un grupo no activo (`404`) |
+| `INVITE_LINK_EXPIRED` | Enlace vencido (`409`) |
 | `MEMBER_ALREADY_ACTIVE` | Usuario ya pertenece al grupo |
 | `EMAIL_NOT_ALLOWED` | El correo invitado no está en la lista de acceso (`422`, ADR-018) |
 | `LAST_OWNER` | Operación dejaría al grupo sin Owner |

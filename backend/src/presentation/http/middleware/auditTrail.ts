@@ -4,6 +4,11 @@ import { AuditLogWriter } from '../../../domain/audit/AuditLogWriter';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
+/** El código de un enlace de invitación es un secreto: nunca llega a la auditoría (solo su hash a D1). */
+function withoutInviteCode(path: string): string {
+  return path.replace(/(\/invite-links\/)[^/]+/, '$1***');
+}
+
 /**
  * Registra en auditoría cada mutación exitosa sin retrasar la respuesta: la escritura se
  * agenda con `waitUntil` y un fallo se registra en logs sin alterar lo que recibe el cliente.
@@ -20,11 +25,12 @@ export function auditTrailMiddleware(
     }
 
     const requestId = c.get('requestId') ?? 'unknown';
+    const path = withoutInviteCode(c.req.path);
     const write = writer
       .write({
         actorId: c.get('actor')?.userId.toString() ?? 'unknown',
-        entity: c.req.path,
-        entityId: c.req.path,
+        entity: path,
+        entityId: path,
         operation: c.req.method,
         requestId,
         occurredAt: now(),

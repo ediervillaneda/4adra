@@ -232,6 +232,53 @@ components:
           type: string
           format: date-time
 
+    InviteLink:
+      type: object
+      description: >
+        Enlace de invitación recién creado. El código en claro solo aparece en esta respuesta;
+        en D1 se guarda su hash SHA-256.
+      required: [groupId, code, expiresAt]
+      properties:
+        groupId:
+          type: string
+        code:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    InviteLinkPreview:
+      type: object
+      description: A qué grupo invita un enlace vigente. No revela miembros, moneda ni descripción.
+      required: [groupId, groupName, expiresAt]
+      properties:
+        groupId:
+          type: string
+        groupName:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    JoinedMembership:
+      type: object
+      description: Membresía del actor después de unirse con un enlace.
+      required: [groupId, userId, role, status, joinedAt]
+      properties:
+        groupId:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
+        status:
+          type: string
+          enum: [ACTIVE]
+        joinedAt:
+          type: string
+          format: date-time
+
     SplitParticipant:
       type: object
       properties:
@@ -676,6 +723,110 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Invitation'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /groups/{groupId}/members/invite-link:
+    post:
+      summary: Crea el enlace de invitación del grupo y reemplaza el anterior (Owner/Administrator)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '201':
+          description: Enlace creado; vence en 7 días y el anterior deja de servir
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/InviteLink'
+        '403':
+          description: PERMISSION_DENIED (Member o ReadOnly)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (inexistente o el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /invite-links/{code}:
+    get:
+      summary: Muestra a qué grupo invita un enlace vigente
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Grupo al que invita el enlace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/InviteLinkPreview'
+        '404':
+          description: INVITE_LINK_NOT_FOUND (inexistente, reemplazado o de un grupo no activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: INVITE_LINK_EXPIRED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /invite-links/{code}/join:
+    post:
+      summary: El actor entra como Member al grupo del enlace (si ya era miembro activo, conserva su rol)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: El actor es miembro activo del grupo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JoinedMembership'
+        '403':
+          description: USER_DISABLED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: INVITE_LINK_NOT_FOUND (inexistente, reemplazado o de un grupo no activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: INVITE_LINK_EXPIRED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 

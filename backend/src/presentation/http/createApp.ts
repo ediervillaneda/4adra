@@ -24,6 +24,14 @@ import {
   createPostAcceptInvitationHandler,
   createPostDeclineInvitationHandler,
 } from './invitations/invitationsController';
+import {
+  createGetInviteLinkHandler,
+  createPostInviteLinkHandler,
+  createPostJoinWithInviteLinkHandler,
+} from './inviteLinks/inviteLinksController';
+import { CreateInviteLinkUseCase } from '../../application/invitation/CreateInviteLinkUseCase';
+import { GetInviteLinkUseCase } from '../../application/invitation/GetInviteLinkUseCase';
+import { JoinGroupWithInviteLinkUseCase } from '../../application/invitation/JoinGroupWithInviteLinkUseCase';
 import { AuthenticationProvider } from '../../domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../domain/audit/AuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../../application/user/GetCurrentUserProfileUseCase';
@@ -44,6 +52,9 @@ export interface AppDependencies {
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
   acceptInvitationUseCase: AcceptInvitationUseCase;
   declineInvitationUseCase: DeclineInvitationUseCase;
+  createInviteLinkUseCase: CreateInviteLinkUseCase;
+  getInviteLinkUseCase: GetInviteLinkUseCase;
+  joinGroupWithInviteLinkUseCase: JoinGroupWithInviteLinkUseCase;
   /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
   authHandler: (request: Request) => Promise<Response>;
   generateRequestId: () => string;
@@ -81,6 +92,15 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.post(
     '/v1/invitations/:invitationId/decline',
     createPostDeclineInvitationHandler(dependencies.declineInvitationUseCase),
+  );
+  app.post(
+    '/v1/groups/:groupId/members/invite-link',
+    createPostInviteLinkHandler(dependencies.createInviteLinkUseCase),
+  );
+  app.get('/v1/invite-links/:code', createGetInviteLinkHandler(dependencies.getInviteLinkUseCase));
+  app.post(
+    '/v1/invite-links/:code/join',
+    createPostJoinWithInviteLinkHandler(dependencies.joinGroupWithInviteLinkUseCase),
   );
 
   app.notFound((c) =>

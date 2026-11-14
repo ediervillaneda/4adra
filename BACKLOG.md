@@ -20,7 +20,7 @@ Decisiones caras:
 2. [x] Como miembro, quiero abrir un grupo y ver sus miembros con su rol, para saber quién participa. Requiere: #1
 3. [x] Como Owner o Administrator, quiero invitar a alguien por su correo, para sumarlo al grupo. Requiere: #2
 4. [x] Como invitado, quiero ver mis invitaciones pendientes y aceptarlas o rechazarlas, para decidir si entro al grupo. Requiere: #3
-5. [ ] Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo. Requiere: #2
+5. [x] Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo. Requiere: #2
 6. [ ] Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos. Requiere: #2
 7. [ ] Como Owner, quiero remover a un miembro, para sacar a quien ya no participa. Requiere: #2
 8. [ ] Como miembro, quiero salir de un grupo, para dejar de verlo. Requiere: #2

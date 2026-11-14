@@ -19,6 +19,12 @@ export interface GroupMember {
   joinedAt: Date;
 }
 
+/** La membresía de un usuario en un grupo. */
+export interface GroupMembership {
+  role: MemberRole;
+  joinedAt: Date;
+}
+
 export interface GroupRepository {
   /** Guarda el grupo y la membresía OWNER de su creador en una sola operación atómica. */
   createWithOwner(group: Group): Promise<void>;
@@ -30,4 +36,14 @@ export interface GroupRepository {
   listActiveMembers(groupId: GroupId): Promise<GroupMember[]>;
   /** Si el correo es de un miembro activo del grupo. */
   hasActiveMemberWithEmail(groupId: GroupId, email: Email): Promise<boolean>;
+  /**
+   * Suma al usuario con ese rol, salvo que ya tenga membresía en el grupo (entonces no la toca),
+   * y devuelve la membresía que queda.
+   */
+  addMemberIfAbsent(
+    groupId: GroupId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<GroupMembership>;
 }

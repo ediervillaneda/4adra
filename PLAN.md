@@ -1,33 +1,34 @@
-# Plan — Historia #4 de `BACKLOG.md`
+# Plan — Historia #5 de `BACKLOG.md`
 
 > Lo escribe `/story` y lo usa `/pair` como entrada. Solo contiene la historia en curso. Al cerrarla, se marca hecha en `BACKLOG.md` y este archivo se reemplaza con la siguiente.
 
 ## Historia
-Como invitado, quiero ver mis invitaciones pendientes y aceptarlas o rechazarlas, para decidir si entro al grupo.
+Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo.
 
 ## Criterios de aceptación
-- [x] Dado que tengo invitaciones pendientes y vigentes dirigidas a mi correo, cuando abro Inicio, entonces las veo en una sección \"Invitaciones\" con el nombre del grupo, quién me invitó y el rol que me ofrecen. Si no tengo ninguna, la sección no aparece. No veo invitaciones vencidas, aceptadas ni rechazadas, ni las dirigidas a otros correos.
-- [x] Dado que tengo una invitación pendiente y vigente, cuando la acepto, entonces quedo como miembro activo del grupo con el rol ofrecido, el grupo aparece en mi lista de Inicio, y la invitación deja de aparecer como pendiente.
-- [x] Dado que tengo una invitación pendiente y vigente, cuando la rechazo, entonces desaparece de mi lista, no entro al grupo, y el grupo no revela nada más de mí.
-- [x] Dado que la invitación venció, ya fue respondida, o no es para mi correo, cuando intento aceptarla o rechazarla (por ejemplo desde la API), entonces recibo un error claro y no cambia nada. Una invitación ajena responde como \"no encontrada\", sin revelar que existe.
-- [x] Dado que ya soy miembro activo del grupo por otra vía, cuando acepto una invitación pendiente de ese grupo, entonces la invitación se cierra sin duplicar mi membresía y mi rol actual no cambia.
+- [x] Dado que soy Owner o Administrator de un grupo, cuando pido el enlace de invitación, entonces veo un enlace que puedo copiar o compartir, válido por 7 días y para varias personas. Si pido uno nuevo, el anterior deja de servir. Si soy Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
+- [x] Dado que tengo acceso a 4adra y abro un enlace vigente, cuando entro con Google (si no tenía sesión) y confirmo "Unirme" en la pantalla que dice a qué grupo me invitan, entonces quedo como Miembro del grupo y lo veo en Inicio. Si ya era miembro activo, entro al grupo sin duplicar mi membresía y sin cambiar mi rol.
+- [x] Dado que el enlace venció, fue reemplazado o no existe, cuando lo abro, entonces veo un mensaje claro y no entro a ningún grupo. Si mi correo no está en la lista de acceso de 4adra, veo "Necesitas una invitación", como hoy.
 
 ## Plan
-- Backend: casos de uso para listar las invitaciones pendientes y vigentes del actor (por su correo normalizado), aceptar y rechazar. Aceptar inserta la membresía activa y cierra la invitación en un solo `db.batch`; `UNIQUE (group_id, user_id)` protege contra doble aceptación concurrente. Vencimiento evaluado con reloj inyectado. Auditoría de ambas operaciones.
-- Base de datos: probablemente sin migración. `invitations` ya trae estado y `expires_at`. Confirmar que el estado final (`ACCEPTED`/`DECLINED`) cabe en el `CHECK` actual; si no, migración `0005`.
-- API: `POST /invitations/{invitationId}/accept` y `POST /invitations/{invitationId}/decline` (ya en `ApiSpecification.md`), y un `GET /invitations` para listar las del actor (**no está en el contrato: hay que agregarlo a `ApiSpecification.md`, `api/Members.md` y `openapi.yaml` con tu autorización antes de implementarlo**). Errores: 404 de invitación, y uno para vencida o ya respondida. Pruebas de integración y de contrato.
-- PWA: sección \"Invitaciones\" en Inicio con tarjeta por invitación y botones Aceptar y Rechazar, estados de carga y error, y al aceptar, refrescar la lista de grupos. Textos en `shared/texts.ts`; tareas con `PendingTasks`.
-- Documentación: Members.md, DatabaseSchema (si hay migración), UISpecification (\"Invitación recibida\"), CHANGELOG, checklist de la Fase 1, BACKLOG.md y TODO.md.
+- Base de datos: una migración nueva con los enlaces de cada grupo: el **hash (SHA-256) de un código aleatorio** imposible de adivinar (el código nunca se guarda), quién lo creó, cuándo vence y si fue reemplazado. Un solo enlace vigente por grupo.
+- Backend: tres casos de uso, con auditoría. Crear el enlace (solo Owner o Administrator; reemplaza el anterior). Ver a qué grupo invita un enlace (solo el nombre del grupo y si sigue vigente). Unirse con el enlace (crea el perfil si falta, entra como Miembro y no duplica una membresía activa). El chequeo "¿es Owner o Administrator del grupo?", que ya usa invitar por correo, se extrae para compartirlo entre los dos casos de uso.
+- API: tres endpoints nuevos, que hay que agregar al contrato (`ApiSpecification.md`, `api/Members.md` y `openapi.yaml`) **con tu autorización antes de implementarlos**: crear el enlace de un grupo, consultar un enlace y unirse con él. Errores: permiso denegado, enlace no encontrado y enlace vencido. Pruebas de integración y de contrato.
+- PWA: en el detalle del grupo, para Owner y Administrator, "Compartir enlace" abre un diálogo con el enlace, el botón "Copiar" y, donde el navegador lo permita (celular), el botón "Compartir", que abre la hoja nativa (WhatsApp, Telegram, etc.) sin dependencias nuevas. Una ruta nueva para abrir el enlace, con "Te invitan a «…»" y el botón "Unirme". El login con Google debe volver al enlace, porque hoy siempre regresa a Inicio.
+- Documentación: Members.md, DatabaseSchema, UISpecification, CHANGELOG, checklist de la Fase 1, TODO.md y BACKLOG.md.
 
 ## Fuera de alcance
-- Aviso por correo o notificación al invitado: no hay envío de correos; notificaciones son de la Fase 3.
-- Que el Owner o Administrator vea las invitaciones pendientes del grupo, y cancelar o reenviar (decisión de privacidad aparte).
-- El enlace de invitación (historia #5).
-- Pantalla propia de invitaciones o enlaces profundos: todo vive en Inicio.
-- El encabezado `Idempotency-Key`.
-- Reactivar una membresía `REMOVED` al aceptar: llega con la historia #7 (remover miembros).
+- Dar acceso a 4adra con el enlace: la lista de acceso (ADR-018) no cambia.
+- Elegir el rol del enlace: siempre se entra como Miembro, y el rol se cambia en la historia #6.
+- Anular un enlace sin generar otro, ver quién entró por él o limitar cuántas veces se usa.
+- El popup con enlace después de invitar por correo (pedido durante la #4); si se quiere, va como historia aparte.
+- Envío por correo y notificaciones (Fase 3).
 
 ## Sugerencias (tú decides)
-- Decidir cómo se llama el estado de rechazo en la base (`DECLINED`) y si \"vencida\" se guarda o solo se calcula con `expires_at`. Calcularla evita un job que la marque.
-- Con esta historia ya hay dos casos de uso que escriben membresías. El chequeo \"¿es Owner o Administrator?\" aún no se repite; extraerlo cuando llegue la #6.
-- Mostrar el nombre de quien invita expone su nombre al invitado antes de aceptar. Es poco sensible (sin correo), pero conviene confirmarlo.
+- Las tres sugerencias de `/story` quedaron aprobadas e incorporadas al plan: guardar solo el hash del código, extraer el chequeo de Owner o Administrator y el botón "Compartir" nativo.
+
+## Decisiones durante `/pair`
+- El diálogo crea el enlace solo al pulsar "Crear enlace" y avisa antes que el anterior deja de servir: como solo se guarda el hash, el código no se puede volver a mostrar, y crearlo al abrir mataría el enlace ya compartido.
+- La auditoría enmascara el código en la ruta (`/invite-links/***/join`).
+- `?volver=` se valida resolviendo la ruta contra el mismo origen (rechaza `//`, `/\` y `/<tab>/`), también en el callback de error y en `/entrar` con sesión.
+- Queda para la #7: unirse con una membresía `REMOVED` (hoy no ocurre).

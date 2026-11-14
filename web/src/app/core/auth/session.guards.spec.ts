@@ -5,6 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import {
   ActivatedRouteSnapshot,
   CanActivateFn,
+  convertToParamMap,
   provideRouter,
   Router,
   RouterStateSnapshot,
@@ -12,7 +13,7 @@ import {
 } from '@angular/router';
 import { guestGuard, sessionGuard } from './session.guards';
 
-const route = {} as ActivatedRouteSnapshot;
+const route = { queryParamMap: convertToParamMap({}) } as ActivatedRouteSnapshot;
 const state = {} as RouterStateSnapshot;
 const ANA = { user: { name: 'Ana', email: 'ana@example.com', image: null } };
 
@@ -37,12 +38,34 @@ describe('session guards', () => {
     expect(urlOf(await runGuard(sessionGuard, null))).toBe('/entrar');
   });
 
+  it('sessionGuardShouldRememberRequestedUrlInVolver', async () => {
+    const result = TestBed.runInInjectionContext(() =>
+      sessionGuard(route, { url: '/unirse/codigo-1' } as RouterStateSnapshot),
+    ) as Promise<unknown>;
+    TestBed.inject(HttpTestingController).expectOne('/api/auth/get-session').flush(null);
+
+    expect(urlOf(await result)).toBe('/entrar?volver=%2Funirse%2Fcodigo-1');
+  });
+
   it('sessionGuardShouldAllowAuthenticated', async () => {
     expect(await runGuard(sessionGuard, ANA)).toBe(true);
   });
 
   it('guestGuardShouldRedirectAuthenticatedToHome', async () => {
     expect(urlOf(await runGuard(guestGuard, ANA))).toBe('/');
+  });
+
+  it.each([
+    ['/unirse/codigo-1', '/unirse/codigo-1'],
+    ['//evil.example.com/x', '/'],
+  ])('guestGuardShouldSendAuthenticatedToVolverWhenInternal (%s)', async (volver, expected) => {
+    const withVolver = { queryParamMap: convertToParamMap({ volver }) } as ActivatedRouteSnapshot;
+    const result = TestBed.runInInjectionContext(() =>
+      guestGuard(withVolver, state),
+    ) as Promise<unknown>;
+    TestBed.inject(HttpTestingController).expectOne('/api/auth/get-session').flush(ANA);
+
+    expect(urlOf(await result)).toBe(expected);
   });
 
   it('sessionGuardShouldLetUserInWhenSessionIsUnavailable', async () => {
