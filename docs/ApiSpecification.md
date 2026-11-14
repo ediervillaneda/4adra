@@ -76,7 +76,7 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups/{groupId}/members/invite-link` | Crea el enlace de invitación del grupo y reemplaza el anterior (Owner/Administrator) |
 | `GET /invite-links/{code}` | Muestra a qué grupo invita un enlace vigente |
 | `POST /invite-links/{code}/join` | El actor entra como Member al grupo del enlace |
-| `PATCH /groups/{groupId}/members/{userId}` | Cambia rol o estado |
+| `PATCH /groups/{groupId}/members/{userId}` | Cambia el rol de un miembro activo (Owner) |
 | `DELETE /groups/{groupId}/members/{userId}` | Remueve membresía (Owner/Administrator) |
 | `POST /groups/{groupId}/leave` | El actor abandona el grupo (si no es el último Owner y no tiene deuda pendiente) |
 
