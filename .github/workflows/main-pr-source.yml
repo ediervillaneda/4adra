@@ -1,0 +1,31 @@
+name: Rama de origen
+
+# Rama de origen: en los PR hacia main, falla si la rama del PR no es release/* ni hotfix/* (Git Flow,
+# docs/Workflows.md). El check "Rama de origen" es obligatorio para mergear a main (protección de rama).
+# No hace checkout ni usa secrets.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  check-source-branch:
+    # Este nombre es el check obligatorio de main: no cambiarlo sin actualizar la protección de rama.
+    name: Rama de origen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Solo release/* o hotfix/* pueden entrar a main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            release/*|hotfix/*)
+              echo "Rama de origen válida: $HEAD_REF"
+              ;;
+            *)
+              echo "::error::A main solo entran PR desde release/* o hotfix/*; esta rama es '$HEAD_REF'."
+              exit 1
+              ;;
+          esac
