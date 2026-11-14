@@ -6,6 +6,10 @@ import { InviteMemberUseCase } from '../../src/application/invitation/InviteMemb
 import { ListMyInvitationsUseCase } from '../../src/application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../../src/application/invitation/AcceptInvitationUseCase';
 import { DeclineInvitationUseCase } from '../../src/application/invitation/DeclineInvitationUseCase';
+import { CreateInviteLinkUseCase } from '../../src/application/invitation/CreateInviteLinkUseCase';
+import { GetInviteLinkUseCase } from '../../src/application/invitation/GetInviteLinkUseCase';
+import { JoinGroupWithInviteLinkUseCase } from '../../src/application/invitation/JoinGroupWithInviteLinkUseCase';
+import { InMemoryInviteLinkRepository } from './InMemoryInviteLinkRepository';
 import { InMemoryGroupRepository } from './InMemoryGroupRepository';
 import { InMemoryInvitationRepository } from './InMemoryInvitationRepository';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
@@ -20,10 +24,15 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
   acceptInvitationUseCase: AcceptInvitationUseCase;
   declineInvitationUseCase: DeclineInvitationUseCase;
+  createInviteLinkUseCase: CreateInviteLinkUseCase;
+  getInviteLinkUseCase: GetInviteLinkUseCase;
+  joinGroupWithInviteLinkUseCase: JoinGroupWithInviteLinkUseCase;
 } {
   const users = new InMemoryUserRepository();
   const groups = new InMemoryGroupRepository(users);
   const invitations = new InMemoryInvitationRepository(groups, users);
+  const links = new InMemoryInviteLinkRepository(groups);
+  const hashCode = (code: string): Promise<string> => Promise.resolve(`sha256(${code})`);
   let sequence = 0;
   return {
     createGroupUseCase: new CreateGroupUseCase(
@@ -45,5 +54,21 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
     listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitations, now),
     acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, users, now),
     declineInvitationUseCase: new DeclineInvitationUseCase(invitations, now),
+    createInviteLinkUseCase: new CreateInviteLinkUseCase(
+      groups,
+      links,
+      () => `lnk_${String((sequence += 1))}`,
+      () => `codigo-${String(sequence)}`,
+      hashCode,
+      now,
+    ),
+    getInviteLinkUseCase: new GetInviteLinkUseCase(links, hashCode, now),
+    joinGroupWithInviteLinkUseCase: new JoinGroupWithInviteLinkUseCase(
+      links,
+      groups,
+      users,
+      hashCode,
+      now,
+    ),
   };
 }

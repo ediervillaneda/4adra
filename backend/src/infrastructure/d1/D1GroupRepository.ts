@@ -1,6 +1,11 @@
 import { Group, GroupStatus } from '../../domain/group/Group';
 import { GroupId } from '../../domain/group/GroupId';
-import { GroupMember, GroupRepository, MemberGroup } from '../../domain/group/GroupRepository';
+import {
+  GroupMember,
+  GroupMembership,
+  GroupRepository,
+  MemberGroup,
+} from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
 import { Email } from '../../domain/user/Email';
 import { UserId } from '../../domain/user/UserId';
@@ -128,5 +133,28 @@ export class D1GroupRepository implements GroupRepository {
       .bind(groupId.toString(), email.toString())
       .first();
     return row !== null;
+  }
+
+  async addMemberIfAbsent(
+    groupId: GroupId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<GroupMembership> {
+    const timestamp = toIsoDate(at);
+    const [, selected] = await this.database.batch<{ role: MemberRole; joined_at: string }>([
+      this.database
+        .prepare(
+          `INSERT INTO group_members (group_id, user_id, role, status, joined_at, updated_at)
+           VALUES (?, ?, ?, 'ACTIVE', ?, ?)
+           ON CONFLICT (group_id, user_id) DO NOTHING`,
+        )
+        .bind(groupId.toString(), userId.toString(), role, timestamp, timestamp),
+      this.database
+        .prepare('SELECT role, joined_at FROM group_members WHERE group_id = ? AND user_id = ?')
+        .bind(groupId.toString(), userId.toString()),
+    ]);
+    const row = selected?.results[0] as { role: MemberRole; joined_at: string };
+    return { role: row.role, joinedAt: fromIsoDate(row.joined_at) };
   }
 }

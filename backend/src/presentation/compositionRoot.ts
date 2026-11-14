@@ -11,6 +11,8 @@ import { D1AuditLogWriter } from '../infrastructure/d1/D1AuditLogWriter';
 import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRepository';
 import { D1GroupRepository } from '../infrastructure/d1/D1GroupRepository';
 import { D1InvitationRepository } from '../infrastructure/d1/D1InvitationRepository';
+import { D1InviteLinkRepository } from '../infrastructure/d1/D1InviteLinkRepository';
+import { generateInviteCode, hashInviteCode } from '../infrastructure/crypto/inviteCode';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
 import { UpdateCurrentUserProfileUseCase } from '../application/user/UpdateCurrentUserProfileUseCase';
@@ -22,6 +24,9 @@ import { InviteMemberUseCase } from '../application/invitation/InviteMemberUseCa
 import { ListMyInvitationsUseCase } from '../application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../application/invitation/AcceptInvitationUseCase';
 import { DeclineInvitationUseCase } from '../application/invitation/DeclineInvitationUseCase';
+import { CreateInviteLinkUseCase } from '../application/invitation/CreateInviteLinkUseCase';
+import { GetInviteLinkUseCase } from '../application/invitation/GetInviteLinkUseCase';
+import { JoinGroupWithInviteLinkUseCase } from '../application/invitation/JoinGroupWithInviteLinkUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
@@ -29,6 +34,7 @@ export function composeApp(env: Env): Hono<AppEnv> {
   const userRepository = new D1UserRepository(env.DB);
   const groupRepository = new D1GroupRepository(env.DB);
   const invitationRepository = new D1InvitationRepository(env.DB);
+  const inviteLinkRepository = new D1InviteLinkRepository(env.DB);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -72,6 +78,26 @@ export function composeApp(env: Env): Hono<AppEnv> {
       () => new Date(),
     ),
     declineInvitationUseCase: new DeclineInvitationUseCase(invitationRepository, () => new Date()),
+    createInviteLinkUseCase: new CreateInviteLinkUseCase(
+      groupRepository,
+      inviteLinkRepository,
+      () => uuidv7(),
+      generateInviteCode,
+      hashInviteCode,
+      () => new Date(),
+    ),
+    getInviteLinkUseCase: new GetInviteLinkUseCase(
+      inviteLinkRepository,
+      hashInviteCode,
+      () => new Date(),
+    ),
+    joinGroupWithInviteLinkUseCase: new JoinGroupWithInviteLinkUseCase(
+      inviteLinkRepository,
+      groupRepository,
+      userRepository,
+      hashInviteCode,
+      () => new Date(),
+    ),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
   });

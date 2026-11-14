@@ -13,6 +13,7 @@ function appWithWriter(writer: AuditLogWriter): Hono<AppEnv> {
   app.get('/api/v1/ping', (c) => c.json({ ok: true }, 200));
   app.post('/api/v1/groups', (c) => c.json({ ok: true }, 201));
   app.post('/api/v1/fails', (c) => c.json({ ok: false }, 400));
+  app.post('/api/v1/invite-links/:code/join', (c) => c.json({ ok: true }, 200));
   return app;
 }
 
@@ -49,6 +50,27 @@ describe('auditTrailMiddleware', () => {
       requestId: 'req_1',
       occurredAt: new Date('2026-07-13T12:00:00.000Z'),
     });
+  });
+
+  it('shouldMaskInviteCodeInAuditLog', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    const ctx = executionContextFake();
+
+    await appWithWriter({ write }).request(
+      '/api/v1/invite-links/Hq3vX0b9r2kTqWm1Yp8sLA/join',
+      { method: 'POST' },
+      {},
+      ctx,
+    );
+    await ctx.settle();
+
+    expect(write).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: '/api/v1/invite-links/***/join',
+        entityId: '/api/v1/invite-links/***/join',
+      }),
+    );
+    expect(JSON.stringify(write.mock.calls)).not.toContain('Hq3vX0b9r2kTqWm1Yp8sLA');
   });
 
   it('shouldNotAuditFailedMutation', async () => {

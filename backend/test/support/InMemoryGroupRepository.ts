@@ -1,6 +1,11 @@
 import { Group } from '../../src/domain/group/Group';
 import { GroupId } from '../../src/domain/group/GroupId';
-import { GroupMember, GroupRepository, MemberGroup } from '../../src/domain/group/GroupRepository';
+import {
+  GroupMember,
+  GroupMembership,
+  GroupRepository,
+  MemberGroup,
+} from '../../src/domain/group/GroupRepository';
 import { MemberRole } from '../../src/domain/group/MemberRole';
 import { Email } from '../../src/domain/user/Email';
 import { UserId } from '../../src/domain/user/UserId';
@@ -11,6 +16,8 @@ interface StoredMembership {
   userId: string;
   role: MemberRole;
   status: 'ACTIVE' | 'REMOVED';
+  /** Si falta, se toma la fecha de creación del grupo. */
+  joinedAt?: Date;
 }
 
 /** Como la D1 (que une `group_members` con `users`), toma nombre y foto de los perfiles guardados. */
@@ -30,18 +37,35 @@ export class InMemoryGroupRepository implements GroupRepository {
   }
 
   /** Como `INSERT … ON CONFLICT (group_id, user_id) DO NOTHING`: si ya hay membresía, no la toca. */
-  joinIfAbsent(groupId: GroupId, userId: UserId, role: MemberRole): void {
-    const exists = this.memberships.some(
+  joinIfAbsent(groupId: GroupId, userId: UserId, role: MemberRole, at?: Date): StoredMembership {
+    const existing = this.memberships.find(
       (entry) => entry.groupId === groupId.toString() && entry.userId === userId.toString(),
     );
-    if (!exists) {
-      this.memberships.push({
-        groupId: groupId.toString(),
-        userId: userId.toString(),
-        role,
-        status: 'ACTIVE',
-      });
+    if (existing !== undefined) {
+      return existing;
     }
+    const created: StoredMembership = {
+      groupId: groupId.toString(),
+      userId: userId.toString(),
+      role,
+      status: 'ACTIVE',
+      ...(at === undefined ? {} : { joinedAt: at }),
+    };
+    this.memberships.push(created);
+    return created;
+  }
+
+  addMemberIfAbsent(
+    groupId: GroupId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<GroupMembership> {
+    const membership = this.joinIfAbsent(groupId, userId, role, at);
+    return Promise.resolve({
+      role: membership.role,
+      joinedAt: membership.joinedAt ?? (this.groupsById.get(membership.groupId) as Group).createdAt,
+    });
   }
 
   createWithOwner(group: Group): Promise<void> {
@@ -80,7 +104,7 @@ export class InMemoryGroupRepository implements GroupRepository {
           displayName: user.displayName,
           photoUrl: user.photoUrl,
           role: entry.role,
-          joinedAt: (this.groupsById.get(entry.groupId) as Group).createdAt,
+          joinedAt: entry.joinedAt ?? (this.groupsById.get(entry.groupId) as Group).createdAt,
         });
       }
     }

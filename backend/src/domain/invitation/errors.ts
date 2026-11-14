@@ -44,3 +44,21 @@ export class InvitationAlreadyRespondedException extends DomainError {
     super('La invitación ya fue respondida.');
   }
 }
+
+/** El enlace no existe, fue reemplazado por otro o su grupo ya no está activo. */
+export class InviteLinkNotFoundException extends DomainError {
+  readonly code = 'INVITE_LINK_NOT_FOUND';
+
+  constructor() {
+    super('Este enlace de invitación ya no sirve.');
+  }
+}
+
+/** El enlace llegó a su vencimiento. */
+export class InviteLinkExpiredException extends DomainError {
+  readonly code = 'INVITE_LINK_EXPIRED';
+
+  constructor() {
+    super('Este enlace de invitación ya venció.');
+  }
+}
