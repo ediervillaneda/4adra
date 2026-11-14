@@ -1,6 +1,6 @@
 {
   "name": "@4adra/backend",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Backend de 4adra: Cloudflare Worker sobre Clean Architecture + DDD Lite.",
   "engines": {
