@@ -183,4 +183,22 @@ describe('GroupDetailComponent', () => {
       READ_ONLY: null,
     });
   });
+
+  it('groupDetailShouldShowShareInviteLinkOnlyForOwnerAndAdministrator', async () => {
+    const visibility: Record<string, string | null> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role);
+      const button = element.querySelector('[data-testid="share-invite-link"]');
+      visibility[role] = button?.textContent?.trim() ?? null;
+      http.verify();
+    }
+
+    expect(visibility).toEqual({
+      OWNER: 'Compartir enlace',
+      ADMINISTRATOR: 'Compartir enlace',
+      MEMBER: null,
+      READ_ONLY: null,
+    });
+  });
 });

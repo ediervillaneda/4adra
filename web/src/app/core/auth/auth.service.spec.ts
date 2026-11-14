@@ -45,6 +45,36 @@ describe('AuthService', () => {
     expect(assign).toHaveBeenCalledWith('https://accounts.google.com/x');
   });
 
+  it.each([
+    ['/unirse/codigo-1', '/unirse/codigo-1'],
+    ['https://evil.example.com/x', '/'],
+    ['//evil.example.com/x', '/'],
+    ['/\\evil.example.com/x', '/'],
+    ['/\t/evil.example.com/x', '/'],
+    ['/\n/evil.example.com/x', '/'],
+    [null, '/'],
+  ])('shouldUseReturnPathAsGoogleCallbackOnlyWhenInternal (%s)', async (returnPath, expected) => {
+    const pending = service.signInWithGoogle(returnPath);
+
+    const request = http.expectOne('/api/auth/sign-in/social');
+    expect((request.request.body as { callbackURL: string }).callbackURL).toBe(expected);
+    request.flush({ url: 'https://accounts.google.com/x', redirect: true });
+    await pending;
+  });
+
+  it.each([
+    ['/unirse/codigo-1', '/entrar?volver=%2Funirse%2Fcodigo-1'],
+    ['//evil.example.com/x', '/entrar'],
+    [null, '/entrar'],
+  ])('shouldKeepReturnPathInErrorCallback (%s)', async (returnPath, expected) => {
+    const pending = service.signInWithGoogle(returnPath);
+
+    const request = http.expectOne('/api/auth/sign-in/social');
+    expect((request.request.body as { errorCallbackURL: string }).errorCallbackURL).toBe(expected);
+    request.flush({ url: 'https://accounts.google.com/x', redirect: true });
+    await pending;
+  });
+
   it('shouldBeAnonymousWhenGetSessionReturnsNull', async () => {
     const pending = service.refreshSession();
     http.expectOne('/api/auth/get-session').flush(null);

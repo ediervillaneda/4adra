@@ -85,6 +85,29 @@ export interface NewGroupRequest {
   defaultCurrency: string;
 }
 
+/** Enlace recién creado; el código solo llega aquí (components/schemas/InviteLink). */
+export interface InviteLink {
+  groupId: string;
+  code: string;
+  expiresAt: string;
+}
+
+/** A qué grupo invita un enlace vigente (components/schemas/InviteLinkPreview). */
+export interface InviteLinkPreview {
+  groupId: string;
+  groupName: string;
+  expiresAt: string;
+}
+
+/** Membresía después de unirse con un enlace (components/schemas/JoinedMembership). */
+export interface JoinedMembership {
+  groupId: string;
+  userId: string;
+  role: MemberRole;
+  status: 'ACTIVE';
+  joinedAt: string;
+}
+
 export interface ApiSuccessEnvelope<T> {
   data: T;
   meta: { requestId: string };

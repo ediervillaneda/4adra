@@ -3,9 +3,14 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatDialog } from '@angular/material/dialog';
 import { GroupNotFoundError, GroupsService } from '../../../core/groups/groups.service';
 import { GroupMember, GroupSummary } from '../../../shared/api';
 import { TEXTS } from '../../../shared/texts';
+import {
+  ShareInviteLinkDialogComponent,
+  ShareInviteLinkDialogData,
+} from '../share-invite-link/share-invite-link-dialog.component';
 
 type DetailState =
   | { status: 'loading' }
@@ -40,6 +45,14 @@ type DetailState =
               [routerLink]="['/grupos', content.group.id, 'invitar']"
               >{{ texts.groups.invite }}</a
             >
+            <button
+              mat-stroked-button
+              type="button"
+              data-testid="share-invite-link"
+              (click)="openShareInviteLink(content.group)"
+            >
+              {{ texts.groups.shareInviteLink }}
+            </button>
           }
           <mat-list>
             @for (member of content.members; track member.userId) {
@@ -88,6 +101,7 @@ type DetailState =
 })
 export class GroupDetailComponent {
   private readonly groupsService = inject(GroupsService);
+  private readonly dialog = inject(MatDialog);
   private readonly groupId = inject(ActivatedRoute).snapshot.paramMap.get('groupId') ?? '';
   protected readonly texts = TEXTS;
   protected readonly state = signal<DetailState>({ status: 'loading' });
@@ -100,6 +114,13 @@ export class GroupDetailComponent {
   /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
   protected canInvite(group: GroupSummary): boolean {
     return group.role === 'OWNER' || group.role === 'ADMINISTRATOR';
+  }
+
+  protected openShareInviteLink(group: GroupSummary): void {
+    this.dialog.open<ShareInviteLinkDialogComponent, ShareInviteLinkDialogData>(
+      ShareInviteLinkDialogComponent,
+      { data: { groupId: group.id, groupName: group.name } },
+    );
   }
 
   protected content(): Extract<DetailState, { status: 'content' }> | null {

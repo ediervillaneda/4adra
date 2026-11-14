@@ -44,6 +44,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'unirse/:code',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/invite-links/join-group.component').then((m) => m.JoinGroupComponent),
+  },
+  {
     path: 'privacidad',
     loadComponent: () =>
       import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),

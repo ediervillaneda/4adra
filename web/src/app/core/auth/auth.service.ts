@@ -1,8 +1,10 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { DOCUMENT } from '@angular/common';
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BROWSER_LOCATION } from '../browser-location';
+import { toInternalPath } from './internal-path';
 
 export interface SessionUser {
   name: string;
@@ -26,6 +28,7 @@ interface BetterAuthSession {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly origin = inject(DOCUMENT).location.origin;
   private readonly location = inject(BROWSER_LOCATION);
   private readonly state = signal<SessionState>({ status: 'loading' });
 
@@ -69,12 +72,16 @@ export class AuthService {
     this.state.set({ status: 'anonymous' });
   }
 
-  async signInWithGoogle(): Promise<void> {
+  /** `returnPath`: a dónde volver después de Google (por ejemplo, un enlace de invitación). */
+  async signInWithGoogle(returnPath: string | null = null): Promise<void> {
+    const internal = toInternalPath(returnPath, this.origin);
     const { url } = await firstValueFrom(
       this.http.post<{ url: string }>('/api/auth/sign-in/social', {
         provider: 'google',
-        callbackURL: '/',
-        errorCallbackURL: '/entrar',
+        callbackURL: internal ?? '/',
+        // Si Google falla o se cancela, el reintento desde /entrar vuelve al mismo lugar.
+        errorCallbackURL:
+          internal === null ? '/entrar' : `/entrar?volver=${encodeURIComponent(internal)}`,
       }),
     );
     this.location.assign(url);

@@ -4,7 +4,10 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../core/auth/auth.service';
 
-function render(error: string | null): { element: HTMLElement; signIn: ReturnType<typeof vi.fn> } {
+function render(
+  error: string | null,
+  volver: string | null = null,
+): { element: HTMLElement; signIn: ReturnType<typeof vi.fn> } {
   const signIn = vi.fn().mockResolvedValue(undefined);
   TestBed.configureTestingModule({
     imports: [LoginComponent],
@@ -12,7 +15,14 @@ function render(error: string | null): { element: HTMLElement; signIn: ReturnTyp
       { provide: AuthService, useValue: { signInWithGoogle: signIn } },
       {
         provide: ActivatedRoute,
-        useValue: { snapshot: { queryParamMap: convertToParamMap(error ? { error } : {}) } },
+        useValue: {
+          snapshot: {
+            queryParamMap: convertToParamMap({
+              ...(error ? { error } : {}),
+              ...(volver ? { volver } : {}),
+            }),
+          },
+        },
       },
     ],
   });
@@ -29,6 +39,14 @@ describe('LoginComponent', () => {
 
     expect(signIn).toHaveBeenCalledTimes(1);
     expect(element.textContent).toContain('Continuar con Google');
+  });
+
+  it('loginShouldReturnToVolverAfterGoogle', () => {
+    const { element, signIn } = render(null, '/unirse/codigo-1');
+
+    element.querySelector<HTMLButtonElement>('button')?.click();
+
+    expect(signIn).toHaveBeenCalledWith('/unirse/codigo-1');
   });
 
   it('loginShouldShowInvitationMessageWhenErrorIsNotInvited', () => {
