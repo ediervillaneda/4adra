@@ -81,7 +81,7 @@ git push -u origin hotfix/1.2.1
 
 ### `backend.yml` — Backend CI
 
-Dispara en: push a `main`/`develop` y cualquier `pull_request` que toquen `backend/**` o `docs/api/openapi.yaml`. Un solo job secuencial. Incluye el lint del contrato OpenAPI, que antes estaba en `openapi-lint.yml`.
+Dispara en: cualquier `pull_request` (sin filtro de carpetas) y push a `develop` que toque `backend/**` o `docs/api/openapi.yaml`. No corre con el push a `main` que deja el merge: el PR ya lo validó y `deploy-cloudflare.yml` hace su propio build. Un solo job secuencial. Incluye el lint del contrato OpenAPI, que antes estaba en `openapi-lint.yml`.
 
 Pasos y su comando equivalente en local:
 
@@ -112,6 +112,10 @@ npm test                   # Vitest + cobertura (umbral 70 %)
 npm audit --omit=dev --audit-level=high
 npm run build              # web/dist/web/browser (assets del Worker)
 ```
+
+### `main-pr-source.yml` — Rama de origen
+
+Dispara en los `pull_request` hacia `main`. Falla si la rama del PR no es `release/*` ni `hotfix/*`, así que solo entran a producción versiones y hotfixes (Git Flow). No hace checkout ni usa secrets.
 
 ### `release.yml` — Release
 
@@ -155,6 +159,7 @@ Revertir: `npx wrangler rollback` (ver `docs/Deployment.md`).
 |---|---|---|
 | Solo por Pull Request (sin push directo, force-push ni borrado) | Sí | Sí |
 | Checks obligatorios `Backend CI` y `Web CI` en verde | Sí | No (corren, pero no bloquean) |
+| Check obligatorio `Rama de origen` (solo `release/*` o `hotfix/*`) | Sí | No aplica |
 | Rama del PR al día con la base (*strict*) | Sí | No |
 | Aplica también a administradores | Sí | Sí |
 

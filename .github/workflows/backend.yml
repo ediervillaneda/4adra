@@ -1,8 +1,9 @@
 name: Backend CI
 
 # Backend CI: valida el Worker (backend/) en todos los PR, sin filtro de carpetas: el check "Backend CI"
-# es obligatorio para mergear a main (protección de rama). También corre en cada push a main o develop
-# que toque backend/ o el contrato OpenAPI. En orden:
+# es obligatorio para mergear a main (protección de rama). También corre en cada push a develop que toque
+# backend/ o el contrato OpenAPI. En main no se repite tras el merge: el PR ya lo validó y
+# deploy-cloudflare.yml hace su propio build. En orden:
 #   1. Formato (Prettier), lint (ESLint) y tipos (tsc).
 #   2. Pruebas unitarias con umbrales de cobertura.
 #   3. Migraciones D1 en limpio, pruebas de integración (runtime de Workers + D1 local) y de contrato.
@@ -12,7 +13,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
     paths:
       - 'backend/**'
       - 'docs/api/openapi.yaml'
