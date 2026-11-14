@@ -36,7 +36,7 @@ No incluye wireframes ni un sistema de diseño completo (paleta de marca, tipogr
 
 | Ruta | Pantalla | Estado |
 |---|---|---|
-| `/` | Inicio: lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace. Cada grupo enlaza a su detalle | Hecho (historias #1 y #2) |
+| `/` | Inicio: sección "Invitaciones" (solo si hay pendientes y vigentes) con una tarjeta por invitación: grupo, "Te invita …" y rol, y botones Aceptar y Rechazar, deshabilitados mientras llega la respuesta. Aceptar quita la tarjeta y recarga los grupos; rechazar la quita. Si la invitación ya venció, ya fue respondida o no está disponible, se quita y el aviso global explica por qué; otro fallo deja la tarjeta con un error. Si no se pueden cargar las invitaciones, un aviso lo dice. Debajo, la lista "Mis grupos" (nombre, rol y moneda) con botón flotante "Crear grupo"; si no hay grupos, el estado vacío con el mismo enlace. Cada grupo enlaza a su detalle | Hecho (historias #1, #2 y #4) |
 | `/grupos/nuevo` | Crear grupo: nombre, descripción opcional y moneda base (preseleccionada con la del perfil); errores por campo | Hecho (historia #1) |
 | `/grupos/:groupId` | Detalle del grupo: nombre, descripción, moneda base y miembros activos en orden alfabético (foto de Google, nombre y rol en español, sin correos). Estados: cargando, contenido, "Grupo no encontrado" (grupo inexistente o ajeno, con enlace a Inicio) y error genérico. Owner y Administrator ven el botón "Invitar". Todavía sin las pestañas Gastos, Balances y Liquidaciones | Hecho (historias #2 y #3) |
 | `/grupos/:groupId/invitar` | Invitar a alguien: correo y rol (Administrador, Miembro o Solo lectura, Miembro por omisión). Muestra "Invitación enviada" en la misma pantalla, o el motivo del rechazo (correo fuera de la lista de acceso, o ya es miembro); otros errores van al aviso global | Hecho (historia #3) |
@@ -132,7 +132,7 @@ Convención de columnas: **Estados** asume siempre `Loading/Content/Empty/Error`
 | Archivar grupo (confirmación) | — | `POST /groups/{groupId}/archive` | Owner | Confirmar archivado (irreversible desde UI) |
 | Miembros del grupo | `Empty` improbable (siempre ≥1) | `GET /groups/{groupId}/members` | Miembro activo | Ver roles; invitar (Owner/Administrator); cambiar rol/remover (Owner) |
 | Invitar miembro | — | `POST /groups/{groupId}/members/invitations` | Owner, Administrator | Correo + rol |
-| Invitación recibida | — | `POST /invitations/{id}/accept\|decline` | Destinatario de la invitación | Aceptar / rechazar |
+| Invitación recibida (tarjeta en Inicio) | Sin invitaciones: la sección no aparece | `GET /invitations`, `POST /invitations/{id}/accept\|decline` | Destinatario de la invitación | Aceptar / rechazar |
 | Abandonar grupo (confirmación) | `Error` si `OUTSTANDING_BALANCE`/`LAST_OWNER` | `POST /groups/{groupId}/leave` | Miembro activo, no último Owner, balance en cero | Confirmar salida |
 
 #### Gastos

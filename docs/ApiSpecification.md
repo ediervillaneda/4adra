@@ -70,6 +70,7 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups/{groupId}/archive` | Archiva grupo |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |
+| `GET /invitations` | Lista las invitaciones pendientes y vigentes dirigidas al correo del actor |
 | `POST /invitations/{invitationId}/accept` | Acepta una invitación pendiente dirigida al actor |
 | `POST /invitations/{invitationId}/decline` | Rechaza una invitación pendiente dirigida al actor |
 | `PATCH /groups/{groupId}/members/{userId}` | Cambia rol o estado |

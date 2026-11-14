@@ -1,6 +1,7 @@
 import { GroupId } from '../group/GroupId';
 import { Email } from '../user/Email';
 import { UserId } from '../user/UserId';
+import { InvitationAlreadyRespondedException, InvitationExpiredException } from './errors';
 
 /** Roles que se pueden asignar al invitar; `OWNER` solo llega por transferencia (docs/api/Members.md). */
 export type InvitableRole = 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
@@ -70,5 +71,28 @@ export class Invitation {
   /** Sigue pendiente mientras no llegue su vencimiento; al cumplirse los 7 días ya no vale. */
   isPendingAt(now: Date): boolean {
     return this.status === 'PENDING' && now.getTime() < this.expiresAt.getTime();
+  }
+
+  /** Si está dirigida a ese correo (ambos ya normalizados). */
+  isAddressedTo(email: Email): boolean {
+    return this.email.toString() === email.toString();
+  }
+
+  accept(now: Date): Invitation {
+    return this.respond('ACCEPTED', now);
+  }
+
+  decline(now: Date): Invitation {
+    return this.respond('DECLINED', now);
+  }
+
+  private respond(status: 'ACCEPTED' | 'DECLINED', now: Date): Invitation {
+    if (this.status !== 'PENDING') {
+      throw new InvitationAlreadyRespondedException();
+    }
+    if (!this.isPendingAt(now)) {
+      throw new InvitationExpiredException();
+    }
+    return new Invitation({ ...this, status });
   }
 }

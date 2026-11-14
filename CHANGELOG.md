@@ -31,6 +31,12 @@ Ver `docs/Workflows.md`.
   - Explica el rechazo cuando el correo no está en la lista o ya es de un miembro.
   - API: `POST /api/v1/groups/{groupId}/members/invitations`, con `403 PERMISSION_DENIED`, `409 MEMBER_ALREADY_ACTIVE` y el código nuevo `422 EMAIL_NOT_ALLOWED`. Base de datos: migración `0004_invitations`.
   - Aún no se puede aceptar ni rechazar (historia #4).
+- **Ver, aceptar o rechazar invitaciones** (pieza 2, historia #4):
+  - Inicio muestra la sección "Invitaciones" con el grupo, quién invita (sin su correo) y el rol ofrecido; solo las pendientes y vigentes dirigidas a tu correo.
+  - Aceptar te suma al grupo con ese rol, y el grupo aparece en "Mis grupos". Si ya eras miembro, la invitación se cierra y tu rol no cambia.
+  - Rechazar la quita sin sumarte al grupo.
+  - Si la invitación ya venció o ya fue respondida, se quita de Inicio y un aviso explica por qué.
+  - API: `GET /api/v1/invitations` y `POST /api/v1/invitations/{invitationId}/accept|decline`, con `404 INVITATION_NOT_FOUND` (también para invitaciones ajenas), `409 INVITATION_EXPIRED` y el código nuevo `409 INVITATION_ALREADY_RESPONDED`. Sin migración: el vencimiento se calcula con `expires_at`.
 
 ## [0.2.0] - 2026-11-11
 

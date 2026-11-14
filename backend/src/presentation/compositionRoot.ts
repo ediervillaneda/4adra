@@ -19,12 +19,16 @@ import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
 import { GetGroupUseCase } from '../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../application/group/ListGroupMembersUseCase';
 import { InviteMemberUseCase } from '../application/invitation/InviteMemberUseCase';
+import { ListMyInvitationsUseCase } from '../application/invitation/ListMyInvitationsUseCase';
+import { AcceptInvitationUseCase } from '../application/invitation/AcceptInvitationUseCase';
+import { DeclineInvitationUseCase } from '../application/invitation/DeclineInvitationUseCase';
 
 /** Único lugar que instancia dependencias concretas a partir de los bindings del Worker. */
 export function composeApp(env: Env): Hono<AppEnv> {
   const allowedEmails = new D1AllowedEmailRepository(env.DB);
   const userRepository = new D1UserRepository(env.DB);
   const groupRepository = new D1GroupRepository(env.DB);
+  const invitationRepository = new D1InvitationRepository(env.DB);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -57,10 +61,17 @@ export function composeApp(env: Env): Hono<AppEnv> {
     inviteMemberUseCase: new InviteMemberUseCase(
       groupRepository,
       allowedEmails,
-      new D1InvitationRepository(env.DB),
+      invitationRepository,
       () => uuidv7(),
       () => new Date(),
     ),
+    listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitationRepository, () => new Date()),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(
+      invitationRepository,
+      userRepository,
+      () => new Date(),
+    ),
+    declineInvitationUseCase: new DeclineInvitationUseCase(invitationRepository, () => new Date()),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
   });

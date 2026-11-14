@@ -4,7 +4,7 @@ import { GroupId } from '../../domain/group/GroupId';
 import { GroupRepository } from '../../domain/group/GroupRepository';
 import { validateNewGroup } from '../../domain/group/NewGroup';
 import { UserRepository } from '../../domain/user/UserRepository';
-import { createUserFromActor } from '../user/createUserFromActor';
+import { ensureActiveUserProfile } from '../user/ensureActiveUserProfile';
 import { GroupSummaryView } from './GroupSummaryView';
 import { toGroupSummaryView } from './toGroupSummaryView';
 
@@ -26,11 +26,7 @@ export class CreateGroupUseCase {
   async execute(command: CreateGroupCommand): Promise<GroupSummaryView> {
     const data = validateNewGroup(command.input);
     const now = this.now();
-    const creator =
-      (await this.userRepository.findById(command.actor.userId)) ??
-      createUserFromActor(command.actor, now);
-    creator.assertActive();
-    await this.userRepository.save(creator);
+    const creator = await ensureActiveUserProfile(this.userRepository, command.actor, now);
 
     const group = Group.create(GroupId.fromString(this.generateId()), data, creator.id, now);
     await this.groupRepository.createWithOwner(group);

@@ -21,6 +21,18 @@ export const TEXTS = {
     emptyGroupsTitle: 'Tus grupos aparecerán aquí',
     emptyGroupsBody: 'Crea un grupo para empezar a compartir gastos.',
     groupsTitle: 'Mis grupos',
+    invitationsTitle: 'Invitaciones',
+    invitedBy: (name: string, role: string): string => `Te invita ${name} · ${role}`,
+    acceptInvitation: 'Aceptar',
+    declineInvitation: 'Rechazar',
+    invitationAnswerError: 'No se pudo responder la invitación. Intenta de nuevo.',
+    invitationsLoadError:
+      'No se pudieron cargar tus invitaciones. Recarga la página para intentarlo de nuevo.',
+    closedInvitation: {
+      INVITATION_EXPIRED: 'Esta invitación ya venció.',
+      INVITATION_ALREADY_RESPONDED: 'Ya respondiste esta invitación.',
+      INVITATION_NOT_FOUND: 'Esta invitación ya no está disponible.',
+    } as Record<string, string>,
     createGroup: 'Crear grupo',
     reviewProfileHint: 'Revisa tu perfil: confirma tu moneda y zona horaria.',
     reviewProfileAction: 'Ir a mi perfil',

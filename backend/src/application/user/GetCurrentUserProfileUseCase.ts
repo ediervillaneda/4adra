@@ -2,7 +2,7 @@ import { UserRepository } from '../../domain/user/UserRepository';
 import { GetCurrentUserProfileCommand } from './GetCurrentUserProfileCommand';
 import { UserProfileView } from './UserProfileView';
 import { toUserProfileView } from './toUserProfileView';
-import { createUserFromActor } from './createUserFromActor';
+import { ensureActiveUserProfile } from './ensureActiveUserProfile';
 
 export class GetCurrentUserProfileUseCase {
   constructor(
@@ -11,16 +11,7 @@ export class GetCurrentUserProfileUseCase {
   ) {}
 
   async execute(command: GetCurrentUserProfileCommand): Promise<UserProfileView> {
-    const { actor } = command;
-    const existing = await this.userRepository.findById(actor.userId);
-
-    if (existing !== null) {
-      existing.assertActive();
-      return toUserProfileView(existing);
-    }
-
-    const created = createUserFromActor(actor, this.now());
-    await this.userRepository.save(created);
-    return toUserProfileView(created);
+    const profile = await ensureActiveUserProfile(this.userRepository, command.actor, this.now());
+    return toUserProfileView(profile);
   }
 }

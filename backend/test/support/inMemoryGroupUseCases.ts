@@ -3,6 +3,9 @@ import { ListMyGroupsUseCase } from '../../src/application/group/ListMyGroupsUse
 import { GetGroupUseCase } from '../../src/application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../src/application/group/ListGroupMembersUseCase';
 import { InviteMemberUseCase } from '../../src/application/invitation/InviteMemberUseCase';
+import { ListMyInvitationsUseCase } from '../../src/application/invitation/ListMyInvitationsUseCase';
+import { AcceptInvitationUseCase } from '../../src/application/invitation/AcceptInvitationUseCase';
+import { DeclineInvitationUseCase } from '../../src/application/invitation/DeclineInvitationUseCase';
 import { InMemoryGroupRepository } from './InMemoryGroupRepository';
 import { InMemoryInvitationRepository } from './InMemoryInvitationRepository';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
@@ -14,9 +17,13 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
   getGroupUseCase: GetGroupUseCase;
   listGroupMembersUseCase: ListGroupMembersUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
+  listMyInvitationsUseCase: ListMyInvitationsUseCase;
+  acceptInvitationUseCase: AcceptInvitationUseCase;
+  declineInvitationUseCase: DeclineInvitationUseCase;
 } {
   const users = new InMemoryUserRepository();
   const groups = new InMemoryGroupRepository(users);
+  const invitations = new InMemoryInvitationRepository(groups, users);
   let sequence = 0;
   return {
     createGroupUseCase: new CreateGroupUseCase(
@@ -31,9 +38,12 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
     inviteMemberUseCase: new InviteMemberUseCase(
       groups,
       { isAllowed: () => Promise.resolve(true) },
-      new InMemoryInvitationRepository(),
+      invitations,
       () => `inv_${String((sequence += 1))}`,
       now,
     ),
+    listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitations, now),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, users, now),
+    declineInvitationUseCase: new DeclineInvitationUseCase(invitations, now),
   };
 }

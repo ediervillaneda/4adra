@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  PendingTasks,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +15,12 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ProfileReviewFlag } from '../../core/profile/profile-review-flag';
 import { CurrentProfileStore } from '../../core/profile/current-profile.store';
 import { GroupsService } from '../../core/groups/groups.service';
-import { GroupSummary } from '../../shared/api';
+import {
+  InvitationClosedError,
+  InvitationsService,
+} from '../../core/invitations/invitations.service';
+import { ApiErrorNotifier } from '../../core/http/api-error-notifier';
+import { GroupSummary, ReceivedInvitation } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
 
 @Component({
@@ -24,6 +36,50 @@ import { TEXTS } from '../../shared/texts';
           <a mat-button routerLink="/perfil">{{ texts.home.reviewProfileAction }}</a>
         </mat-card-actions>
       </mat-card>
+    }
+    @if (invitationsLoadFailed()) {
+      <p class="answer-error" role="alert">{{ texts.home.invitationsLoadError }}</p>
+    }
+    @if (invitations().length > 0) {
+      <section data-testid="invitations-section">
+        <h2 class="section-title">{{ texts.home.invitationsTitle }}</h2>
+        @for (invitation of invitations(); track invitation.invitationId) {
+          <mat-card appearance="outlined" class="invitation" data-testid="invitation-item">
+            <mat-card-header>
+              <mat-icon mat-card-avatar>mail</mat-icon>
+              <mat-card-title>{{ invitation.groupName }}</mat-card-title>
+              <mat-card-subtitle>{{
+                texts.home.invitedBy(invitation.invitedByName, texts.groups.roles[invitation.role])
+              }}</mat-card-subtitle>
+            </mat-card-header>
+            @if (failedInvitationIds().has(invitation.invitationId)) {
+              <mat-card-content>
+                <p class="answer-error" role="alert">{{ texts.home.invitationAnswerError }}</p>
+              </mat-card-content>
+            }
+            <mat-card-actions align="end">
+              <button
+                mat-button
+                type="button"
+                data-testid="decline-invitation"
+                [disabled]="answeringInvitationIds().has(invitation.invitationId)"
+                (click)="answer(invitation.invitationId, 'decline')"
+              >
+                {{ texts.home.declineInvitation }}
+              </button>
+              <button
+                mat-flat-button
+                type="button"
+                data-testid="accept-invitation"
+                [disabled]="answeringInvitationIds().has(invitation.invitationId)"
+                (click)="answer(invitation.invitationId, 'accept')"
+              >
+                {{ texts.home.acceptInvitation }}
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+      </section>
     }
     @if (groups(); as groups) {
       @if (groups.length > 0) {
@@ -59,6 +115,12 @@ import { TEXTS } from '../../shared/texts';
     .hint {
       margin-bottom: 24px;
     }
+    .invitation {
+      margin-bottom: 12px;
+    }
+    .answer-error {
+      color: var(--mat-sys-error);
+    }
     .section-title {
       font: var(--mat-sys-title-medium);
     }
@@ -90,9 +152,18 @@ export class HomeComponent {
   private readonly session = inject(AuthService).session;
   private readonly currentProfile = inject(CurrentProfileStore);
   private readonly groupsService = inject(GroupsService);
+  private readonly invitationsService = inject(InvitationsService);
+  private readonly errorNotifier = inject(ApiErrorNotifier);
   protected readonly texts = TEXTS;
   /** null mientras carga: así no parpadea el estado vacío. */
   protected readonly groups = signal<GroupSummary[] | null>(null);
+  protected readonly invitations = signal<ReceivedInvitation[]>([]);
+  protected readonly invitationsLoadFailed = signal(false);
+  /** Invitaciones con una respuesta en curso: sus botones quedan deshabilitados. */
+  protected readonly answeringInvitationIds = signal<ReadonlySet<string>>(new Set());
+  /** Invitaciones cuya última respuesta falló: su tarjeta muestra el error. */
+  protected readonly failedInvitationIds = signal<ReadonlySet<string>>(new Set());
+  private readonly pendingTasks = inject(PendingTasks);
   protected readonly showReviewHint = !inject(ProfileReviewFlag).isReviewed();
   protected readonly greeting = computed(() => {
     const state = this.session();
@@ -105,9 +176,62 @@ export class HomeComponent {
   constructor() {
     void this.currentProfile.load();
     void this.loadGroups();
+    // PendingTasks: whenStable (y la app) esperan a que lleguen las invitaciones.
+    void this.pendingTasks.run(() => this.loadInvitations());
+  }
+
+  protected answer(invitationId: string, answer: 'accept' | 'decline'): void {
+    if (this.answeringInvitationIds().has(invitationId)) {
+      return;
+    }
+    // PendingTasks: whenStable (y la app) esperan la respuesta y la recarga de grupos.
+    void this.pendingTasks.run(() => this.sendAnswer(invitationId, answer));
+  }
+
+  private async sendAnswer(invitationId: string, answer: 'accept' | 'decline'): Promise<void> {
+    this.answeringInvitationIds.update((ids) => withId(ids, invitationId));
+    this.failedInvitationIds.update((ids) => withoutId(ids, invitationId));
+    try {
+      await (answer === 'accept'
+        ? this.invitationsService.accept(invitationId)
+        : this.invitationsService.decline(invitationId));
+    } catch (error) {
+      if (!(error instanceof InvitationClosedError)) {
+        this.failedInvitationIds.update((ids) => withId(ids, invitationId));
+        return;
+      }
+      // Ya no se puede responder: se quita la tarjeta y el banner explica por qué.
+      this.errorNotifier.show(error.message);
+    } finally {
+      this.answeringInvitationIds.update((ids) => withoutId(ids, invitationId));
+    }
+    this.invitations.update((invitations) =>
+      invitations.filter((invitation) => invitation.invitationId !== invitationId),
+    );
+    if (answer === 'accept') {
+      await this.loadGroups();
+    }
+  }
+
+  private async loadInvitations(): Promise<void> {
+    try {
+      this.invitations.set(await this.invitationsService.listMyInvitations());
+    } catch {
+      this.invitationsLoadFailed.set(true);
+    }
   }
 
   private async loadGroups(): Promise<void> {
     this.groups.set(await this.groupsService.listGroups());
   }
+}
+
+function withId(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  return new Set(ids).add(id);
+}
+
+function withoutId(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  const next = new Set(ids);
+  next.delete(id);
+  return next;
 }

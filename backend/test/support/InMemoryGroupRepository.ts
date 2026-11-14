@@ -25,6 +25,25 @@ export class InMemoryGroupRepository implements GroupRepository {
     this.memberships.push(membership);
   }
 
+  groupById(groupId: GroupId): Group | null {
+    return this.groupsById.get(groupId.toString()) ?? null;
+  }
+
+  /** Como `INSERT … ON CONFLICT (group_id, user_id) DO NOTHING`: si ya hay membresía, no la toca. */
+  joinIfAbsent(groupId: GroupId, userId: UserId, role: MemberRole): void {
+    const exists = this.memberships.some(
+      (entry) => entry.groupId === groupId.toString() && entry.userId === userId.toString(),
+    );
+    if (!exists) {
+      this.memberships.push({
+        groupId: groupId.toString(),
+        userId: userId.toString(),
+        role,
+        status: 'ACTIVE',
+      });
+    }
+  }
+
   createWithOwner(group: Group): Promise<void> {
     this.seedMembership(group, {
       groupId: group.id.toString(),

@@ -16,6 +16,14 @@ import {
 import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
 import { InviteMemberUseCase } from '../../application/invitation/InviteMemberUseCase';
+import { ListMyInvitationsUseCase } from '../../application/invitation/ListMyInvitationsUseCase';
+import { AcceptInvitationUseCase } from '../../application/invitation/AcceptInvitationUseCase';
+import { DeclineInvitationUseCase } from '../../application/invitation/DeclineInvitationUseCase';
+import {
+  createGetInvitationsHandler,
+  createPostAcceptInvitationHandler,
+  createPostDeclineInvitationHandler,
+} from './invitations/invitationsController';
 import { AuthenticationProvider } from '../../domain/auth/AuthenticationProvider';
 import { AuditLogWriter } from '../../domain/audit/AuditLogWriter';
 import { GetCurrentUserProfileUseCase } from '../../application/user/GetCurrentUserProfileUseCase';
@@ -33,6 +41,9 @@ export interface AppDependencies {
   getGroupUseCase: GetGroupUseCase;
   listGroupMembersUseCase: ListGroupMembersUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
+  listMyInvitationsUseCase: ListMyInvitationsUseCase;
+  acceptInvitationUseCase: AcceptInvitationUseCase;
+  declineInvitationUseCase: DeclineInvitationUseCase;
   /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
   authHandler: (request: Request) => Promise<Response>;
   generateRequestId: () => string;
@@ -61,6 +72,15 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.post(
     '/v1/groups/:groupId/members/invitations',
     createPostInvitationHandler(dependencies.inviteMemberUseCase),
+  );
+  app.get('/v1/invitations', createGetInvitationsHandler(dependencies.listMyInvitationsUseCase));
+  app.post(
+    '/v1/invitations/:invitationId/accept',
+    createPostAcceptInvitationHandler(dependencies.acceptInvitationUseCase),
+  );
+  app.post(
+    '/v1/invitations/:invitationId/decline',
+    createPostDeclineInvitationHandler(dependencies.declineInvitationUseCase),
   );
 
   app.notFound((c) =>
