@@ -4,6 +4,7 @@ import {
   InvitationRepository,
   ReceivedInvitation,
 } from '../../src/domain/invitation/InvitationRepository';
+import { InvitationAlreadyRespondedException } from '../../src/domain/invitation/errors';
 import { Email } from '../../src/domain/user/Email';
 import { UserId } from '../../src/domain/user/UserId';
 import { InMemoryGroupRepository } from './InMemoryGroupRepository';
@@ -67,8 +68,12 @@ export class InMemoryInvitationRepository implements InvitationRepository {
     return Promise.resolve();
   }
 
+  /** Como el `UPDATE … WHERE status = 'PENDING'` de D1: si ya no está pendiente, no la toca. */
   private replace(invitation: Invitation): void {
     const index = this.invitations.findIndex((stored) => stored.id === invitation.id);
+    if (this.invitations[index]?.status !== 'PENDING') {
+      throw new InvitationAlreadyRespondedException();
+    }
     this.invitations[index] = invitation;
   }
 }

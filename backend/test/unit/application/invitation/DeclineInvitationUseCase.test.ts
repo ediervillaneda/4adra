@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DeclineInvitationUseCase } from '../../../../src/application/invitation/DeclineInvitationUseCase';
 import { GroupId } from '../../../../src/domain/group/GroupId';
+import { Invitation } from '../../../../src/domain/invitation/Invitation';
 import {
   InvitationAlreadyRespondedException,
   InvitationExpiredException,
@@ -50,4 +51,20 @@ describe('DeclineInvitationUseCase', () => {
       expect(statusOf('inv_aceptada')).toBe('ACCEPTED');
     },
   );
+
+  it('shouldThrowAlreadyRespondedWhenInvitationWasAcceptedMeanwhile', async () => {
+    const { invitations, seedInvitation, statusOf } = invitationScenario();
+    seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', status: 'ACCEPTED' });
+    // Otra pestaña la aceptó entre la lectura y la escritura: el caso de uso aún la ve pendiente.
+    const accepted = (await invitations.findById('inv_casa')) as Invitation;
+    vi.spyOn(invitations, 'findById').mockResolvedValue(
+      Invitation.restore({ ...accepted, status: 'PENDING' }),
+    );
+    const useCase = new DeclineInvitationUseCase(invitations, () => NOW);
+
+    await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
+      InvitationAlreadyRespondedException,
+    );
+    expect(statusOf('inv_casa')).toBe('ACCEPTED');
+  });
 });

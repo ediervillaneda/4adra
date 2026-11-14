@@ -28,8 +28,11 @@ export class AcceptInvitationUseCase {
     const now = this.now();
     const accepted = invitation.accept(now);
     // La membresía exige el perfil; quien acepta por la API sin pasar por GET /me aún no lo tiene.
-    if ((await this.userRepository.findById(command.actor.userId)) === null) {
+    const profile = await this.userRepository.findById(command.actor.userId);
+    if (profile === null) {
       await this.userRepository.save(createUserFromActor(command.actor, now));
+    } else {
+      profile.assertActive();
     }
     await this.invitationRepository.saveAccepted(accepted, command.actor.userId, now);
     return toInvitationView(accepted);

@@ -20,7 +20,10 @@ export interface InvitationRepository {
   /**
    * En una sola operación atómica: guarda la invitación aceptada y suma al usuario como miembro
    * activo con el rol ofrecido, salvo que ya tenga membresía en el grupo (entonces no la toca).
+   * Si la invitación ya no estaba `PENDING` (otra respuesta llegó antes), no cambia nada y lanza
+   * `InvitationAlreadyRespondedException`.
    */
   saveAccepted(accepted: Invitation, member: UserId, at: Date): Promise<void>;
+  /** Igual que `saveAccepted`: si ya no estaba `PENDING`, lanza `InvitationAlreadyRespondedException`. */
   saveDeclined(declined: Invitation, at: Date): Promise<void>;
 }

@@ -4,6 +4,7 @@ import {
   InvitationRepository,
   ReceivedInvitation,
 } from '../../domain/invitation/InvitationRepository';
+import { InvitationAlreadyRespondedException } from '../../domain/invitation/errors';
 import { Email } from '../../domain/user/Email';
 import { UserId } from '../../domain/user/UserId';
 import { fromIsoDate, toIsoDate } from './isoDate';
@@ -107,11 +108,12 @@ export class D1InvitationRepository implements InvitationRepository {
 
   /**
    * La membresía solo se inserta si el `UPDATE` cerró la invitación (`changes() = 1`): si otra
-   * respuesta llegó antes, no entra nadie. `ON CONFLICT` deja intacta una membresía existente.
+   * respuesta llegó antes, no entra nadie y se lanza `InvitationAlreadyRespondedException`.
+   * `ON CONFLICT` deja intacta una membresía existente.
    */
   async saveAccepted(accepted: Invitation, member: UserId, at: Date): Promise<void> {
     const timestamp = toIsoDate(at);
-    await this.database.batch([
+    const [closed] = await this.database.batch([
       this.database
         .prepare(
           `UPDATE invitations SET status = 'ACCEPTED', updated_at = ?
@@ -126,15 +128,21 @@ export class D1InvitationRepository implements InvitationRepository {
         )
         .bind(accepted.groupId.toString(), member.toString(), accepted.role, timestamp, timestamp),
     ]);
+    if (closed?.meta.changes !== 1) {
+      throw new InvitationAlreadyRespondedException();
+    }
   }
 
   async saveDeclined(declined: Invitation, at: Date): Promise<void> {
-    await this.database
+    const result = await this.database
       .prepare(
         `UPDATE invitations SET status = 'DECLINED', updated_at = ?
          WHERE id = ? AND status = 'PENDING'`,
       )
       .bind(toIsoDate(at), declined.id)
       .run();
+    if (result.meta.changes !== 1) {
+      throw new InvitationAlreadyRespondedException();
+    }
   }
 }

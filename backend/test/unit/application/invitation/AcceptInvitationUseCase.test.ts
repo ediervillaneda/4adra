@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AcceptInvitationUseCase } from '../../../../src/application/invitation/AcceptInvitationUseCase';
 import { AuthenticatedActor } from '../../../../src/domain/auth/AuthenticatedActor';
 import { GroupId } from '../../../../src/domain/group/GroupId';
+import { Invitation } from '../../../../src/domain/invitation/Invitation';
+import { User } from '../../../../src/domain/user/User';
+import { UserDisabledException } from '../../../../src/domain/user/errors';
 import { Email } from '../../../../src/domain/user/Email';
 import { UserId } from '../../../../src/domain/user/UserId';
 import {
@@ -106,5 +109,48 @@ describe('AcceptInvitationUseCase', () => {
 
     expect((await users.findById(lia.userId))?.displayName).toBe('Lía');
     expect((await groups.findForMember(casa, lia.userId))?.role).toBe('MEMBER');
+  });
+
+  it('shouldThrowAlreadyRespondedWhenInvitationWasDeclinedMeanwhile', async () => {
+    const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
+    seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', status: 'DECLINED' });
+    // Otra pestaña la rechazó entre la lectura y la escritura: el caso de uso aún la ve pendiente.
+    const declined = (await invitations.findById('inv_casa')) as Invitation;
+    vi.spyOn(invitations, 'findById').mockResolvedValue(
+      Invitation.restore({ ...declined, status: 'PENDING' }),
+    );
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+
+    await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
+      InvitationAlreadyRespondedException,
+    );
+    expect(statusOf('inv_casa')).toBe('DECLINED');
+    expect(await groups.findForMember(casa, juan.userId)).toBeNull();
+  });
+
+  it('shouldThrowUserDisabledAndChangeNothingWhenActorAccountIsDisabled', async () => {
+    const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
+    users.seed(
+      User.create({
+        id: juan.userId,
+        displayName: 'Juan',
+        email: juan.email,
+        photoUrl: null,
+        preferredCurrency: 'COP',
+        language: 'es',
+        timeZone: 'America/Bogota',
+        status: 'DISABLED',
+        createdAt: NOW,
+        updatedAt: NOW,
+      }),
+    );
+    seedInvitation({ id: 'inv_casa', groupId: 'grp_casa' });
+    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+
+    await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
+      UserDisabledException,
+    );
+    expect(statusOf('inv_casa')).toBe('PENDING');
+    expect(await groups.findForMember(casa, juan.userId)).toBeNull();
   });
 });
