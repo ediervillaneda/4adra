@@ -893,12 +893,34 @@ paths:
         default:
           $ref: '#/components/responses/Error'
     delete:
-      summary: Remueve una membresía (Owner/Administrator según política; no el último Owner ni con balance pendiente)
+      summary: Remueve a un miembro activo (Owner; Administrator solo a Member o ReadOnly; nunca a sí mismo)
+      description: >
+        La membresía pasa a REMOVED y nunca se borra. Por ahora se ignoran If-Match e Idempotency-Key;
+        OUTSTANDING_BALANCE entra con los gastos (pieza 3).
       responses:
         '200':
-          description: Membresía removida
+          description: Membresía removida (status REMOVED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '403':
+          description: PERMISSION_DENIED (Member o ReadOnly, o Administrator que intenta remover a un Owner o Administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo) o MEMBER_NOT_FOUND (la persona no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
-          description: OUTSTANDING_BALANCE o LAST_OWNER
+          description: CANNOT_REMOVE_SELF (el actor intentó removerse; para irse está leave)
           content:
             application/json:
               schema:
