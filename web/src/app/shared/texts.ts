@@ -2,6 +2,9 @@
  * Todos los textos visibles de la PWA (solo español, ADR-019). Las plantillas no llevan
  * literales: así la interfaz se puede traducir después sin buscar textos sueltos.
  */
+/** Lo comparten cambiar rol y salir del grupo (`409 LAST_OWNER`). */
+const LAST_OWNER_MESSAGE = 'El grupo necesita al menos un Propietario.';
+
 export const TEXTS = {
   appName: '4adra',
   tagline: 'Cuentas claras, gastos compartidos',
@@ -51,6 +54,13 @@ export const TEXTS = {
     changeRole: 'Cambiar rol',
     changeRoleTitle: (name: string): string => `Cambiar el rol de ${name}`,
     changeRoleSave: 'Guardar',
+    leaveGroup: 'Salir del grupo',
+    leaveGroupTitle: (groupName: string): string => `¿Salir de «${groupName}»?`,
+    leaveGroupMessage:
+      'Dejarás de ver el grupo. Podrás volver si te invitan de nuevo o entras con un enlace.',
+    leaveGroupErrors: {
+      LAST_OWNER: LAST_OWNER_MESSAGE,
+    } as Record<string, string>,
     removeMember: 'Remover',
     removeMemberTitle: (name: string): string => `¿Remover a «${name}» del grupo?`,
     removeMemberMessage:
@@ -61,7 +71,7 @@ export const TEXTS = {
       PERMISSION_DENIED: 'No tienes permiso para remover a esta persona.',
     } as Record<string, string>,
     changeRoleErrors: {
-      LAST_OWNER: 'El grupo necesita al menos un Propietario.',
+      LAST_OWNER: LAST_OWNER_MESSAGE,
       MEMBER_NOT_FOUND: 'Esa persona ya no es miembro del grupo.',
       PERMISSION_DENIED: 'Solo un Propietario puede cambiar roles.',
     } as Record<string, string>,

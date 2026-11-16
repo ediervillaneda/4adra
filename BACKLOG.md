@@ -23,7 +23,7 @@ Decisiones caras:
 5. [x] Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo. Requiere: #2
 6. [x] Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos. Requiere: #2
 7. [x] Como Owner, quiero remover a un miembro, para sacar a quien ya no participa. Requiere: #2
-8. [ ] Como miembro, quiero salir de un grupo, para dejar de verlo. Requiere: #2
+8. [x] Como miembro, quiero salir de un grupo, para dejar de verlo. Requiere: #2
 9. [ ] Como Owner, quiero editar el nombre y la descripción del grupo, para mantenerlo al día. Requiere: #2
 10. [ ] Como Owner, quiero archivar un grupo, para sacarlo de Inicio sin perder sus registros. Requiere: #1
 

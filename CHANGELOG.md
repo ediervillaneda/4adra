@@ -15,6 +15,11 @@ Ver `docs/Workflows.md`.
 ## [Sin publicar]
 
 ### Agregado
+- **Salir de un grupo** (pieza 2, historia #8):
+  - Cualquier miembro ve "Salir del grupo" en el detalle. Tras confirmar "¿Salir de «…»?" vuelve a Inicio, y el grupo deja de aparecer ("Grupo no encontrado" si abre su enlace).
+  - El único Propietario no puede salir: ve "El grupo necesita al menos un Propietario." y primero tiene que nombrar a otro, aunque sea la única persona del grupo. La condición va en la misma escritura de D1, para que dos Owners que salen a la vez no dejen el grupo sin ninguno.
+  - La membresía queda `REMOVED`, como al ser removido; vuelve con una invitación o un enlace.
+  - API: `POST /api/v1/groups/{groupId}/leave`, con `404 GROUP_NOT_FOUND` y `409 LAST_OWNER`. Sin migración.
 - **Remover a un miembro** (pieza 2, historia #7):
   - El Owner remueve a cualquier miembro, y el Administrador solo a Miembros y a Solo lectura, desde "Remover" en el detalle del grupo, tras confirmar "¿Remover a «…» del grupo?". Nadie se remueve a sí mismo: para eso estará Salir (#8).
   - La membresía queda `REMOVED`, nunca se borra. La persona deja de ver el grupo en Inicio y en su detalle ("Grupo no encontrado").

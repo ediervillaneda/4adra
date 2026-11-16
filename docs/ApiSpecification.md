@@ -78,7 +78,7 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /invite-links/{code}/join` | El actor entra como Member al grupo del enlace |
 | `PATCH /groups/{groupId}/members/{userId}` | Cambia el rol de un miembro activo (Owner) |
 | `DELETE /groups/{groupId}/members/{userId}` | Remueve a un miembro activo (Owner; Administrator solo a Member/ReadOnly; nunca a sí mismo) |
-| `POST /groups/{groupId}/leave` | El actor abandona el grupo (si no es el último Owner y no tiene deuda pendiente) |
+| `POST /groups/{groupId}/leave` | El actor abandona el grupo (cualquier rol; un Owner, solo si queda otro Owner; sin deuda pendiente desde la pieza 3) |
 
 ```json
 POST /groups

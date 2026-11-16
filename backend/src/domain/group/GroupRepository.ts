@@ -40,6 +40,10 @@ export type MemberRemovalResult =
   | { status: 'PERMISSION_DENIED' }
   | { status: 'MEMBER_NOT_FOUND' };
 
+/** Resultado de que el actor salga del grupo: su membresía tal como quedó, o por qué no salió. */
+export type LeaveGroupResult =
+  { status: 'LEFT'; member: GroupMember } | { status: 'LAST_OWNER' } | { status: 'NOT_MEMBER' };
+
 export interface GroupRepository {
   /** Guarda el grupo y la membresía OWNER de su creador en una sola operación atómica. */
   createWithOwner(group: Group): Promise<void>;
@@ -82,4 +86,9 @@ export interface GroupRepository {
     userId: UserId,
     at: Date,
   ): Promise<MemberRemovalResult>;
+  /**
+   * El usuario sale del grupo (su membresía pasa a REMOVED, nunca se borra), salvo que sea el único
+   * Owner activo. La condición se evalúa en la misma escritura.
+   */
+  leaveGroup(groupId: GroupId, userId: UserId, at: Date): Promise<LeaveGroupResult>;
 }
