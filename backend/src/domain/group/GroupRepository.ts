@@ -51,6 +51,12 @@ export type GroupUpdateResult =
   | { status: 'PERMISSION_DENIED' }
   | { status: 'NOT_MEMBER' };
 
+/** Resultado de archivar: el grupo archivado (visto por el actor), o por qué no se archivó. */
+export type GroupArchiveResult =
+  | { status: 'ARCHIVED'; memberGroup: MemberGroup }
+  | { status: 'PERMISSION_DENIED' }
+  | { status: 'NOT_MEMBER' };
+
 export interface GroupRepository {
   /** Guarda el grupo y la membresía OWNER de su creador en una sola operación atómica. */
   createWithOwner(group: Group): Promise<void>;
@@ -64,6 +70,13 @@ export interface GroupRepository {
     details: GroupDetails,
     at: Date,
   ): Promise<GroupUpdateResult>;
+  /**
+   * El actor (Owner activo) archiva el grupo: sube la versión en uno y actualiza `updatedAt`. Si ya
+   * estaba archivado, no cambia nada y lo devuelve igual. El permiso se evalúa en la misma escritura.
+   */
+  archive(groupId: GroupId, actorId: UserId, at: Date): Promise<GroupArchiveResult>;
+  /** El grupo, sin importar quién lo pide; si no existe, `null`. */
+  findById(groupId: GroupId): Promise<Group | null>;
   /** Grupos donde el usuario tiene una membresía activa. */
   listForMember(userId: UserId): Promise<MemberGroup[]>;
   /** El grupo, solo si el usuario tiene en él una membresía activa; si no, `null`. */

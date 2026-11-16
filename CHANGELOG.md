@@ -15,6 +15,12 @@ Ver `docs/Workflows.md`.
 ## [Sin publicar]
 
 ### Agregado
+- **Archivar un grupo** (pieza 2, historia #10):
+  - El Owner ve "Archivar grupo" en el detalle, con la confirmación "¿Archivar «…»? No se puede deshacer."; al confirmar vuelve a Inicio. Es irreversible desde la app.
+  - Inicio separa los grupos activos de la sección "Archivados", plegada, que solo aparece si hay alguno. Todos los miembros ven ahí el grupo archivado.
+  - El detalle de un grupo archivado muestra el aviso "Grupo archivado" con sus datos y sus miembros, sin ninguna acción (editar, invitar, compartir enlace, cambiar rol, remover, salir ni archivar).
+  - Las invitaciones pendientes de un grupo archivado dejan de aparecer en Inicio y no se pueden aceptar; sus enlaces dejan de servir.
+  - API: `POST /api/v1/groups/{groupId}/archive` (`200` con el grupo, también si ya estaba archivado; `403 PERMISSION_DENIED`; `404 GROUP_NOT_FOUND`). Editar, invitar, crear enlace, cambiar rol, remover, salir y aceptar una invitación responden `409 GROUP_ARCHIVED` en un grupo archivado. Sin migración.
 - **Editar el nombre y la descripción del grupo** (pieza 2, historia #9):
   - Owner y Administrador ven "Editar" en el detalle, que abre `/grupos/:groupId/editar` con los datos precargados. Al guardar vuelven al detalle, y los demás miembros ven el cambio en Inicio y en el detalle.
   - Las mismas reglas que al crear el grupo (nombre de 1 a 120 caracteres, descripción de hasta 500); vaciar la descripción deja el grupo sin ella. La moneda base se muestra pero no se puede cambiar.

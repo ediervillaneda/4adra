@@ -1,6 +1,7 @@
 import { Group, GroupStatus } from '../../domain/group/Group';
 import { GroupId } from '../../domain/group/GroupId';
 import {
+  GroupArchiveResult,
   GroupMember,
   GroupMembership,
   GroupRepository,
@@ -38,21 +39,24 @@ interface GroupMemberRow {
   joined_at: string;
 }
 
+type GroupRow = Omit<MemberGroupRow, 'role'>;
+
+function toGroup(row: GroupRow): Group {
+  return Group.restore({
+    id: GroupId.fromString(row.id),
+    name: row.name,
+    description: row.description,
+    defaultCurrency: row.default_currency,
+    status: row.status,
+    createdBy: UserId.fromString(row.created_by),
+    createdAt: fromIsoDate(row.created_at),
+    updatedAt: fromIsoDate(row.updated_at),
+    version: row.version,
+  });
+}
+
 function fromRow(row: MemberGroupRow): MemberGroup {
-  return {
-    group: Group.restore({
-      id: GroupId.fromString(row.id),
-      name: row.name,
-      description: row.description,
-      defaultCurrency: row.default_currency,
-      status: row.status,
-      createdBy: UserId.fromString(row.created_by),
-      createdAt: fromIsoDate(row.created_at),
-      updatedAt: fromIsoDate(row.updated_at),
-      version: row.version,
-    }),
-    role: row.role,
-  };
+  return { group: toGroup(row), role: row.role };
 }
 
 /** Rol del actor y Owners activos, para explicar un cambio de rol que no se aplicó. */
@@ -150,6 +154,46 @@ export class D1GroupRepository implements GroupRepository {
       return { status: 'PERMISSION_DENIED' };
     }
     return { status: 'UPDATED', memberGroup: fromRow(row) };
+  }
+
+  async archive(groupId: GroupId, actorId: UserId, at: Date): Promise<GroupArchiveResult> {
+    const group = groupId.toString();
+    const [, selected] = await this.database.batch<MemberGroupRow & { member_status: string }>([
+      // Solo un grupo activo se archiva (archivar de nuevo no cambia nada) y el permiso del actor se
+      // evalúa en la misma sentencia: D1 serializa las escrituras.
+      this.database
+        .prepare(
+          `UPDATE groups SET status = 'ARCHIVED', version = version + 1, updated_at = ?
+           WHERE id = ? AND status = 'ACTIVE'
+             AND EXISTS (SELECT 1 FROM group_members
+                         WHERE group_id = groups.id AND user_id = ? AND status = 'ACTIVE'
+                           AND role = 'OWNER')`,
+        )
+        .bind(toIsoDate(at), group, actorId.toString()),
+      this.database
+        .prepare(
+          `SELECT g.*, m.role, m.status AS member_status FROM groups g
+           JOIN group_members m ON m.group_id = g.id
+           WHERE g.id = ? AND m.user_id = ?`,
+        )
+        .bind(group, actorId.toString()),
+    ]);
+    const row = selected?.results[0];
+    if (row?.member_status !== 'ACTIVE') {
+      return { status: 'NOT_MEMBER' };
+    }
+    if (row.role !== 'OWNER') {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    return { status: 'ARCHIVED', memberGroup: fromRow(row) };
+  }
+
+  async findById(groupId: GroupId): Promise<Group | null> {
+    const row = await this.database
+      .prepare('SELECT * FROM groups WHERE id = ?')
+      .bind(groupId.toString())
+      .first<GroupRow>();
+    return row === null ? null : toGroup(row);
   }
 
   async listForMember(userId: UserId): Promise<MemberGroup[]> {

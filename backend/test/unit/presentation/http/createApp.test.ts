@@ -225,4 +225,36 @@ describe('createApp', () => {
     expect(response.status).toBe(200);
     expect(resolveSession).not.toHaveBeenCalled();
   });
+
+  it('shouldArchiveGroupAndRespond409GroupArchivedToLaterChanges', async () => {
+    const app = buildApp();
+    const call = (path: string, method: string, body?: unknown): Promise<Response> =>
+      Promise.resolve(
+        app.request(
+          path,
+          {
+            method,
+            headers: { cookie: VALID_COOKIE, 'content-type': 'application/json' },
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+          },
+          {},
+          executionContextFake(),
+        ),
+      );
+    const created: { data: { id: string } } = await (
+      await call('/api/v1/groups', 'POST', { name: 'Casa', defaultCurrency: 'COP' })
+    ).json();
+
+    const archived = await call(`/api/v1/groups/${created.data.id}/archive`, 'POST');
+    const edited = await call(`/api/v1/groups/${created.data.id}`, 'PATCH', {
+      name: 'Casa nueva',
+      description: null,
+    });
+
+    expect(archived.status).toBe(200);
+    const archivedBody: { data: { status: string } } = await archived.json();
+    expect(archivedBody.data.status).toBe('ARCHIVED');
+    const editedBody: ErrorBody = await edited.json();
+    expect([edited.status, editedBody.error.code]).toEqual([409, 'GROUP_ARCHIVED']);
+  });
 });

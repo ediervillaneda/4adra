@@ -106,6 +106,24 @@ describe('ChangeMemberRoleDialogComponent', () => {
     expect(close).not.toHaveBeenCalled();
   });
 
+  it('changeRoleDialogShouldSayTheGroupWasArchivedMeanwhile', async () => {
+    const fixture = render();
+    const element = chooseAndSave(fixture, 'READ_ONLY');
+
+    http
+      .expectOne('/api/v1/groups/grp_casa/members/usr_juan')
+      .flush(
+        { error: { code: 'GROUP_ARCHIVED', message: 'x' }, ...META },
+        { status: 409, statusText: 'Conflict' },
+      );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
+      'El grupo está archivado.',
+    );
+  });
+
   it('changeRoleDialogShouldCloseWithoutResultOnCancel', () => {
     const element = render().nativeElement as HTMLElement;
 

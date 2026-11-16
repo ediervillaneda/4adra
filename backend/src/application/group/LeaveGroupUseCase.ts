@@ -17,8 +17,14 @@ export class LeaveGroupUseCase {
   ) {}
 
   async execute(command: LeaveGroupCommand): Promise<GroupMemberView> {
-    // Sin chequeo previo: la misma escritura dice si el actor era miembro activo.
     const groupId = GroupId.fromString(command.groupId);
+    // Se lee antes para saber si el grupo está archivado; la escritura vuelve a decir si el actor
+    // sigue siendo miembro activo.
+    const memberGroup = await this.groupRepository.findForMember(groupId, command.actor.userId);
+    if (memberGroup === null) {
+      throw new GroupNotFoundException();
+    }
+    memberGroup.group.ensureActive();
     const result = await this.groupRepository.leaveGroup(groupId, command.actor.userId, this.now());
     // No era miembro activo: nunca lo fue, ya salió o lo removieron.
     if (result.status === 'NOT_MEMBER') {

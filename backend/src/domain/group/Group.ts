@@ -1,5 +1,6 @@
 import { GroupId } from './GroupId';
 import { GroupDetails } from './GroupDetails';
+import { GroupArchivedException } from './errors';
 import { NewGroup } from './NewGroup';
 import { UserId } from '../user/UserId';
 
@@ -47,6 +48,23 @@ export class Group {
       updatedAt: now,
       version: this.props.version + 1,
     });
+  }
+
+  /** El mismo grupo archivado, con una versión más y `updatedAt` nuevo. Es irreversible desde la app. */
+  archive(now: Date): Group {
+    return new Group({
+      ...this.props,
+      status: 'ARCHIVED',
+      updatedAt: now,
+      version: this.props.version + 1,
+    });
+  }
+
+  /** Un grupo archivado es de solo lectura: cualquier cambio a él o a sus miembros se rechaza. */
+  ensureActive(): void {
+    if (this.props.status !== 'ACTIVE') {
+      throw new GroupArchivedException();
+    }
   }
 
   get id(): GroupId {

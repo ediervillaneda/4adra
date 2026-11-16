@@ -65,7 +65,7 @@ export class D1InvitationRepository implements InvitationRepository {
          FROM invitations i
          JOIN groups g ON g.id = i.group_id
          JOIN users u ON u.id = i.invited_by
-         WHERE i.email = ? AND i.status = 'PENDING'
+         WHERE i.email = ? AND i.status = 'PENDING' AND g.status = 'ACTIVE'
          ORDER BY i.created_at DESC`,
       )
       .bind(email.toString())

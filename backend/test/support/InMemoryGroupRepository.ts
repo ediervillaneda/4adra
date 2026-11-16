@@ -1,6 +1,7 @@
 import { Group } from '../../src/domain/group/Group';
 import { GroupId } from '../../src/domain/group/GroupId';
 import {
+  GroupArchiveResult,
   GroupMember,
   GroupMembership,
   GroupRepository,
@@ -65,6 +66,25 @@ export class InMemoryGroupRepository implements GroupRepository {
     const edited = memberGroup.group.withDetails(details, at);
     this.groupsById.set(groupId.toString(), edited);
     return { status: 'UPDATED', memberGroup: { group: edited, role: memberGroup.role } };
+  }
+
+  /** Como el `UPDATE … WHERE status = 'ACTIVE' AND EXISTS` de D1: solo un Owner activo archiva, una sola vez. */
+  async archive(groupId: GroupId, actorId: UserId, at: Date): Promise<GroupArchiveResult> {
+    const memberGroup = await this.findForMember(groupId, actorId);
+    if (memberGroup === null) {
+      return { status: 'NOT_MEMBER' };
+    }
+    if (memberGroup.role !== 'OWNER') {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    const group =
+      memberGroup.group.status === 'ARCHIVED' ? memberGroup.group : memberGroup.group.archive(at);
+    this.groupsById.set(groupId.toString(), group);
+    return { status: 'ARCHIVED', memberGroup: { group, role: memberGroup.role } };
+  }
+
+  findById(groupId: GroupId): Promise<Group | null> {
+    return Promise.resolve(this.groupById(groupId));
   }
 
   groupById(groupId: GroupId): Group | null {

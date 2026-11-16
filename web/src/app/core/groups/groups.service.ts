@@ -36,6 +36,13 @@ export class GroupEditDeniedError extends Error {
   }
 }
 
+/** El grupo está archivado y ya no admite cambios (409 GROUP_ARCHIVED). */
+export class GroupArchivedError extends Error {
+  constructor() {
+    super('GROUP_ARCHIVED');
+  }
+}
+
 /** El backend rechazó la invitación por una regla de negocio; `message` ya está en español. */
 export class InvitationRejectedError extends Error {}
 
@@ -47,6 +54,9 @@ export class MemberRemovalRejectedError extends Error {}
 
 /** El backend no dejó salir del grupo por una regla de negocio; `message` ya está en español. */
 export class LeaveGroupRejectedError extends Error {}
+
+/** El backend no dejó archivar el grupo por una regla de negocio; `message` ya está en español. */
+export class ArchiveGroupRejectedError extends Error {}
 
 /** El código de error del sobre estándar, si la respuesta lo trae. */
 function errorCodeOf(error: unknown): string | undefined {
@@ -122,6 +132,9 @@ export class GroupsService {
       if (errorCodeOf(error) === 'PERMISSION_DENIED') {
         throw new GroupEditDeniedError();
       }
+      if (errorCodeOf(error) === 'GROUP_ARCHIVED') {
+        throw new GroupArchivedError();
+      }
       throw toGroupNotFound(toGroupValidationError(error));
     }
   }
@@ -162,6 +175,17 @@ export class GroupsService {
         return;
       }
       throw rejectionFrom(error, TEXTS.groups.leaveGroupErrors, LeaveGroupRejectedError);
+    }
+  }
+
+  async archiveGroup(groupId: string): Promise<GroupSummary> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessEnvelope<GroupSummary>>(`/api/v1/groups/${groupId}/archive`, null),
+      );
+      return response.data;
+    } catch (error) {
+      throw rejectionFrom(error, TEXTS.groups.archiveGroupErrors, ArchiveGroupRejectedError);
     }
   }
 

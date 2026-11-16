@@ -4,6 +4,8 @@
  */
 /** Lo comparten cambiar rol y salir del grupo (`409 LAST_OWNER`). */
 const LAST_OWNER_MESSAGE = 'El grupo necesita al menos un Propietario.';
+/** Lo comparten las acciones sobre un grupo que se archivó con la pantalla abierta (`409 GROUP_ARCHIVED`). */
+const GROUP_ARCHIVED_MESSAGE = 'El grupo está archivado.';
 
 export const TEXTS = {
   appName: '4adra',
@@ -27,6 +29,7 @@ export const TEXTS = {
     greeting: (name: string): string => `Hola, ${name}`,
     emptyGroupsTitle: 'Tus grupos aparecerán aquí',
     emptyGroupsBody: 'Crea un grupo para empezar a compartir gastos.',
+    noActiveGroupsTitle: 'No tienes grupos activos',
     groupsTitle: 'Mis grupos',
     invitationsTitle: 'Invitaciones',
     invitedBy: (name: string, role: string): string => `Te invita ${name} · ${role}`,
@@ -39,8 +42,10 @@ export const TEXTS = {
       INVITATION_EXPIRED: 'Esta invitación ya venció.',
       INVITATION_ALREADY_RESPONDED: 'Ya respondiste esta invitación.',
       INVITATION_NOT_FOUND: 'Esta invitación ya no está disponible.',
+      GROUP_ARCHIVED: 'Ese grupo fue archivado.',
     } as Record<string, string>,
     createGroup: 'Crear grupo',
+    archivedTitle: 'Archivados',
     reviewProfileHint: 'Revisa tu perfil: confirma tu moneda y zona horaria.',
     reviewProfileAction: 'Ir a mi perfil',
   },
@@ -50,6 +55,7 @@ export const TEXTS = {
     edit: 'Editar',
     saveChanges: 'Guardar',
     editDenied: 'No tienes permiso para editar este grupo.',
+    editArchived: 'El grupo está archivado: ya no se puede editar.',
     currencyIsFixed: 'La moneda base no se puede cambiar.',
     membersTitle: 'Miembros',
     notFoundTitle: 'Grupo no encontrado',
@@ -65,7 +71,16 @@ export const TEXTS = {
       'Dejarás de ver el grupo. Podrás volver si te invitan de nuevo o entras con un enlace.',
     leaveGroupErrors: {
       LAST_OWNER: LAST_OWNER_MESSAGE,
+      GROUP_ARCHIVED: GROUP_ARCHIVED_MESSAGE,
     } as Record<string, string>,
+    archiveGroup: 'Archivar grupo',
+    archiveGroupTitle: (groupName: string): string => `¿Archivar «${groupName}»?`,
+    archiveGroupMessage:
+      'No se puede deshacer. El grupo pasará a "Archivados": sus miembros lo seguirán viendo, pero nadie podrá cambiarlo.',
+    archiveGroupErrors: {
+      PERMISSION_DENIED: 'Solo el Propietario puede archivar el grupo.',
+    } as Record<string, string>,
+    archivedBanner: 'Grupo archivado: puedes ver sus datos y sus miembros, pero no cambiarlos.',
     removeMember: 'Remover',
     removeMemberTitle: (name: string): string => `¿Remover a «${name}» del grupo?`,
     removeMemberMessage:
@@ -74,11 +89,13 @@ export const TEXTS = {
       CANNOT_REMOVE_SELF: 'No puedes removerte a ti mismo; para irte, sal del grupo.',
       MEMBER_NOT_FOUND: 'Esa persona ya no es miembro del grupo.',
       PERMISSION_DENIED: 'No tienes permiso para remover a esta persona.',
+      GROUP_ARCHIVED: GROUP_ARCHIVED_MESSAGE,
     } as Record<string, string>,
     changeRoleErrors: {
       LAST_OWNER: LAST_OWNER_MESSAGE,
       MEMBER_NOT_FOUND: 'Esa persona ya no es miembro del grupo.',
       PERMISSION_DENIED: 'Solo un Propietario puede cambiar roles.',
+      GROUP_ARCHIVED: GROUP_ARCHIVED_MESSAGE,
     } as Record<string, string>,
     inviteTitle: 'Invitar a alguien',
     inviteEmail: 'Correo',
@@ -88,6 +105,7 @@ export const TEXTS = {
     inviteErrors: {
       EMAIL_NOT_ALLOWED: 'Ese correo no está en la lista de acceso de 4adra.',
       MEMBER_ALREADY_ACTIVE: 'Esa persona ya es miembro del grupo.',
+      GROUP_ARCHIVED: GROUP_ARCHIVED_MESSAGE,
     } as Record<string, string>,
     name: 'Nombre del grupo',
     description: 'Descripción (opcional)',

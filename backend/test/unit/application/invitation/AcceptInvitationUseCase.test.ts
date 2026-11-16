@@ -20,7 +20,7 @@ describe('AcceptInvitationUseCase', () => {
   it('shouldJoinGroupWithOfferedRoleAndMarkInvitationAccepted', async () => {
     const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
     seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', role: 'ADMINISTRATOR' });
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     const view = await useCase.execute({ actor: juan, invitationId: 'inv_casa' });
 
@@ -41,7 +41,7 @@ describe('AcceptInvitationUseCase', () => {
     async (invitationId) => {
       const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
       seedInvitation({ id: 'inv_eva', groupId: 'grp_casa', email: 'eva@example.com' });
-      const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+      const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
       await expect(useCase.execute({ actor: juan, invitationId })).rejects.toBeInstanceOf(
         InvitationNotFoundException,
@@ -54,7 +54,7 @@ describe('AcceptInvitationUseCase', () => {
   it('shouldThrowInvitationExpiredAndChangeNothing', async () => {
     const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
     seedInvitation({ id: 'inv_casa', createdAt: new Date('2026-11-06T12:00:00.000Z') });
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
       InvitationExpiredException,
@@ -68,7 +68,7 @@ describe('AcceptInvitationUseCase', () => {
     async (status) => {
       const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
       seedInvitation({ id: 'inv_casa', status });
-      const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+      const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
       await expect(
         useCase.execute({ actor: juan, invitationId: 'inv_casa' }),
@@ -78,11 +78,24 @@ describe('AcceptInvitationUseCase', () => {
     },
   );
 
+  it('shouldReportInvitationStateBeforeArchivedGroup', async () => {
+    const { users, groups, invitations, seedInvitation, statusOf } = invitationScenario();
+    seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', status: 'DECLINED' });
+    await groups.archive(casa, UserId.fromString('usr_ana'), NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
+
+    // La invitación ya cerrada se informa como tal (la PWA la quita de Inicio), aunque el grupo esté archivado.
+    await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
+      InvitationAlreadyRespondedException,
+    );
+    expect(statusOf('inv_casa')).toBe('DECLINED');
+  });
+
   it('shouldCloseInvitationKeepingRoleWhenActorIsAlreadyActiveMember', async () => {
     const { users, groups, invitations, seedInvitation, joinAs, statusOf } = invitationScenario();
     joinAs('grp_casa', 'MEMBER');
     seedInvitation({ id: 'inv_casa', groupId: 'grp_casa', role: 'ADMINISTRATOR' });
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     const view = await useCase.execute({ actor: juan, invitationId: 'inv_casa' });
 
@@ -103,7 +116,7 @@ describe('AcceptInvitationUseCase', () => {
       photoUrl: null,
     };
     seedInvitation({ id: 'inv_lia', groupId: 'grp_casa', email: 'lia@example.com' });
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     await useCase.execute({ actor: lia, invitationId: 'inv_lia' });
 
@@ -119,7 +132,7 @@ describe('AcceptInvitationUseCase', () => {
     vi.spyOn(invitations, 'findById').mockResolvedValue(
       Invitation.restore({ ...declined, status: 'PENDING' }),
     );
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
       InvitationAlreadyRespondedException,
@@ -145,7 +158,7 @@ describe('AcceptInvitationUseCase', () => {
       }),
     );
     seedInvitation({ id: 'inv_casa', groupId: 'grp_casa' });
-    const useCase = new AcceptInvitationUseCase(invitations, users, () => NOW);
+    const useCase = new AcceptInvitationUseCase(invitations, groups, users, () => NOW);
 
     await expect(useCase.execute({ actor: juan, invitationId: 'inv_casa' })).rejects.toBeInstanceOf(
       UserDisabledException,

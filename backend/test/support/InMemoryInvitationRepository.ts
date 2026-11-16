@@ -39,7 +39,8 @@ export class InMemoryInvitationRepository implements InvitationRepository {
       }
       const group = this.groups.groupById(invitation.groupId);
       const inviter = await this.users.findById(invitation.invitedBy);
-      if (group !== null && inviter !== null) {
+      // Como el `JOIN groups … AND g.status = 'ACTIVE'` de D1: las de un grupo archivado no se listan.
+      if (group?.status === 'ACTIVE' && inviter !== null) {
         received.push({ invitation, groupName: group.name, invitedByName: inviter.displayName });
       }
     }

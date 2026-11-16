@@ -33,6 +33,7 @@ export class RemoveMemberUseCase {
     if (actorGroup === null) {
       throw new GroupNotFoundException();
     }
+    actorGroup.group.ensureActive();
     if (command.userId === command.actor.userId.toString()) {
       throw new CannotRemoveSelfException();
     }

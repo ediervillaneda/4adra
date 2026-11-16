@@ -25,7 +25,7 @@ Decisiones caras:
 7. [x] Como Owner, quiero remover a un miembro, para sacar a quien ya no participa. Requiere: #2
 8. [x] Como miembro, quiero salir de un grupo, para dejar de verlo. Requiere: #2
 9. [x] Como Owner, quiero editar el nombre y la descripción del grupo, para mantenerlo al día. Requiere: #2
-10. [ ] Como Owner, quiero archivar un grupo, para sacarlo de Inicio sin perder sus registros. Requiere: #1
+10. [x] Como Owner, quiero archivar un grupo, para sacarlo de Inicio sin perder sus registros. Requiere: #1
 
 ## Notas
 - La regla "no se puede salir ni ser removido con balance ≠ 0" entra con los gastos (pieza 3); en esta pieza todo balance es cero.

@@ -6,6 +6,7 @@ import { GetGroupUseCase } from '../../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../../application/group/ListGroupMembersUseCase';
 import { ChangeMemberRoleUseCase } from '../../../application/group/ChangeMemberRoleUseCase';
 import { RemoveMemberUseCase } from '../../../application/group/RemoveMemberUseCase';
+import { ArchiveGroupUseCase } from '../../../application/group/ArchiveGroupUseCase';
 import { LeaveGroupUseCase } from '../../../application/group/LeaveGroupUseCase';
 import { UpdateGroupUseCase } from '../../../application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../../../application/invitation/InviteMemberUseCase';
@@ -89,6 +90,18 @@ export function createPostLeaveGroupHandler(
       groupId: c.req.param('groupId'),
     });
     return c.json(successEnvelope(member, c.get('requestId')), 200);
+  };
+}
+
+export function createPostArchiveGroupHandler(
+  useCase: ArchiveGroupUseCase,
+): Handler<AppEnv, '/v1/groups/:groupId/archive'> {
+  return async (c) => {
+    const group = await useCase.execute({
+      actor: c.get('actor'),
+      groupId: c.req.param('groupId'),
+    });
+    return c.json(successEnvelope(group, c.get('requestId')), 200);
   };
 }
 

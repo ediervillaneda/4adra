@@ -28,7 +28,10 @@ type DetailState =
   | { status: 'notFound' }
   | { status: 'error' };
 
-/** Detalle de un grupo: sus datos y sus miembros activos (historias #2, #6, #7 y #8 de la pieza 2). */
+/**
+ * Detalle de un grupo: sus datos y sus miembros activos (historias #2, #6 a #10 de la pieza 2). Un grupo
+ * archivado se muestra de solo lectura, sin ninguna acción.
+ */
 @Component({
   selector: 'app-group-detail',
   imports: [RouterLink, MatButtonModule, MatIconModule, MatListModule],
@@ -47,6 +50,12 @@ type DetailState =
           <p class="currency">
             {{ texts.groups.defaultCurrency }}: {{ content.group.defaultCurrency }}
           </p>
+          @if (content.group.status === 'ARCHIVED') {
+            <p class="archived-banner" role="status" data-testid="archived-banner">
+              <mat-icon>inventory_2</mat-icon>
+              {{ texts.groups.archivedBanner }}
+            </p>
+          }
           @if (canEdit(content.group)) {
             <a
               mat-stroked-button
@@ -114,14 +123,28 @@ type DetailState =
               </mat-list-item>
             }
           </mat-list>
-          <button
-            mat-stroked-button
-            type="button"
-            data-testid="leave-group"
-            (click)="openLeaveGroup(content.group)"
-          >
-            {{ texts.groups.leaveGroup }}
-          </button>
+          @if (isActive(content.group)) {
+            <div class="group-actions">
+              <button
+                mat-stroked-button
+                type="button"
+                data-testid="leave-group"
+                (click)="openLeaveGroup(content.group)"
+              >
+                {{ texts.groups.leaveGroup }}
+              </button>
+              @if (canArchive(content.group)) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  data-testid="archive-group"
+                  (click)="openArchiveGroup(content.group)"
+                >
+                  {{ texts.groups.archiveGroup }}
+                </button>
+              }
+            </div>
+          }
         }
       }
       @case ('notFound') {
@@ -145,6 +168,20 @@ type DetailState =
     .section-title {
       font: var(--mat-sys-title-medium);
     }
+    .archived-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface);
+    }
+    .group-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
   `,
 })
 export class GroupDetailComponent {
@@ -164,18 +201,28 @@ export class GroupDetailComponent {
     void this.pendingTasks.run(() => this.currentProfile.load());
   }
 
+  /** Un grupo archivado es de solo lectura: no se ofrece ninguna acción (el backend responde 409). */
+  protected isActive(group: GroupSummary): boolean {
+    return group.status === 'ACTIVE';
+  }
+
   /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
   protected canInvite(group: GroupSummary): boolean {
-    return group.role === 'OWNER' || group.role === 'ADMINISTRATOR';
+    return this.isActive(group) && (group.role === 'OWNER' || group.role === 'ADMINISTRATOR');
   }
 
   protected canEdit(group: GroupSummary): boolean {
-    return canEditGroup(group.role);
+    return this.isActive(group) && canEditGroup(group.role);
   }
 
   /** Solo el Owner cambia roles (matriz en docs/Security.md); el backend vuelve a validarlo. */
   protected canChangeRoles(group: GroupSummary): boolean {
-    return group.role === 'OWNER';
+    return this.isActive(group) && group.role === 'OWNER';
+  }
+
+  /** Solo el Owner archiva un grupo activo; el backend vuelve a validarlo. */
+  protected canArchive(group: GroupSummary): boolean {
+    return this.isActive(group) && group.role === 'OWNER';
   }
 
   /**
@@ -185,7 +232,7 @@ export class GroupDetailComponent {
   protected canRemove(group: GroupSummary, member: GroupMember): boolean {
     // Sin saber quién mira (perfil aún sin cargar o GET /me fallido), no se ofrece en ninguna fila.
     const viewerId = this.currentProfile.profile()?.id;
-    if (viewerId === undefined || member.userId === viewerId) {
+    if (!this.isActive(group) || viewerId === undefined || member.userId === viewerId) {
       return false;
     }
     return (
@@ -210,6 +257,27 @@ export class GroupDetailComponent {
       .afterClosed()
       .subscribe((left) => {
         if (left === true) {
+          void this.pendingTasks.run(() => this.router.navigate(['/']));
+        }
+      });
+  }
+
+  /** Archivar es irreversible desde la app: al confirmar, vuelve a Inicio, donde el grupo pasa a "Archivados". */
+  protected openArchiveGroup(group: GroupSummary): void {
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, true>(ConfirmDialogComponent, {
+        data: {
+          title: TEXTS.groups.archiveGroupTitle(group.name),
+          message: TEXTS.groups.archiveGroupMessage,
+          confirmLabel: TEXTS.groups.archiveGroup,
+          confirm: async () => {
+            await this.groupsService.archiveGroup(group.id);
+          },
+        },
+      })
+      .afterClosed()
+      .subscribe((archived) => {
+        if (archived === true) {
           void this.pendingTasks.run(() => this.router.navigate(['/']));
         }
       });

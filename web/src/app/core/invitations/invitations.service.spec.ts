@@ -28,6 +28,7 @@ describe('InvitationsService', () => {
       code: 'INVITATION_NOT_FOUND',
       message: 'Esta invitación ya no está disponible.',
     },
+    { status: 409, code: 'GROUP_ARCHIVED', message: 'Ese grupo fue archivado.' },
   ])('serviceShouldReportClosedInvitationInSpanish ($code)', async ({ status, code, message }) => {
     const accepted = service.accept('inv_1');
     http
