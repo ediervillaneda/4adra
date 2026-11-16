@@ -298,6 +298,7 @@ Estados de invitación: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`.
 | `MEMBER_ALREADY_ACTIVE` | Usuario ya pertenece al grupo |
 | `EMAIL_NOT_ALLOWED` | El correo invitado no está en la lista de acceso (`422`, ADR-018) |
 | `MEMBER_NOT_FOUND` | La persona no es miembro activo del grupo (`404`) |
+| `GROUP_ARCHIVED` | El grupo está archivado: invitar, crear un enlace, cambiar rol, remover, salir y aceptar una invitación no cambian nada (`409`) |
 | `CANNOT_REMOVE_SELF` | El actor intentó removerse a sí mismo; para irse está `leave` (`409`) |
 | `LAST_OWNER` | Operación dejaría al grupo sin Owner (`409`) |
 | `OUTSTANDING_BALANCE` | Salida no permitida por deuda pendiente |
