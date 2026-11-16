@@ -5,6 +5,7 @@ import {
   GroupMembership,
   GroupRepository,
   MemberGroup,
+  RoleChangeResult,
 } from '../../src/domain/group/GroupRepository';
 import { MemberRole } from '../../src/domain/group/MemberRole';
 import { Email } from '../../src/domain/user/Email';
@@ -18,6 +19,8 @@ interface StoredMembership {
   status: 'ACTIVE' | 'REMOVED';
   /** Si falta, se toma la fecha de creación del grupo. */
   joinedAt?: Date;
+  /** Última vez que cambió la membresía; si falta, nunca cambió. */
+  updatedAt?: Date;
 }
 
 /** Como la D1 (que une `group_members` con `users`), toma nombre y foto de los perfiles guardados. */
@@ -30,6 +33,14 @@ export class InMemoryGroupRepository implements GroupRepository {
   seedMembership(group: Group, membership: StoredMembership): void {
     this.groupsById.set(group.id.toString(), group);
     this.memberships.push(membership);
+  }
+
+  membershipOf(groupId: GroupId, userId: UserId): StoredMembership | null {
+    return (
+      this.memberships.find(
+        (entry) => entry.groupId === groupId.toString() && entry.userId === userId.toString(),
+      ) ?? null
+    );
   }
 
   groupById(groupId: GroupId): Group | null {
@@ -66,6 +77,36 @@ export class InMemoryGroupRepository implements GroupRepository {
       role: membership.role,
       joinedAt: membership.joinedAt ?? (this.groupsById.get(membership.groupId) as Group).createdAt,
     });
+  }
+
+  /** Como el `UPDATE … WHERE` de D1: no toca nada si el actor no es Owner, la persona no es miembro activo o el grupo quedaría sin Owner. */
+  async changeMemberRole(
+    groupId: GroupId,
+    actorId: UserId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<RoleChangeResult> {
+    const activeInGroup = this.memberships.filter(
+      (entry) => entry.groupId === groupId.toString() && entry.status === 'ACTIVE',
+    );
+    const actor = activeInGroup.find((entry) => entry.userId === actorId.toString());
+    if (actor?.role !== 'OWNER') {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    const target = activeInGroup.find((entry) => entry.userId === userId.toString());
+    if (target === undefined) {
+      return { status: 'MEMBER_NOT_FOUND' };
+    }
+    const owners = activeInGroup.filter((entry) => entry.role === 'OWNER').length;
+    if (role !== 'OWNER' && target.role === 'OWNER' && owners <= 1) {
+      return { status: 'LAST_OWNER' };
+    }
+    target.role = role;
+    target.updatedAt = at;
+    const members = await this.listActiveMembers(groupId);
+    const member = members.find((entry) => entry.userId.toString() === userId.toString());
+    return member === undefined ? { status: 'MEMBER_NOT_FOUND' } : { status: 'CHANGED', member };
   }
 
   createWithOwner(group: Group): Promise<void> {

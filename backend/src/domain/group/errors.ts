@@ -17,3 +17,21 @@ export class PermissionDeniedException extends DomainError {
     super('No tienes permiso para hacer esto en el grupo.');
   }
 }
+
+/** La persona no es miembro activo del grupo (o no existe). */
+export class MemberNotFoundException extends DomainError {
+  readonly code = 'MEMBER_NOT_FOUND';
+
+  constructor() {
+    super('Miembro no encontrado.');
+  }
+}
+
+/** La operación dejaría el grupo sin Owner activo. */
+export class LastOwnerException extends DomainError {
+  readonly code = 'LAST_OWNER';
+
+  constructor() {
+    super('El grupo necesita al menos un Propietario.');
+  }
+}
