@@ -8,7 +8,9 @@ import {
   GroupSummary,
   Invitation,
   InvitationRequest,
+  MemberRole,
   NewGroupRequest,
+  RoleChangeRequest,
 } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
 
@@ -28,6 +30,16 @@ export class GroupNotFoundError extends Error {
 
 /** El backend rechazó la invitación por una regla de negocio; `message` ya está en español. */
 export class InvitationRejectedError extends Error {}
+
+/** El backend rechazó el cambio de rol por una regla de negocio; `message` ya está en español. */
+export class MemberRoleChangeRejectedError extends Error {}
+
+/** El código de error del sobre estándar, si la respuesta lo trae. */
+function errorCodeOf(error: unknown): string | undefined {
+  return error instanceof HttpErrorResponse
+    ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
+    : undefined;
+}
 
 function toGroupNotFound(error: unknown): unknown {
   return error instanceof HttpErrorResponse && error.status === 404
@@ -71,12 +83,26 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const code =
-        error instanceof HttpErrorResponse
-          ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
-          : undefined;
+      const code = errorCodeOf(error);
       const message = code === undefined ? undefined : TEXTS.groups.inviteErrors[code];
       throw message === undefined ? error : new InvitationRejectedError(message);
+    }
+  }
+
+  async changeMemberRole(groupId: string, userId: string, role: MemberRole): Promise<GroupMember> {
+    const request: RoleChangeRequest = { role };
+    try {
+      const response = await firstValueFrom(
+        this.http.patch<ApiSuccessEnvelope<GroupMember>>(
+          `/api/v1/groups/${groupId}/members/${userId}`,
+          request,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      const code = errorCodeOf(error);
+      const message = code === undefined ? undefined : TEXTS.groups.changeRoleErrors[code];
+      throw message === undefined ? error : new MemberRoleChangeRejectedError(message);
     }
   }
 

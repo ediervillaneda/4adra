@@ -24,11 +24,18 @@ export interface ProfileChanges {
   timeZone: string;
 }
 
-export type MemberRole = 'OWNER' | 'ADMINISTRATOR' | 'MEMBER' | 'READ_ONLY';
-
 /** Roles que se pueden asignar al invitar; `OWNER` no (docs/api/Members.md). */
 export const INVITABLE_ROLES = ['ADMINISTRATOR', 'MEMBER', 'READ_ONLY'] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+/** Los cuatro roles, en orden de más a menos permisos; los asigna un Owner (docs/api/Members.md). */
+export const MEMBER_ROLES = ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY'] as const;
+export type MemberRole = (typeof MEMBER_ROLES)[number];
+
+/** Cuerpo de PATCH /api/v1/groups/{groupId}/members/{userId}. */
+export interface RoleChangeRequest {
+  role: MemberRole;
+}
 
 /** Cuerpo de POST /api/v1/groups/{groupId}/members/invitations. */
 export interface InvitationRequest {
