@@ -57,9 +57,9 @@ export class InMemoryInvitationRepository implements InvitationRepository {
     return Promise.resolve();
   }
 
-  saveAccepted(accepted: Invitation, member: UserId): Promise<void> {
+  saveAccepted(accepted: Invitation, member: UserId, at: Date): Promise<void> {
     this.replace(accepted);
-    this.groups.joinIfAbsent(accepted.groupId, member, accepted.role);
+    this.groups.joinIfAbsent(accepted.groupId, member, accepted.role, at);
     return Promise.resolve();
   }
 

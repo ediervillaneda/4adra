@@ -35,3 +35,12 @@ export class LastOwnerException extends DomainError {
     super('El grupo necesita al menos un Propietario.');
   }
 }
+
+/** Nadie se remueve a sí mismo de un grupo; para irse está salir del grupo. */
+export class CannotRemoveSelfException extends DomainError {
+  readonly code = 'CANNOT_REMOVE_SELF';
+
+  constructor() {
+    super('No puedes removerte a ti mismo; para irte, sal del grupo.');
+  }
+}

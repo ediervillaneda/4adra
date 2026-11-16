@@ -34,6 +34,9 @@ export class InvitationRejectedError extends Error {}
 /** El backend rechazó el cambio de rol por una regla de negocio; `message` ya está en español. */
 export class MemberRoleChangeRejectedError extends Error {}
 
+/** El backend rechazó la remoción por una regla de negocio; `message` ya está en español. */
+export class MemberRemovalRejectedError extends Error {}
+
 /** El código de error del sobre estándar, si la respuesta lo trae. */
 function errorCodeOf(error: unknown): string | undefined {
   return error instanceof HttpErrorResponse
@@ -86,6 +89,21 @@ export class GroupsService {
       const code = errorCodeOf(error);
       const message = code === undefined ? undefined : TEXTS.groups.inviteErrors[code];
       throw message === undefined ? error : new InvitationRejectedError(message);
+    }
+  }
+
+  async removeMember(groupId: string, userId: string): Promise<GroupMember> {
+    try {
+      const response = await firstValueFrom(
+        this.http.delete<ApiSuccessEnvelope<GroupMember>>(
+          `/api/v1/groups/${groupId}/members/${userId}`,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      const code = errorCodeOf(error);
+      const message = code === undefined ? undefined : TEXTS.groups.removeMemberErrors[code];
+      throw message === undefined ? error : new MemberRemovalRejectedError(message);
     }
   }
 

@@ -109,7 +109,7 @@ export class D1InvitationRepository implements InvitationRepository {
   /**
    * La membresía solo se inserta si el `UPDATE` cerró la invitación (`changes() = 1`): si otra
    * respuesta llegó antes, no entra nadie y se lanza `InvitationAlreadyRespondedException`.
-   * `ON CONFLICT` deja intacta una membresía existente.
+   * `ON CONFLICT` deja intacta una membresía activa y reactiva una REMOVED con el rol ofrecido.
    */
   async saveAccepted(accepted: Invitation, member: UserId, at: Date): Promise<void> {
     const timestamp = toIsoDate(at);
@@ -124,7 +124,10 @@ export class D1InvitationRepository implements InvitationRepository {
         .prepare(
           `INSERT INTO group_members (group_id, user_id, role, status, joined_at, updated_at)
            SELECT ?, ?, ?, 'ACTIVE', ?, ? WHERE changes() = 1
-           ON CONFLICT (group_id, user_id) DO NOTHING`,
+           ON CONFLICT (group_id, user_id) DO UPDATE SET
+             role = excluded.role, status = 'ACTIVE',
+             joined_at = excluded.joined_at, updated_at = excluded.updated_at
+           WHERE group_members.status = 'REMOVED'`,
         )
         .bind(accepted.groupId.toString(), member.toString(), accepted.role, timestamp, timestamp),
     ]);

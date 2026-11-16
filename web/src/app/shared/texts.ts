@@ -5,6 +5,10 @@
 export const TEXTS = {
   appName: '4adra',
   tagline: 'Cuentas claras, gastos compartidos',
+  /** Textos que comparten varias funcionalidades (por ejemplo, el diálogo de confirmación). */
+  common: {
+    cancel: 'Cancelar',
+  },
   nav: {
     home: 'Inicio',
     profile: 'Perfil',
@@ -47,6 +51,15 @@ export const TEXTS = {
     changeRole: 'Cambiar rol',
     changeRoleTitle: (name: string): string => `Cambiar el rol de ${name}`,
     changeRoleSave: 'Guardar',
+    removeMember: 'Remover',
+    removeMemberTitle: (name: string): string => `¿Remover a «${name}» del grupo?`,
+    removeMemberMessage:
+      'Dejará de ver el grupo. Podrá volver si lo invitas de nuevo o entra con un enlace.',
+    removeMemberErrors: {
+      CANNOT_REMOVE_SELF: 'No puedes removerte a ti mismo; para irte, sal del grupo.',
+      MEMBER_NOT_FOUND: 'Esa persona ya no es miembro del grupo.',
+      PERMISSION_DENIED: 'No tienes permiso para remover a esta persona.',
+    } as Record<string, string>,
     changeRoleErrors: {
       LAST_OWNER: 'El grupo necesita al menos un Propietario.',
       MEMBER_NOT_FOUND: 'Esa persona ya no es miembro del grupo.',

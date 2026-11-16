@@ -5,6 +5,7 @@ import {
   GroupMembership,
   GroupRepository,
   MemberGroup,
+  MemberRemovalResult,
   RoleChangeResult,
 } from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
@@ -30,6 +31,7 @@ interface GroupMemberRow {
   display_name: string;
   photo_url: string | null;
   role: MemberRole;
+  status: 'ACTIVE' | 'REMOVED';
   joined_at: string;
 }
 
@@ -62,6 +64,7 @@ function toGroupMember(row: GroupMemberRow): GroupMember {
     displayName: row.display_name,
     photoUrl: row.photo_url,
     role: row.role,
+    status: row.status,
     joinedAt: fromIsoDate(row.joined_at),
   };
 }
@@ -125,7 +128,7 @@ export class D1GroupRepository implements GroupRepository {
   async listActiveMembers(groupId: GroupId): Promise<GroupMember[]> {
     const { results } = await this.database
       .prepare(
-        `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.joined_at FROM group_members m
+        `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.status, m.joined_at FROM group_members m
          JOIN users u ON u.id = m.user_id
          WHERE m.group_id = ? AND m.status = 'ACTIVE'`,
       )
@@ -158,7 +161,10 @@ export class D1GroupRepository implements GroupRepository {
         .prepare(
           `INSERT INTO group_members (group_id, user_id, role, status, joined_at, updated_at)
            VALUES (?, ?, ?, 'ACTIVE', ?, ?)
-           ON CONFLICT (group_id, user_id) DO NOTHING`,
+           ON CONFLICT (group_id, user_id) DO UPDATE SET
+             role = excluded.role, status = 'ACTIVE',
+             joined_at = excluded.joined_at, updated_at = excluded.updated_at
+           WHERE group_members.status = 'REMOVED'`,
         )
         .bind(groupId.toString(), userId.toString(), role, timestamp, timestamp),
       this.database
@@ -204,7 +210,7 @@ export class D1GroupRepository implements GroupRepository {
         ),
       this.database
         .prepare(
-          `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.joined_at FROM group_members m
+          `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.status, m.joined_at FROM group_members m
            JOIN users u ON u.id = m.user_id
            WHERE m.group_id = ? AND m.user_id = ? AND m.status = 'ACTIVE'`,
         )
@@ -221,7 +227,7 @@ export class D1GroupRepository implements GroupRepository {
         .bind(group, actorId.toString(), group),
     ]);
     const row = selected?.results[0];
-    if (updated?.meta.changes !== 0 && row !== undefined) {
+    if (updated?.meta.changes === 1 && row !== undefined) {
       return { status: 'CHANGED', member: toGroupMember(row) };
     }
     const facts = context?.results[0];
@@ -235,5 +241,51 @@ export class D1GroupRepository implements GroupRepository {
       return { status: 'LAST_OWNER' };
     }
     throw new Error('El cambio de rol no se aplicó por un motivo no previsto.');
+  }
+
+  async removeMember(
+    groupId: GroupId,
+    actorId: UserId,
+    userId: UserId,
+    at: Date,
+  ): Promise<MemberRemovalResult> {
+    const group = groupId.toString();
+    const [updated, selected] = await this.database.batch<GroupMemberRow>([
+      // El permiso del actor (canRemove) se vuelve a evaluar en la misma sentencia: D1 serializa
+      // las escrituras, así que un actor degradado o removido a mitad de camino no remueve a nadie.
+      this.database
+        .prepare(
+          `UPDATE group_members SET status = 'REMOVED', updated_at = ?
+           WHERE group_id = ? AND user_id = ? AND status = 'ACTIVE' AND user_id <> ?
+             AND EXISTS (SELECT 1 FROM group_members actor
+                         WHERE actor.group_id = ? AND actor.user_id = ? AND actor.status = 'ACTIVE'
+                           AND (actor.role = 'OWNER'
+                                OR (actor.role = 'ADMINISTRATOR'
+                                    AND group_members.role IN ('MEMBER', 'READ_ONLY'))))`,
+        )
+        .bind(
+          toIsoDate(at),
+          group,
+          userId.toString(),
+          actorId.toString(),
+          group,
+          actorId.toString(),
+        ),
+      this.database
+        .prepare(
+          `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.status, m.joined_at
+           FROM group_members m JOIN users u ON u.id = m.user_id
+           WHERE m.group_id = ? AND m.user_id = ?`,
+        )
+        .bind(group, userId.toString()),
+    ]);
+    const row = selected?.results[0];
+    if (updated?.meta.changes === 1 && row !== undefined) {
+      return { status: 'REMOVED', member: toGroupMember(row) };
+    }
+    // Sin cambios: o la persona no es miembro activo, o el actor no puede removerla.
+    return row?.status === 'ACTIVE'
+      ? { status: 'PERMISSION_DENIED' }
+      : { status: 'MEMBER_NOT_FOUND' };
   }
 }

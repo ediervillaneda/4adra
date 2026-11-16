@@ -63,13 +63,14 @@ export interface ReceivedInvitation {
   expiresAt: string;
 }
 
-/** Miembro activo de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
+/** Membresía de un grupo, sin correo (components/schemas/Membership en openapi.yaml). */
 export interface GroupMember {
   userId: string;
   displayName: string;
   photoUrl: string | null;
   role: MemberRole;
-  status: 'ACTIVE';
+  /** `REMOVED` solo en la respuesta de remover; las listas traen solo miembros activos. */
+  status: 'ACTIVE' | 'REMOVED';
   joinedAt: string;
 }
 

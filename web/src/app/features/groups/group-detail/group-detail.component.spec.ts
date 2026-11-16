@@ -5,6 +5,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
+import { CurrentProfileStore } from '../../../core/profile/current-profile.store';
 import { GroupDetailComponent } from './group-detail.component';
 
 const CASA = {
@@ -60,10 +62,19 @@ let http: HttpTestingController;
 /** Lo que devuelve el diálogo "Cambiar rol" al cerrarse (undefined: cerrado sin cambios). */
 let dialogResult: unknown;
 let openedDialogs: unknown[];
+/** Quién mira el detalle: así el componente sabe cuál es su propia fila. */
+let currentUserId: string | null;
+/** Cómo responde `CurrentProfileStore.load()`; por defecto, el perfil ya está cargado. */
+let loadProfile: (profile: ReturnType<typeof signal<{ id: string } | null>>) => Promise<void>;
 
-function render(): ComponentFixture<GroupDetailComponent> {
+function render(userId: string | null = 'usr_otro'): ComponentFixture<GroupDetailComponent> {
   dialogResult = undefined;
   openedDialogs = [];
+  currentUserId = userId;
+  loadProfile ??= () => Promise.resolve();
+  const profile = signal<{ id: string } | null>(
+    currentUserId === null ? null : { id: currentUserId },
+  );
   TestBed.configureTestingModule({
     imports: [GroupDetailComponent],
     providers: [
@@ -73,6 +84,10 @@ function render(): ComponentFixture<GroupDetailComponent> {
       {
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: convertToParamMap({ groupId: 'grp_casa' }) } },
+      },
+      {
+        provide: CurrentProfileStore,
+        useValue: { profile, load: () => loadProfile(profile) },
       },
       {
         provide: MatDialog,
@@ -105,6 +120,7 @@ async function respondWithCasa(
 describe('GroupDetailComponent', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+    loadProfile = () => Promise.resolve();
   });
 
   afterEach(() => {
@@ -269,5 +285,105 @@ describe('GroupDetailComponent', () => {
 
     http.expectNone('/api/v1/groups/grp_casa');
     expect(element.querySelectorAll('[data-testid="change-role"]').length).toBe(4);
+  });
+
+  it('groupDetailShouldShowRemoveOnlyOnMembersTheActorCanRemoveExceptThemself', async () => {
+    // Quien mira es Zoe (Owner), Álvaro (Administrator), Ana (Member) o beto (ReadOnly).
+    const viewers = [
+      ['OWNER', 'usr_zoe'],
+      ['ADMINISTRATOR', 'usr_alvaro'],
+      ['MEMBER', 'usr_ana'],
+      ['READ_ONLY', 'usr_beto'],
+    ] as const;
+    const removable: Record<string, (string | undefined)[]> = {};
+    for (const [role, userId] of viewers) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(userId), role);
+      removable[role] = Array.from(element.querySelectorAll('[data-testid="member-item"]'))
+        .filter((item) => item.querySelector('[data-testid="remove-member"]') !== null)
+        .map((item) => item.querySelector('[data-testid="member-name"]')?.textContent?.trim());
+      http.verify();
+    }
+
+    expect(removable).toEqual({
+      OWNER: ['Álvaro', 'Ana', 'beto'],
+      ADMINISTRATOR: ['Ana', 'beto'],
+      MEMBER: [],
+      READ_ONLY: [],
+    });
+  });
+
+  it('groupDetailShouldRemoveAfterConfirmingAndReloadTheList', async () => {
+    const fixture = render('usr_zoe');
+    const element = await respondWithCasa(fixture, 'OWNER');
+    dialogResult = true;
+
+    const anaRow = Array.from(element.querySelectorAll('[data-testid="member-item"]'))[1];
+    anaRow?.querySelector<HTMLButtonElement>('[data-testid="remove-member"]')?.click();
+    const dialog = openedDialogs[0] as { title: string; confirm: () => Promise<void> };
+    expect(dialog.title).toBe('¿Remover a «Ana» del grupo?');
+
+    const confirmed = dialog.confirm();
+    const request = http.expectOne('/api/v1/groups/grp_casa/members/usr_ana');
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ data: { ...MEMBERS[1], status: 'REMOVED' }, ...META });
+    await confirmed;
+
+    http.expectOne('/api/v1/groups/grp_casa').flush({ data: { ...CASA, role: 'OWNER' }, ...META });
+    http.expectOne('/api/v1/groups/grp_casa/members').flush({
+      data: MEMBERS.filter((member) => member.userId !== 'usr_ana'),
+      ...META,
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const names = Array.from(element.querySelectorAll('[data-testid="member-name"]')).map((name) =>
+      name.textContent?.trim(),
+    );
+    expect(names).toEqual(['Álvaro', 'beto', 'Zoe']);
+  });
+
+  it('groupDetailShouldRejectRemovalWithTheBackendMessage', async () => {
+    const fixture = render('usr_zoe');
+    const element = await respondWithCasa(fixture, 'OWNER');
+
+    element.querySelector<HTMLButtonElement>('[data-testid="remove-member"]')?.click();
+    const dialog = openedDialogs[0] as { confirm: () => Promise<void> };
+
+    const confirmed = dialog.confirm();
+    http.expectOne('/api/v1/groups/grp_casa/members/usr_alvaro').flush(
+      {
+        error: { code: 'MEMBER_NOT_FOUND', message: 'Miembro no encontrado.' },
+        ...META,
+      },
+      { status: 404, statusText: 'Not Found' },
+    );
+
+    await expect(confirmed).rejects.toThrow('Esa persona ya no es miembro del grupo.');
+  });
+
+  it('groupDetailShouldHideRemoveUntilItKnowsWhoIsViewing', async () => {
+    // GET /me falla: sin saber cuál es la fila propia, no se ofrece "Remover" en ninguna.
+    loadProfile = () => Promise.resolve();
+    const element = await respondWithCasa(render(null), 'OWNER');
+
+    expect(element.querySelectorAll('[data-testid="remove-member"]').length).toBe(0);
+  });
+
+  it('groupDetailShouldWaitForTheProfileBeforeShowingRemove', async () => {
+    // El perfil llega después del grupo: whenStable lo espera y luego aparece "Remover".
+    loadProfile = (profile) =>
+      new Promise((resolve) =>
+        setTimeout(() => {
+          profile.set({ id: 'usr_zoe' });
+          resolve();
+        }, 50),
+      );
+    const element = await respondWithCasa(render(null), 'OWNER');
+
+    const removable = Array.from(element.querySelectorAll('[data-testid="member-item"]'))
+      .filter((item) => item.querySelector('[data-testid="remove-member"]') !== null)
+      .map((item) => item.querySelector('[data-testid="member-name"]')?.textContent?.trim());
+    expect(removable).toEqual(['Álvaro', 'Ana', 'beto']);
   });
 });
