@@ -14,6 +14,13 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+## [0.4.1] - 2026-11-16
+
+Solo documentación; la app no cambia.
+
+### Cambiado
+- `BACKLOG.md` pasa a la pieza 3 (gastos y balances): 11 historias y sus decisiones caras (moneda base sin conversión, permisos de `Security.md`, sin categorías ni filtros).
+
 ## [0.4.0] - 2026-11-16
 
 Cierra la pieza 2 (grupos y miembros): cambiar roles, remover miembros, salir, editar y archivar grupos. Todavía sin gastos (pieza 3).
@@ -134,7 +141,8 @@ Andamiaje de la fase 0, sobre Firebase (reemplazado en 0.2.0).
 - **Backend:** `GET /v1/me` de punta a punta, con pruebas unitarias, de integración y de contrato.
 - **Git Flow:** CI de backend y web, más un workflow de release (ADR-013).
 
-[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.4.0...HEAD
+[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ediervillaneda/4adra/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ediervillaneda/4adra/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ediervillaneda/4adra/compare/v0.2.0...v0.3.0
