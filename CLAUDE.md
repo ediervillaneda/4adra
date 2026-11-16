@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del repositorio
 
-**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.4.0 (ver `CHANGELOG.md`), que cierra la **pieza 2 de 4 (grupos y miembros)**; la siguiente es la pieza 3 (gastos y balances), con una rama `feature/*` por historia, desde `develop`:
+**4adra** (Cuentas claras, gastos compartidos) corre sobre **Cloudflare** (ADR-014..017). La versión publicada es la 0.4.0 (ver `CHANGELOG.md`), que cierra la pieza 2 (grupos y miembros); está en curso la **pieza 3 de 4 (gastos y balances)**, con una rama `feature/*` por historia, desde `develop`:
 
 - **`backend/`**: Worker real (`4adra`) con Hono + D1 + Better Auth (Google). `GET`/`PATCH /api/v1/me`, `POST`/`GET /api/v1/groups`, `GET /api/v1/groups/{groupId}` (y `/members`), `POST /api/v1/groups/{groupId}/members/invitations`, `GET /api/v1/invitations`, `POST /api/v1/invitations/{invitationId}/accept|decline`, `POST /api/v1/groups/{groupId}/members/invite-link`, `GET /api/v1/invite-links/{code}`, `POST /api/v1/invite-links/{code}/join` `PATCH /api/v1/groups/{groupId}/members/{userId}` (cambiar rol) `DELETE /api/v1/groups/{groupId}/members/{userId}` (remover) `POST /api/v1/groups/{groupId}/leave` (salir) `PATCH /api/v1/groups/{groupId}` (editar nombre y descripción) y `POST /api/v1/groups/{groupId}/archive` (archivar) funcionan de punta a punta, con pruebas unitarias, de integración (runtime de Workers + D1 local) y de contrato (OpenAPI).
 - **`web/`**: PWA en Angular 22 (ADR-019). Incluye login con Google, aviso de invitación, perfil editable, política de privacidad, crear un grupo y verlo en Inicio, ver su detalle con los miembros, invitar por correo, ver y responder invitaciones en Inicio, compartir un enlace de invitación y unirse con él, cambiar el rol de un miembro (Owner), remover a un miembro, salir de un grupo, editar su nombre y descripción, archivarlo (sección "Archivados" en Inicio, detalle de solo lectura), y es instalable y funciona sin conexión. El Worker la sirve como Static Assets.
@@ -56,7 +56,7 @@ Si `wrangler dev` deja de responder, revisa que no queden instancias anteriores 
 
 Todo trabajo nuevo sigue tres pasos, en orden y sin saltarse ninguno:
 
-1. **`/backlog`** de la fase en curso (hoy, la pieza 2: grupos y miembros) → escribe **`BACKLOG.md`** en la raíz: contexto, stack y la lista de historias, con las hechas marcadas.
+1. **`/backlog`** de la fase en curso (hoy, la pieza 3: gastos y balances) → escribe **`BACKLOG.md`** en la raíz: contexto, stack y la lista de historias, con las hechas marcadas.
 2. **`/story`** (el "plan") de UNA historia de `BACKLOG.md` → escribe **`PLAN.md`** en la raíz: la historia en curso con sus criterios, el plan, lo que queda fuera y sugerencias. Se reemplaza en cada historia nueva; al cerrarla, se marca hecha en `BACKLOG.md`.
 3. **`/pair`** sobre `PLAN.md` → primero la lista de pruebas, y luego cada prueba en rojo antes del código mínimo. Nunca hace commit.
 
