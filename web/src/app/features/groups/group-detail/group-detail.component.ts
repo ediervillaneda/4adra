@@ -15,6 +15,11 @@ import {
   ChangeMemberRoleDialogComponent,
   ChangeMemberRoleDialogData,
 } from '../change-member-role/change-member-role-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/confirm-dialog.component';
+import { CurrentProfileStore } from '../../../core/profile/current-profile.store';
 
 type DetailState =
   | { status: 'loading' }
@@ -22,7 +27,7 @@ type DetailState =
   | { status: 'notFound' }
   | { status: 'error' };
 
-/** Detalle de un grupo: sus datos y sus miembros activos (historias #2 y #6 de la pieza 2). */
+/** Detalle de un grupo: sus datos y sus miembros activos (historias #2, #6 y #7 de la pieza 2). */
 @Component({
   selector: 'app-group-detail',
   imports: [RouterLink, MatButtonModule, MatIconModule, MatListModule],
@@ -86,6 +91,17 @@ type DetailState =
                     {{ texts.groups.changeRole }}
                   </button>
                 }
+                @if (canRemove(content.group, member)) {
+                  <button
+                    matListItemMeta
+                    mat-button
+                    type="button"
+                    data-testid="remove-member"
+                    (click)="openRemoveMember(content.group, member)"
+                  >
+                    {{ texts.groups.removeMember }}
+                  </button>
+                }
               </mat-list-item>
             }
           </mat-list>
@@ -121,10 +137,13 @@ export class GroupDetailComponent {
   protected readonly texts = TEXTS;
   protected readonly state = signal<DetailState>({ status: 'loading' });
   private readonly pendingTasks = inject(PendingTasks);
+  private readonly currentProfile = inject(CurrentProfileStore);
 
   constructor() {
     // PendingTasks: la app (y las pruebas, con whenStable) no se dan por estables hasta que cargue.
     void this.pendingTasks.run(() => this.load());
+    // El perfil propio dice cuál es tu fila (sin "Remover"); suele estar cargado por la barra superior.
+    void this.pendingTasks.run(() => this.currentProfile.load());
   }
 
   /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
@@ -135,6 +154,42 @@ export class GroupDetailComponent {
   /** Solo el Owner cambia roles (matriz en docs/Security.md); el backend vuelve a validarlo. */
   protected canChangeRoles(group: GroupSummary): boolean {
     return group.role === 'OWNER';
+  }
+
+  /**
+   * Owner remueve a cualquiera; Administrator, solo a Member y ReadOnly; nadie a sí mismo (para eso
+   * está salir). Solo decide qué botón se ve: el backend vuelve a validarlo.
+   */
+  protected canRemove(group: GroupSummary, member: GroupMember): boolean {
+    // Sin saber quién mira (perfil aún sin cargar o GET /me fallido), no se ofrece en ninguna fila.
+    const viewerId = this.currentProfile.profile()?.id;
+    if (viewerId === undefined || member.userId === viewerId) {
+      return false;
+    }
+    return (
+      group.role === 'OWNER' ||
+      (group.role === 'ADMINISTRATOR' && (member.role === 'MEMBER' || member.role === 'READ_ONLY'))
+    );
+  }
+
+  protected openRemoveMember(group: GroupSummary, member: GroupMember): void {
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, true>(ConfirmDialogComponent, {
+        data: {
+          title: TEXTS.groups.removeMemberTitle(member.displayName),
+          message: TEXTS.groups.removeMemberMessage,
+          confirmLabel: TEXTS.groups.removeMember,
+          confirm: async () => {
+            await this.groupsService.removeMember(group.id, member.userId);
+          },
+        },
+      })
+      .afterClosed()
+      .subscribe((removed) => {
+        if (removed === true) {
+          void this.pendingTasks.run(() => this.load());
+        }
+      });
   }
 
   /** Si hubo cambio, recarga grupo y miembros: si el Owner se degradó, ya no ve sus opciones. */
