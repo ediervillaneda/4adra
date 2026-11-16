@@ -72,6 +72,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] Cambiar el rol de un miembro (diálogo "Cambiar rol" en el detalle, solo Owner).
 - [x] Remover a un miembro (confirmación en el detalle), y reingreso por invitación o enlace.
 - [x] Salir del grupo (confirmación en el detalle, vuelve a Inicio).
+- [x] Editar el nombre y la descripción del grupo (`/grupos/:groupId/editar`, Owner y Administrador).
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
 - [ ] Ver balances del grupo.
 - [ ] Ver sugerencias de liquidación y confirmar una liquidación.

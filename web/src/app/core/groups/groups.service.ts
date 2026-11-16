@@ -9,6 +9,7 @@ import {
   Invitation,
   InvitationRequest,
   MemberRole,
+  GroupChangesRequest,
   NewGroupRequest,
   RoleChangeRequest,
 } from '../../shared/api';
@@ -25,6 +26,13 @@ export class GroupValidationError extends Error {
 export class GroupNotFoundError extends Error {
   constructor() {
     super('GROUP_NOT_FOUND');
+  }
+}
+
+/** El rol del actor ya no le permite editar el grupo (403 PERMISSION_DENIED). */
+export class GroupEditDeniedError extends Error {
+  constructor() {
+    super('PERMISSION_DENIED');
   }
 }
 
@@ -61,6 +69,28 @@ function rejectionFrom(
   return message === undefined ? error : new RejectedError(message);
 }
 
+/**
+ * Un `400 VALIDATION_ERROR` al crear o editar un grupo se convierte en `GroupValidationError`, con un
+ * mensaje en español por campo; cualquier otro error se devuelve tal cual, para relanzarlo.
+ */
+function toGroupValidationError(error: unknown): unknown {
+  const body =
+    error instanceof HttpErrorResponse && error.status === 400
+      ? (error.error as Partial<ApiErrorEnvelope> | null)
+      : null;
+  if (body?.error?.code !== 'VALIDATION_ERROR') {
+    return error;
+  }
+  const fieldErrors: Record<string, string> = {};
+  for (const detail of body.error.details ?? []) {
+    if (detail.field) {
+      fieldErrors[detail.field] =
+        TEXTS.groups.errors[detail.reason ?? 'unknown'] ?? TEXTS.groups.errors['unknown'];
+    }
+  }
+  return new GroupValidationError(fieldErrors);
+}
+
 function toGroupNotFound(error: unknown): unknown {
   return error instanceof HttpErrorResponse && error.status === 404
     ? new GroupNotFoundError()
@@ -79,6 +109,20 @@ export class GroupsService {
       return response.data;
     } catch (error) {
       throw toGroupNotFound(error);
+    }
+  }
+
+  async updateGroup(groupId: string, request: GroupChangesRequest): Promise<GroupSummary> {
+    try {
+      const response = await firstValueFrom(
+        this.http.patch<ApiSuccessEnvelope<GroupSummary>>(`/api/v1/groups/${groupId}`, request),
+      );
+      return response.data;
+    } catch (error) {
+      if (errorCodeOf(error) === 'PERMISSION_DENIED') {
+        throw new GroupEditDeniedError();
+      }
+      throw toGroupNotFound(toGroupValidationError(error));
     }
   }
 
@@ -163,21 +207,7 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const body =
-        error instanceof HttpErrorResponse && error.status === 400
-          ? (error.error as Partial<ApiErrorEnvelope> | null)
-          : null;
-      if (body?.error?.code === 'VALIDATION_ERROR') {
-        const fieldErrors: Record<string, string> = {};
-        for (const detail of body.error.details ?? []) {
-          if (detail.field) {
-            fieldErrors[detail.field] =
-              TEXTS.groups.errors[detail.reason ?? 'unknown'] ?? TEXTS.groups.errors['unknown'];
-          }
-        }
-        throw new GroupValidationError(fieldErrors);
-      }
-      throw error;
+      throw toGroupValidationError(error);
     }
   }
 }

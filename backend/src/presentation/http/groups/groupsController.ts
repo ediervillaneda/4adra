@@ -7,6 +7,7 @@ import { ListGroupMembersUseCase } from '../../../application/group/ListGroupMem
 import { ChangeMemberRoleUseCase } from '../../../application/group/ChangeMemberRoleUseCase';
 import { RemoveMemberUseCase } from '../../../application/group/RemoveMemberUseCase';
 import { LeaveGroupUseCase } from '../../../application/group/LeaveGroupUseCase';
+import { UpdateGroupUseCase } from '../../../application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../../../application/invitation/InviteMemberUseCase';
 import { readJsonBody } from '../readJsonBody';
 import { successEnvelope } from '../responseEnvelope';
@@ -23,6 +24,19 @@ export function createGetGroupHandler(
 ): Handler<AppEnv, '/v1/groups/:groupId'> {
   return async (c) => {
     const group = await useCase.execute({ actor: c.get('actor'), groupId: c.req.param('groupId') });
+    return c.json(successEnvelope(group, c.get('requestId')), 200);
+  };
+}
+
+export function createPatchGroupHandler(
+  useCase: UpdateGroupUseCase,
+): Handler<AppEnv, '/v1/groups/:groupId'> {
+  return async (c) => {
+    const group = await useCase.execute({
+      actor: c.get('actor'),
+      groupId: c.req.param('groupId'),
+      input: await readJsonBody(c),
+    });
     return c.json(successEnvelope(group, c.get('requestId')), 200);
   };
 }

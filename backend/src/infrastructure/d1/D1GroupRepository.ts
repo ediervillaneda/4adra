@@ -4,12 +4,14 @@ import {
   GroupMember,
   GroupMembership,
   GroupRepository,
+  GroupUpdateResult,
   LeaveGroupResult,
   MemberGroup,
   MemberRemovalResult,
   RoleChangeResult,
 } from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
+import { GroupDetails } from '../../domain/group/GroupDetails';
 import { Email } from '../../domain/user/Email';
 import { UserId } from '../../domain/user/UserId';
 import { fromIsoDate, toIsoDate } from './isoDate';
@@ -109,6 +111,45 @@ export class D1GroupRepository implements GroupRepository {
         )
         .bind(group.id.toString(), group.createdBy.toString(), createdAt, createdAt),
     ]);
+  }
+
+  async updateDetails(
+    groupId: GroupId,
+    actorId: UserId,
+    details: GroupDetails,
+    at: Date,
+  ): Promise<GroupUpdateResult> {
+    const group = groupId.toString();
+    const [updated, selected] = await this.database.batch<
+      MemberGroupRow & { member_status: string }
+    >([
+      // La versión sube en la base (no con lo que se leyó antes) y el permiso del actor se vuelve a
+      // evaluar en la misma sentencia: D1 serializa las escrituras.
+      this.database
+        .prepare(
+          `UPDATE groups SET name = ?, description = ?, version = version + 1, updated_at = ?
+           WHERE id = ?
+             AND EXISTS (SELECT 1 FROM group_members
+                         WHERE group_id = groups.id AND user_id = ? AND status = 'ACTIVE'
+                           AND role IN ('OWNER', 'ADMINISTRATOR'))`,
+        )
+        .bind(details.name, details.description, toIsoDate(at), group, actorId.toString()),
+      this.database
+        .prepare(
+          `SELECT g.*, m.role, m.status AS member_status FROM groups g
+           JOIN group_members m ON m.group_id = g.id
+           WHERE g.id = ? AND m.user_id = ?`,
+        )
+        .bind(group, actorId.toString()),
+    ]);
+    const row = selected?.results[0];
+    if (row?.member_status !== 'ACTIVE') {
+      return { status: 'NOT_MEMBER' };
+    }
+    if (updated?.meta.changes !== 1) {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    return { status: 'UPDATED', memberGroup: fromRow(row) };
   }
 
   async listForMember(userId: UserId): Promise<MemberGroup[]> {

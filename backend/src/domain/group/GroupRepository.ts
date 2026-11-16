@@ -1,5 +1,6 @@
 import { Group } from './Group';
 import { GroupId } from './GroupId';
+import { GroupDetails } from './GroupDetails';
 import { MemberRole } from './MemberRole';
 import { Email } from '../user/Email';
 import { UserId } from '../user/UserId';
@@ -44,9 +45,25 @@ export type MemberRemovalResult =
 export type LeaveGroupResult =
   { status: 'LEFT'; member: GroupMember } | { status: 'LAST_OWNER' } | { status: 'NOT_MEMBER' };
 
+/** Resultado de editar un grupo: el grupo como quedó (visto por el actor), o por qué no cambió. */
+export type GroupUpdateResult =
+  | { status: 'UPDATED'; memberGroup: MemberGroup }
+  | { status: 'PERMISSION_DENIED' }
+  | { status: 'NOT_MEMBER' };
+
 export interface GroupRepository {
   /** Guarda el grupo y la membresía OWNER de su creador en una sola operación atómica. */
   createWithOwner(group: Group): Promise<void>;
+  /**
+   * El actor (Owner o Administrator activo) cambia nombre y descripción del grupo: sube la versión en
+   * uno y actualiza `updatedAt`. El permiso se vuelve a evaluar en la misma escritura.
+   */
+  updateDetails(
+    groupId: GroupId,
+    actorId: UserId,
+    details: GroupDetails,
+    at: Date,
+  ): Promise<GroupUpdateResult>;
   /** Grupos donde el usuario tiene una membresía activa. */
   listForMember(userId: UserId): Promise<MemberGroup[]>;
   /** El grupo, solo si el usuario tiene en él una membresía activa; si no, `null`. */
