@@ -39,6 +39,7 @@ La pertenencia activa y rol se verifican en servidor dentro de una transacción 
 | Crear gasto | Sí | Sí | Sí | No |
 | Editar/eliminar gasto | Sí | Sí | Sí, cualquier gasto activo del grupo | No |
 | Invitar/remover miembros | Sí | Sí | No | No |
+| Editar nombre y descripción del grupo | Sí | Sí | No | No |
 | Cambiar roles o archivar | Sí | No | No | No |
 | Confirmar liquidación | Sí | Sí | Sí, si es pagador o destinatario | No |
 | Activar perfil de cálculo | Sí | Sí | No | No |

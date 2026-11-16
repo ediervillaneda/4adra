@@ -1,4 +1,5 @@
 import { GroupId } from './GroupId';
+import { GroupDetails } from './GroupDetails';
 import { NewGroup } from './NewGroup';
 import { UserId } from '../user/UserId';
 
@@ -36,6 +37,16 @@ export class Group {
   /** Reconstruye un grupo persistido. */
   static restore(props: GroupProps): Group {
     return new Group(props);
+  }
+
+  /** El mismo grupo con nombre y descripción nuevos (ya validados), una versión más y `updatedAt` nuevo. */
+  withDetails(details: GroupDetails, now: Date): Group {
+    return new Group({
+      ...this.props,
+      ...details,
+      updatedAt: now,
+      version: this.props.version + 1,
+    });
   }
 
   get id(): GroupId {

@@ -40,4 +40,45 @@ describe('Group', () => {
       'Gastos del hogar',
     ]);
   });
+
+  it('shouldChangeNameAndDescriptionAndBumpVersionAndUpdatedAt', () => {
+    const later = new Date('2026-11-20T10:00:00.000Z');
+    const group = Group.restore({
+      id: GroupId.fromString('grp_1'),
+      name: 'Casa',
+      description: 'Gastos del hogar',
+      defaultCurrency: 'COP',
+      status: 'ACTIVE',
+      createdBy: UserId.fromString('usr_ana'),
+      createdAt: NOW,
+      updatedAt: NOW,
+      version: 3,
+    });
+
+    const edited = group.withDetails({ name: 'Casa nueva', description: null }, later);
+
+    expect({
+      name: edited.name,
+      description: edited.description,
+      version: edited.version,
+      updatedAt: edited.updatedAt,
+      defaultCurrency: edited.defaultCurrency,
+      status: edited.status,
+      createdBy: edited.createdBy.toString(),
+      createdAt: edited.createdAt,
+      id: edited.id.toString(),
+    }).toEqual({
+      name: 'Casa nueva',
+      description: null,
+      version: 4,
+      updatedAt: later,
+      defaultCurrency: 'COP',
+      status: 'ACTIVE',
+      createdBy: 'usr_ana',
+      createdAt: NOW,
+      id: 'grp_1',
+    });
+    // El grupo original no cambia.
+    expect([group.name, group.version]).toEqual(['Casa', 3]);
+  });
 });

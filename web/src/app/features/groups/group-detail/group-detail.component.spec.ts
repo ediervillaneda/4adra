@@ -486,4 +486,24 @@ describe('GroupDetailComponent', () => {
 
     expect(arrivedHome).toBe(true);
   });
+
+  it('groupDetailShouldShowEditOnlyForOwnerAndAdministrator', async () => {
+    const links: Record<string, string | null> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role);
+      links[role] =
+        element
+          .querySelector<HTMLAnchorElement>('[data-testid="edit-group"]')
+          ?.getAttribute('href') ?? null;
+      http.verify();
+    }
+
+    expect(links).toEqual({
+      OWNER: '/grupos/grp_casa/editar',
+      ADMINISTRATOR: '/grupos/grp_casa/editar',
+      MEMBER: null,
+      READ_ONLY: null,
+    });
+  });
 });

@@ -15,6 +15,11 @@ Ver `docs/Workflows.md`.
 ## [Sin publicar]
 
 ### Agregado
+- **Editar el nombre y la descripción del grupo** (pieza 2, historia #9):
+  - Owner y Administrador ven "Editar" en el detalle, que abre `/grupos/:groupId/editar` con los datos precargados. Al guardar vuelven al detalle, y los demás miembros ven el cambio en Inicio y en el detalle.
+  - Las mismas reglas que al crear el grupo (nombre de 1 a 120 caracteres, descripción de hasta 500); vaciar la descripción deja el grupo sin ella. La moneda base se muestra pero no se puede cambiar.
+  - Miembro y Solo lectura no ven "Editar"; si abren la ruta, ven "No tienes permiso para editar este grupo.".
+  - API: `PATCH /api/v1/groups/{groupId}` con `{ name, description }` (los dos obligatorios; cualquier otro campo responde `not_allowed`), `400 VALIDATION_ERROR`, `403 PERMISSION_DENIED` y `404 GROUP_NOT_FOUND`. Sin migración.
 - **Salir de un grupo** (pieza 2, historia #8):
   - Cualquier miembro ve "Salir del grupo" en el detalle. Tras confirmar "¿Salir de «…»?" vuelve a Inicio, y el grupo deja de aparecer ("Grupo no encontrado" si abre su enlace).
   - El único Propietario no puede salir: ve "El grupo necesita al menos un Propietario." y primero tiene que nombrar a otro, aunque sea la única persona del grupo. La condición va en la misma escritura de D1, para que dos Owners que salen a la vez no dejen el grupo sin ninguno.

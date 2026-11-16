@@ -38,14 +38,17 @@ Solo se devuelven grupos donde el actor tiene una membresía activa. La lista in
 
 ```http
 PATCH /api/v1/groups/{groupId}
-If-Match: 7
 ```
 
 ```json
-{ "name": "Viaje Guatemala 2027", "description": "Junio", "image": null }
+{ "name": "Viaje Guatemala 2027", "description": "Junio" }
 ```
 
-Owner o Administrator pueden modificar metadatos permitidos. El cambio de moneda base no está permitido si existen gastos activos, salvo migración administrativa aprobada.
+Owner o Administrator cambian el nombre y la descripción del grupo. El cuerpo trae los dos campos (los dos son obligatorios, así que vaciar la descripción es explícito), con las mismas reglas que al crear el grupo: `name` de 1 a 120 caracteres después de recortar espacios, y `description` de hasta 500, o `null` (o vacía) para dejar el grupo sin descripción. Los errores responden `400 VALIDATION_ERROR` con detalle por campo (`required`, `length_1_to_120`, `max_length_500`, `must_be_string`, `must_be_object` o `not_allowed`). Cualquier otro campo, incluida la moneda base, responde `not_allowed`: la moneda base queda fija desde que se crea el grupo.
+
+Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`; Member y ReadOnly reciben `403 PERMISSION_DENIED`. El permiso se revisa antes que el cuerpo, así que esos `404`/`403` llegan aunque el cuerpo sea inválido, y se vuelve a evaluar en la misma escritura. Cada cambio sube la `version` en uno (en la base, no con lo que se leyó antes) y actualiza `updatedAt`. Responde `200` con el grupo actualizado, con el mismo esquema que `GET /groups/{groupId}`.
+
+Por ahora se ignora `If-Match` (no hay `409 STALE_VERSION`): si dos personas editan a la vez, gana la última. La imagen del grupo llega cuando exista almacenamiento de archivos.
 
 ```http
 POST /api/v1/groups/{groupId}/archive

@@ -4,12 +4,14 @@ import {
   GroupMember,
   GroupMembership,
   GroupRepository,
+  GroupUpdateResult,
   LeaveGroupResult,
   MemberGroup,
   MemberRemovalResult,
   RoleChangeResult,
 } from '../../src/domain/group/GroupRepository';
-import { MemberRole } from '../../src/domain/group/MemberRole';
+import { MemberRole, ROLES_THAT_EDIT_GROUP } from '../../src/domain/group/MemberRole';
+import { GroupDetails } from '../../src/domain/group/GroupDetails';
 import { canRemove } from '../../src/domain/group/canRemove';
 import { Email } from '../../src/domain/user/Email';
 import { UserId } from '../../src/domain/user/UserId';
@@ -44,6 +46,25 @@ export class InMemoryGroupRepository implements GroupRepository {
         (entry) => entry.groupId === groupId.toString() && entry.userId === userId.toString(),
       ) ?? null
     );
+  }
+
+  /** Como el `UPDATE … WHERE EXISTS` de D1: solo un Owner o Administrator activo cambia el grupo. */
+  async updateDetails(
+    groupId: GroupId,
+    actorId: UserId,
+    details: GroupDetails,
+    at: Date,
+  ): Promise<GroupUpdateResult> {
+    const memberGroup = await this.findForMember(groupId, actorId);
+    if (memberGroup === null) {
+      return { status: 'NOT_MEMBER' };
+    }
+    if (!ROLES_THAT_EDIT_GROUP.includes(memberGroup.role)) {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    const edited = memberGroup.group.withDetails(details, at);
+    this.groupsById.set(groupId.toString(), edited);
+    return { status: 'UPDATED', memberGroup: { group: edited, role: memberGroup.role } };
   }
 
   groupById(groupId: GroupId): Group | null {

@@ -74,6 +74,12 @@ export interface GroupMember {
   joinedAt: string;
 }
 
+/** Cuerpo de PATCH /api/v1/groups/{groupId}: los dos campos son obligatorios. */
+export interface GroupChangesRequest {
+  name: string;
+  description: string | null;
+}
+
 /** Grupo visto por uno de sus miembros (components/schemas/Group en openapi.yaml). */
 export interface GroupSummary {
   id: string;

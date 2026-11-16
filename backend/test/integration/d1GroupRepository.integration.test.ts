@@ -229,3 +229,86 @@ describe('D1GroupRepository.leaveGroup', () => {
     expect(await repository.leaveGroup(group, juan, CHANGED_AT)).toEqual({ status: 'NOT_MEMBER' });
   });
 });
+
+describe('D1GroupRepository.updateDetails', () => {
+  async function groupRow(group: GroupId): Promise<{
+    name: string;
+    description: string | null;
+    version: number;
+    updated_at: string;
+  } | null> {
+    return env.DB.prepare('SELECT name, description, version, updated_at FROM groups WHERE id = ?')
+      .bind(group.toString())
+      .first();
+  }
+
+  it('shouldBumpTheVersionOncePerChangeEvenForEditsBasedOnTheSameRead', async () => {
+    const { group, ana, beto } = await seedGroup('edita-dos', {
+      ana: 'OWNER',
+      beto: 'ADMINISTRATOR',
+      juan: 'MEMBER',
+    });
+    const repository = new D1GroupRepository(env.DB);
+
+    // Ana y Beto leyeron la versión 1 y guardan uno detrás del otro.
+    const first = await repository.updateDetails(
+      group,
+      ana,
+      { name: 'Casa de Ana', description: null },
+      CHANGED_AT,
+    );
+    const second = await repository.updateDetails(
+      group,
+      beto,
+      { name: 'Casa de Beto', description: 'Junio' },
+      CHANGED_AT,
+    );
+
+    expect([first.status, second.status]).toEqual(['UPDATED', 'UPDATED']);
+    expect(await groupRow(group)).toEqual({
+      name: 'Casa de Beto',
+      description: 'Junio',
+      version: 3,
+      updated_at: CHANGED_AT.toISOString(),
+    });
+  });
+
+  it('shouldRejectWhenTheActorCanNoLongerEditAtWriteTime', async () => {
+    // Juan pasó el chequeo como Administrator, pero lo degradaron antes de que se escribiera su cambio.
+    const { group, juan } = await seedGroup('edita-degradado', {
+      ana: 'OWNER',
+      beto: 'MEMBER',
+      juan: 'MEMBER',
+    });
+
+    const result = await new D1GroupRepository(env.DB).updateDetails(
+      group,
+      juan,
+      { name: 'Mía', description: null },
+      CHANGED_AT,
+    );
+
+    expect(result).toEqual({ status: 'PERMISSION_DENIED' });
+    expect((await groupRow(group))?.version).toBe(1);
+  });
+
+  it('shouldReportNotMemberWhenTheActorWasRemovedBeforeTheWrite', async () => {
+    const { group, ana, juan } = await seedGroup('edita-removido', {
+      ana: 'OWNER',
+      beto: 'MEMBER',
+      juan: 'ADMINISTRATOR',
+    });
+    const repository = new D1GroupRepository(env.DB);
+    await repository.removeMember(group, ana, juan, CHANGED_AT);
+
+    const result = await repository.updateDetails(
+      group,
+      juan,
+      { name: 'Mía', description: null },
+      CHANGED_AT,
+    );
+
+    expect(result).toEqual({ status: 'NOT_MEMBER' });
+    expect((await groupRow(group))?.name).toBe('Casa');
+  });
+});

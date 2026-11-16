@@ -20,6 +20,7 @@ import {
   ConfirmDialogData,
 } from '../../../shared/confirm-dialog.component';
 import { CurrentProfileStore } from '../../../core/profile/current-profile.store';
+import { canEditGroup } from '../../../core/groups/group-permissions';
 
 type DetailState =
   | { status: 'loading' }
@@ -46,6 +47,14 @@ type DetailState =
           <p class="currency">
             {{ texts.groups.defaultCurrency }}: {{ content.group.defaultCurrency }}
           </p>
+          @if (canEdit(content.group)) {
+            <a
+              mat-stroked-button
+              data-testid="edit-group"
+              [routerLink]="['/grupos', content.group.id, 'editar']"
+              >{{ texts.groups.edit }}</a
+            >
+          }
           <h2 class="section-title">{{ texts.groups.membersTitle }}</h2>
           @if (canInvite(content.group)) {
             <a
@@ -158,6 +167,10 @@ export class GroupDetailComponent {
   /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
   protected canInvite(group: GroupSummary): boolean {
     return group.role === 'OWNER' || group.role === 'ADMINISTRATOR';
+  }
+
+  protected canEdit(group: GroupSummary): boolean {
+    return canEditGroup(group.role);
   }
 
   /** Solo el Owner cambia roles (matriz en docs/Security.md); el backend vuelve a validarlo. */

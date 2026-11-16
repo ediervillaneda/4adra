@@ -5,6 +5,7 @@ import { ListGroupMembersUseCase } from '../../src/application/group/ListGroupMe
 import { ChangeMemberRoleUseCase } from '../../src/application/group/ChangeMemberRoleUseCase';
 import { RemoveMemberUseCase } from '../../src/application/group/RemoveMemberUseCase';
 import { LeaveGroupUseCase } from '../../src/application/group/LeaveGroupUseCase';
+import { UpdateGroupUseCase } from '../../src/application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../../src/application/invitation/InviteMemberUseCase';
 import { ListMyInvitationsUseCase } from '../../src/application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../../src/application/invitation/AcceptInvitationUseCase';
@@ -26,6 +27,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
   changeMemberRoleUseCase: ChangeMemberRoleUseCase;
   removeMemberUseCase: RemoveMemberUseCase;
   leaveGroupUseCase: LeaveGroupUseCase;
+  updateGroupUseCase: UpdateGroupUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
   acceptInvitationUseCase: AcceptInvitationUseCase;
@@ -53,6 +55,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
     changeMemberRoleUseCase: new ChangeMemberRoleUseCase(groups, now),
     removeMemberUseCase: new RemoveMemberUseCase(groups, now),
     leaveGroupUseCase: new LeaveGroupUseCase(groups, now),
+    updateGroupUseCase: new UpdateGroupUseCase(groups, now),
     inviteMemberUseCase: new InviteMemberUseCase(
       groups,
       { isAllowed: () => Promise.resolve(true) },

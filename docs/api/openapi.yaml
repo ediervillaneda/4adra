@@ -610,7 +610,10 @@ paths:
         default:
           $ref: '#/components/responses/Error'
     patch:
-      summary: Edita metadatos del grupo (Owner/Administrator)
+      summary: Edita el nombre y la descripción del grupo (Owner/Administrator)
+      description: >
+        La moneda base queda fija desde que se crea el grupo; cualquier otro campo responde
+        VALIDATION_ERROR (not_allowed). Por ahora se ignora If-Match.
       parameters:
         - $ref: '#/components/parameters/IfMatch'
       requestBody:
@@ -619,14 +622,16 @@ paths:
           application/json:
             schema:
               type: object
+              required: [name, description]
               properties:
                 name:
                   type: string
+                  minLength: 1
+                  maxLength: 120
                 description:
                   type: string
-                image:
-                  type: string
                   nullable: true
+                  maxLength: 500
       responses:
         '200':
           description: Grupo actualizado
@@ -637,6 +642,24 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Group'
+        '400':
+          description: VALIDATION_ERROR (detalle por campo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: PERMISSION_DENIED (Member o ReadOnly)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 

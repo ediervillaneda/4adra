@@ -66,7 +66,7 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups` | Crea grupo y membresía Owner |
 | `GET /groups` | Lista grupos del usuario |
 | `GET /groups/{groupId}` | Consulta grupo |
-| `PATCH /groups/{groupId}` | Edita metadatos |
+| `PATCH /groups/{groupId}` | Edita el nombre y la descripción (Owner/Administrator; la moneda base no cambia) |
 | `POST /groups/{groupId}/archive` | Archiva grupo |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |

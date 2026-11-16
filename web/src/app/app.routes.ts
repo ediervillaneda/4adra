@@ -28,6 +28,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grupos/:groupId/editar',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/groups/edit-group/edit-group.component').then((m) => m.EditGroupComponent),
+  },
+  {
     path: 'grupos/:groupId/invitar',
     canActivate: [sessionGuard],
     loadComponent: () =>
