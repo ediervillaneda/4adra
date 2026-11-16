@@ -61,6 +61,17 @@ async function membershipOf(group: GroupId, user: UserId): Promise<Membership | 
     .first<Membership>();
 }
 
+async function statusOf(
+  group: GroupId,
+  user: UserId,
+): Promise<{ status: string; updated_at: string } | null> {
+  return env.DB.prepare(
+    'SELECT status, updated_at FROM group_members WHERE group_id = ? AND user_id = ?',
+  )
+    .bind(group.toString(), user.toString())
+    .first<{ status: string; updated_at: string }>();
+}
+
 describe('D1GroupRepository.changeMemberRole', () => {
   it('shouldChangeRoleAndRecordWhen', async () => {
     const { group, ana, juan } = await seedGroup('cambia', {
@@ -121,5 +132,65 @@ describe('D1GroupRepository.changeMemberRole', () => {
 
     expect(result).toEqual({ status: 'LAST_OWNER' });
     expect(await membershipOf(group, ana)).toEqual({ role: 'OWNER', updated_at: AT });
+  });
+});
+
+describe('D1GroupRepository.removeMember', () => {
+  it('shouldRemoveAndRecordWhen', async () => {
+    const { group, ana, juan } = await seedGroup('remueve', {
+      ana: 'OWNER',
+      beto: 'MEMBER',
+      juan: 'MEMBER',
+    });
+
+    const result = await new D1GroupRepository(env.DB).removeMember(group, ana, juan, CHANGED_AT);
+
+    expect(result.status).toBe('REMOVED');
+    expect(await statusOf(group, juan)).toEqual({
+      status: 'REMOVED',
+      updated_at: CHANGED_AT.toISOString(),
+    });
+  });
+
+  it.each([
+    ['MEMBER', 'MEMBER'],
+    ['ADMINISTRATOR', 'ADMINISTRATOR'],
+    ['ADMINISTRATOR', 'OWNER'],
+  ] as const)(
+    'shouldRejectWhenActorCannotRemoveTargetAtWriteTime (%s removes %s)',
+    async (betoRole, juanRole) => {
+      // Beto pasó el chequeo, pero cuando se escribe su remoción ya no tiene permiso sobre Juan.
+      const { group, beto, juan } = await seedGroup(`no-remueve-${betoRole}-${juanRole}`, {
+        ana: 'OWNER',
+        beto: betoRole,
+        juan: juanRole,
+      });
+
+      const result = await new D1GroupRepository(env.DB).removeMember(
+        group,
+        beto,
+        juan,
+        CHANGED_AT,
+      );
+
+      expect(result).toEqual({ status: 'PERMISSION_DENIED' });
+      expect(await statusOf(group, juan)).toEqual({ status: 'ACTIVE', updated_at: AT });
+    },
+  );
+
+  it('shouldReportMemberNotFoundForRemovedOrUnknownPeople', async () => {
+    const { group, ana, juan } = await seedGroup('ya-removido', {
+      ana: 'OWNER',
+      beto: 'MEMBER',
+      juan: 'MEMBER',
+    });
+    const repository = new D1GroupRepository(env.DB);
+    await repository.removeMember(group, ana, juan, CHANGED_AT);
+
+    for (const userId of [juan, UserId.fromString('usr_inexistente')]) {
+      expect(await repository.removeMember(group, ana, userId, CHANGED_AT)).toEqual({
+        status: 'MEMBER_NOT_FOUND',
+      });
+    }
   });
 });

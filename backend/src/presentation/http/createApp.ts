@@ -10,6 +10,7 @@ import {
   createGetGroupHandler,
   createGetGroupMembersHandler,
   createGetGroupsHandler,
+  createDeleteMemberHandler,
   createPatchMemberHandler,
   createPostGroupsHandler,
   createPostInvitationHandler,
@@ -17,6 +18,7 @@ import {
 import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
 import { ChangeMemberRoleUseCase } from '../../application/group/ChangeMemberRoleUseCase';
+import { RemoveMemberUseCase } from '../../application/group/RemoveMemberUseCase';
 import { InviteMemberUseCase } from '../../application/invitation/InviteMemberUseCase';
 import { ListMyInvitationsUseCase } from '../../application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../../application/invitation/AcceptInvitationUseCase';
@@ -51,6 +53,7 @@ export interface AppDependencies {
   getGroupUseCase: GetGroupUseCase;
   listGroupMembersUseCase: ListGroupMembersUseCase;
   changeMemberRoleUseCase: ChangeMemberRoleUseCase;
+  removeMemberUseCase: RemoveMemberUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
   acceptInvitationUseCase: AcceptInvitationUseCase;
@@ -86,6 +89,10 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.patch(
     '/v1/groups/:groupId/members/:userId',
     createPatchMemberHandler(dependencies.changeMemberRoleUseCase),
+  );
+  app.delete(
+    '/v1/groups/:groupId/members/:userId',
+    createDeleteMemberHandler(dependencies.removeMemberUseCase),
   );
   app.post(
     '/v1/groups/:groupId/members/invitations',

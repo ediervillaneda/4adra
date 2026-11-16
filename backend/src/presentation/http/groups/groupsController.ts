@@ -5,6 +5,7 @@ import { ListMyGroupsUseCase } from '../../../application/group/ListMyGroupsUseC
 import { GetGroupUseCase } from '../../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../../application/group/ListGroupMembersUseCase';
 import { ChangeMemberRoleUseCase } from '../../../application/group/ChangeMemberRoleUseCase';
+import { RemoveMemberUseCase } from '../../../application/group/RemoveMemberUseCase';
 import { InviteMemberUseCase } from '../../../application/invitation/InviteMemberUseCase';
 import { readJsonBody } from '../readJsonBody';
 import { successEnvelope } from '../responseEnvelope';
@@ -46,6 +47,19 @@ export function createPatchMemberHandler(
       groupId: c.req.param('groupId'),
       userId: c.req.param('userId'),
       input: await readJsonBody(c),
+    });
+    return c.json(successEnvelope(member, c.get('requestId')), 200);
+  };
+}
+
+export function createDeleteMemberHandler(
+  useCase: RemoveMemberUseCase,
+): Handler<AppEnv, '/v1/groups/:groupId/members/:userId'> {
+  return async (c) => {
+    const member = await useCase.execute({
+      actor: c.get('actor'),
+      groupId: c.req.param('groupId'),
+      userId: c.req.param('userId'),
     });
     return c.json(successEnvelope(member, c.get('requestId')), 200);
   };

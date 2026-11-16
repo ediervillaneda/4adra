@@ -5,9 +5,11 @@ import {
   GroupMembership,
   GroupRepository,
   MemberGroup,
+  MemberRemovalResult,
   RoleChangeResult,
 } from '../../src/domain/group/GroupRepository';
 import { MemberRole } from '../../src/domain/group/MemberRole';
+import { canRemove } from '../../src/domain/group/canRemove';
 import { Email } from '../../src/domain/user/Email';
 import { UserId } from '../../src/domain/user/UserId';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
@@ -47,11 +49,23 @@ export class InMemoryGroupRepository implements GroupRepository {
     return this.groupsById.get(groupId.toString()) ?? null;
   }
 
-  /** Como `INSERT … ON CONFLICT (group_id, user_id) DO NOTHING`: si ya hay membresía, no la toca. */
+  /**
+   * Como el `INSERT … ON CONFLICT … DO UPDATE … WHERE status = 'REMOVED'` de D1: una membresía activa
+   * no se toca; una removida se reactiva con el rol nuevo y la fecha de ingreso nueva.
+   */
   joinIfAbsent(groupId: GroupId, userId: UserId, role: MemberRole, at?: Date): StoredMembership {
     const existing = this.memberships.find(
       (entry) => entry.groupId === groupId.toString() && entry.userId === userId.toString(),
     );
+    if (existing?.status === 'REMOVED') {
+      existing.status = 'ACTIVE';
+      existing.role = role;
+      if (at !== undefined) {
+        existing.joinedAt = at;
+        existing.updatedAt = at;
+      }
+      return existing;
+    }
     if (existing !== undefined) {
       return existing;
     }
@@ -109,6 +123,34 @@ export class InMemoryGroupRepository implements GroupRepository {
     return member === undefined ? { status: 'MEMBER_NOT_FOUND' } : { status: 'CHANGED', member };
   }
 
+  /** Como el `UPDATE … WHERE` de D1: no toca nada si el actor no puede remover a la persona o ella no es miembro activo. */
+  async removeMember(
+    groupId: GroupId,
+    actorId: UserId,
+    userId: UserId,
+    at: Date,
+  ): Promise<MemberRemovalResult> {
+    const activeInGroup = this.memberships.filter(
+      (entry) => entry.groupId === groupId.toString() && entry.status === 'ACTIVE',
+    );
+    const target = activeInGroup.find((entry) => entry.userId === userId.toString());
+    if (target === undefined) {
+      return { status: 'MEMBER_NOT_FOUND' };
+    }
+    const actor = activeInGroup.find((entry) => entry.userId === actorId.toString());
+    if (actor === undefined || actor === target || !canRemove(actor.role, target.role)) {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    const member = (await this.listActiveMembers(groupId)).find(
+      (entry) => entry.userId.toString() === userId.toString(),
+    );
+    target.status = 'REMOVED';
+    target.updatedAt = at;
+    return member === undefined
+      ? { status: 'MEMBER_NOT_FOUND' }
+      : { status: 'REMOVED', member: { ...member, status: 'REMOVED' } };
+  }
+
   createWithOwner(group: Group): Promise<void> {
     this.seedMembership(group, {
       groupId: group.id.toString(),
@@ -145,6 +187,7 @@ export class InMemoryGroupRepository implements GroupRepository {
           displayName: user.displayName,
           photoUrl: user.photoUrl,
           role: entry.role,
+          status: 'ACTIVE',
           joinedAt: entry.joinedAt ?? (this.groupsById.get(entry.groupId) as Group).createdAt,
         });
       }
