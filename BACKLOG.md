@@ -1,31 +1,33 @@
-# Backlog — Pieza 2: grupos y miembros
+# Backlog — Pieza 3: gastos y balances
 
 > Lo escribe `/backlog` y lo actualiza cada historia que se cierra. Se lee antes de cualquier trabajo (ver `CLAUDE.md` § "Flujo de trabajo"). La historia en curso se detalla en `PLAN.md`.
 
 ## Contexto
-4adra es la PWA para repartir gastos entre personas invitadas. Esta es la pieza 2 de 4 hacia la primera versión funcional: (1) base de la PWA → **(2) grupos y miembros** → (3) gastos y balances → (4) liquidaciones.
+4adra es la PWA para repartir gastos entre personas invitadas. Esta es la pieza 3 de 4 hacia la primera versión funcional: (1) base de la PWA → (2) grupos y miembros → **(3) gastos y balances** → (4) liquidaciones.
 
 Stack: Cloudflare Worker + Hono + D1 + Better Auth (Google), y PWA en Angular 22 (ver `CLAUDE.md`).
 
 Decisiones caras:
-- **Roles:** `Owner`, `Administrator`, `Member` y `ReadOnly`. Todo grupo conserva al menos un Owner activo.
-- **Varios grupos por persona:** cada grupo es independiente; no hay organizaciones.
-- **Moneda:** cada grupo tiene una moneda base, **fija desde que se crea** (no se puede editar).
+- **Moneda:** todo gasto va en la moneda base del grupo, sin conversión. El gasto guarda su código de moneda, para sumar multimoneda en la Fase 2 sin romper el histórico.
+- **Permisos (`docs/Security.md`):** Owner, Administrator y Member crean, editan y eliminan cualquier gasto activo del grupo; ReadOnly solo consulta.
+- **Sin categorías ni filtros:** la lista de gastos va del más reciente al más antiguo; categorías y filtros llegan en la Fase 3.
+- **Dinero:** decimal exacto, nunca `float`. Los balances se recalculan desde gastos y repartos; nunca se editan a mano.
 - **Sin conexión:** la PWA abre sin red, pero no sincroniza cambios hechos offline.
 - **Idioma:** solo español.
-- **Invitaciones:** solo a correos de la lista de acceso (ADR-018).
 
 ## Backlog
-1. [x] Como persona invitada a 4adra, quiero crear un grupo y verlo en Inicio, para empezar a compartir gastos.
-2. [x] Como miembro, quiero abrir un grupo y ver sus miembros con su rol, para saber quién participa. Requiere: #1
-3. [x] Como Owner o Administrator, quiero invitar a alguien por su correo, para sumarlo al grupo. Requiere: #2
-4. [x] Como invitado, quiero ver mis invitaciones pendientes y aceptarlas o rechazarlas, para decidir si entro al grupo. Requiere: #3
-5. [x] Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo. Requiere: #2
-6. [x] Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos. Requiere: #2
-7. [x] Como Owner, quiero remover a un miembro, para sacar a quien ya no participa. Requiere: #2
-8. [x] Como miembro, quiero salir de un grupo, para dejar de verlo. Requiere: #2
-9. [x] Como Owner, quiero editar el nombre y la descripción del grupo, para mantenerlo al día. Requiere: #2
-10. [x] Como Owner, quiero archivar un grupo, para sacarlo de Inicio sin perder sus registros. Requiere: #1
+1. [ ] Como miembro, quiero registrar un gasto que pagué, repartido en partes iguales entre todos los miembros, y verlo en la lista del grupo, para llevar la cuenta.
+2. [ ] Como miembro, quiero elegir quién pagó y entre quiénes se reparte un gasto, para registrar gastos que pagó otro o que no son de todos. Requiere: #1
+3. [ ] Como miembro, quiero ver el balance del grupo (cuánto pagó y consumió cada uno, y a quién le deben o quién debe), para saber cómo vamos. Requiere: #1
+4. [ ] Como miembro, quiero abrir un gasto y ver cuánto le toca a cada participante, para entender el reparto. Requiere: #1
+5. [ ] Como miembro, quiero repartir un gasto por montos exactos, para cuando cada uno consumió algo distinto. Requiere: #2
+6. [ ] Como miembro, quiero repartir un gasto por porcentajes, para acuerdos como "60/40". Requiere: #2
+7. [ ] Como miembro, quiero repartir un gasto por partes, para cuando alguien cuenta doble (por ejemplo, una pareja). Requiere: #2
+8. [ ] Como miembro, quiero editar un gasto, para corregir un error. Requiere: #4
+9. [ ] Como miembro, quiero eliminar un gasto, para quitar uno registrado por error. Requiere: #4
+10. [ ] Como miembro, quiero ver los gastos eliminados y restaurarlos, para deshacer un borrado. Requiere: #9
+11. [ ] Como miembro, quiero que nadie salga del grupo ni sea removido mientras su balance no esté en cero, para que no se pierdan deudas. Requiere: #3
 
 ## Notas
-- La regla "no se puede salir ni ser removido con balance ≠ 0" entra con los gastos (pieza 3); en esta pieza todo balance es cero.
+- La pieza 2 (grupos y miembros) se publicó en la versión 0.4.0.
+- En un grupo archivado los gastos también son de solo lectura (`409 GROUP_ARCHIVED`), como el resto de sus cambios.
