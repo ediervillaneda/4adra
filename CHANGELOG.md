@@ -14,6 +14,13 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+### Agregado
+- **Cambiar el rol de un miembro** (pieza 2, historia #6):
+  - El Owner ve "Cambiar rol" en cada miembro del detalle del grupo: un diálogo con Propietario, Administrador, Miembro y Solo lectura. Al guardar, la lista muestra el rol nuevo, que rige desde la siguiente acción de esa persona.
+  - Un grupo puede tener varios Owners: se puede promover a otro, degradar a otro Owner o degradarse a sí mismo, siempre que quede al menos un Owner activo. Si no, "El grupo necesita al menos un Propietario." y no cambia nada. La condición va en la misma escritura de D1, para que dos cambios simultáneos no la burlen.
+  - Un Owner que se degrada deja de ver las opciones de Owner.
+  - API: `PATCH /api/v1/groups/{groupId}/members/{userId}`, con `400 VALIDATION_ERROR`, `403 PERMISSION_DENIED`, `404 GROUP_NOT_FOUND`, y los códigos nuevos `404 MEMBER_NOT_FOUND` y `409 LAST_OWNER`. Sin migración.
+
 ## [0.3.1] - 2026-11-13
 
 Solo CI; la app no cambia.

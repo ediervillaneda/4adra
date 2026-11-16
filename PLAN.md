@@ -6,9 +6,9 @@
 Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos.
 
 ## Criterios de aceptación
-- [ ] Dado que soy Owner de un grupo, cuando cambio el rol de un miembro activo a Propietario, Administrador, Miembro o Solo lectura, entonces veo su nuevo rol en la lista de miembros, y él tiene los permisos de ese rol desde su siguiente acción. Si soy Administrador, Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
-- [ ] Dado que el grupo puede tener varios Owners, cuando promuevo a otro miembro a Propietario, degrado a otro Propietario o me degrado a mí mismo, entonces el cambio se aplica mientras quede al menos un Propietario activo. Si el cambio dejaría el grupo sin Propietario, veo "El grupo necesita al menos un Propietario" y no cambia nada. Si me degrado, dejo de ver las opciones de Propietario.
-- [ ] Dado que la persona ya no es miembro activo del grupo (o nunca lo fue), cuando intento cambiar su rol, entonces recibo "miembro no encontrado" y no cambia nada.
+- [x] Dado que soy Owner de un grupo, cuando cambio el rol de un miembro activo a Propietario, Administrador, Miembro o Solo lectura, entonces veo su nuevo rol en la lista de miembros, y él tiene los permisos de ese rol desde su siguiente acción. Si soy Administrador, Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
+- [x] Dado que el grupo puede tener varios Owners, cuando promuevo a otro miembro a Propietario, degrado a otro Propietario o me degrado a mí mismo, entonces el cambio se aplica mientras quede al menos un Propietario activo. Si el cambio dejaría el grupo sin Propietario, veo "El grupo necesita al menos un Propietario" y no cambia nada. Si me degrado, dejo de ver las opciones de Propietario.
+- [x] Dado que la persona ya no es miembro activo del grupo (o nunca lo fue), cuando intento cambiar su rol, entonces recibo "miembro no encontrado" y no cambia nada.
 
 ## Plan
 - Backend: un caso de uso "cambiar rol", con auditoría. Solo un Owner activo puede usarlo: quien no es miembro recibe "grupo no encontrado" y los demás roles "permiso denegado". La persona debe ser miembro activo. Se rechaza el cambio que deje el grupo sin Owner, con la condición dentro de la misma escritura, para que dos cambios simultáneos no lo burlen. Sin migración.
@@ -25,3 +25,10 @@ Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos.
 
 ## Sugerencias (tú decides)
 - Las dos sugerencias de `/story` quedaron aprobadas e incorporadas al plan: el diálogo "Cambiar rol" sigue el patrón del diálogo "Compartir enlace" (`MatDialog` con datos de entrada), y la PWA suma, junto a `INVITABLE_ROLES`, una lista con los cuatro roles.
+
+## Decisiones durante `/pair`
+- El chequeo de rol de la #5 se generalizó a `findGroupWhereActorHasRole(…, roles)`, con `ROLES_THAT_INVITE` y `ROLES_THAT_CHANGE_ROLES` en `MemberRole.ts`.
+- `toGroupMemberView` se extrajo para compartirla entre listar miembros y cambiar el rol.
+- Un `userId` inválido responde `404 MEMBER_NOT_FOUND`, igual que uno inexistente.
+- Tras cerrar el diálogo con cambio, el detalle recarga grupo y miembros (no se parchea la lista a mano): así refleja también la degradación del propio Owner.
+- Tras `/code-review`: el `UPDATE` también exige que el actor siga siendo Owner activo (un Owner degradado a mitad de su petición recibe `403`), y un cambio que no se aplicó se explica leyendo en la misma transacción el rol del actor y los Owners activos, en vez de deducir `LAST_OWNER` de `changes = 0`. "Cancelar" cierra el diálogo sin resultado (antes `''`, que recargaba el detalle) y "Guardar" se deshabilita mientras el rol elegido sea el actual. `MemberRole` se deriva de `MEMBER_ROLES` en backend y PWA.
