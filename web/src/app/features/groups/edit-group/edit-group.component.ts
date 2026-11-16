@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import {
+  GroupArchivedError,
   GroupEditDeniedError,
   GroupNotFoundError,
   GroupValidationError,
@@ -18,6 +19,7 @@ type EditState =
   | { status: 'loading' }
   | { status: 'form'; group: GroupSummary }
   | { status: 'denied' }
+  | { status: 'archived' }
   | { status: 'notFound' }
   | { status: 'error' };
 
@@ -64,6 +66,10 @@ type EditableField = 'name' | 'description';
       }
       @case ('denied') {
         <p>{{ texts.groups.editDenied }}</p>
+        <a mat-button [routerLink]="['/grupos', groupId]">{{ texts.groups.cancel }}</a>
+      }
+      @case ('archived') {
+        <p>{{ texts.groups.editArchived }}</p>
         <a mat-button [routerLink]="['/grupos', groupId]">{{ texts.groups.cancel }}</a>
       }
       @case ('notFound') {
@@ -156,6 +162,9 @@ export class EditGroupComponent {
         // Mientras editabas, te degradaron (403) o te removieron (404): el formulario ya no aplica.
         if (error instanceof GroupEditDeniedError) {
           this.state.set({ status: 'denied' });
+        } else if (error instanceof GroupArchivedError) {
+          // Otro miembro lo archivó mientras editabas.
+          this.state.set({ status: 'archived' });
         } else if (error instanceof GroupNotFoundError) {
           this.state.set({ status: 'notFound' });
         } else if (error instanceof GroupValidationError) {
@@ -175,6 +184,11 @@ export class EditGroupComponent {
   private async load(): Promise<void> {
     try {
       const group = await this.groups.getGroup(this.groupId);
+      // Un grupo archivado es de solo lectura (por ejemplo, al abrir un marcador de esta ruta).
+      if (group.status !== 'ACTIVE') {
+        this.state.set({ status: 'archived' });
+        return;
+      }
       if (!canEditGroup(group.role)) {
         this.state.set({ status: 'denied' });
         return;

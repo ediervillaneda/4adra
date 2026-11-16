@@ -150,6 +150,52 @@ describe('EditGroupComponent', () => {
     },
   );
 
+  it('editGroupShouldNotOfferTheFormForAnArchivedGroup', async () => {
+    // Por ejemplo, al abrir un marcador de /grupos/:id/editar después de archivarlo.
+    TestBed.configureTestingModule({
+      imports: [EditGroupComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ groupId: 'grp_casa' }) } },
+        },
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(EditGroupComponent);
+    fixture.detectChanges();
+    http
+      .expectOne('/api/v1/groups/grp_casa')
+      .flush({ data: { ...CASA, status: 'ARCHIVED' }, ...META });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('El grupo está archivado: ya no se puede editar.');
+    expect(element.querySelector('form')).toBeNull();
+  });
+
+  it('editGroupShouldLeaveTheFormWhenTheGroupWasArchivedMeanwhile', async () => {
+    const fixture = await renderAs('OWNER');
+
+    save(fixture);
+    http
+      .expectOne('/api/v1/groups/grp_casa')
+      .flush(
+        { error: { code: 'GROUP_ARCHIVED', message: 'x' }, ...META },
+        { status: 409, statusText: 'Conflict' },
+      );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('El grupo está archivado: ya no se puede editar.');
+    expect(element.querySelector('form')).toBeNull();
+  });
+
   it('editGroupShouldNotSendAnEmptyOrBlankName', async () => {
     const fixture = await renderAs('OWNER');
     type(fixture, 'name', '   ');

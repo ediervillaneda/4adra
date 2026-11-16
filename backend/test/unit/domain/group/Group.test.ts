@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Group } from '../../../../src/domain/group/Group';
 import { GroupId } from '../../../../src/domain/group/GroupId';
+import { GroupArchivedException } from '../../../../src/domain/group/errors';
 import { UserId } from '../../../../src/domain/user/UserId';
 
 const NOW = new Date('2026-11-12T15:00:00.000Z');
@@ -80,5 +81,44 @@ describe('Group', () => {
     });
     // El grupo original no cambia.
     expect([group.name, group.version]).toEqual(['Casa', 3]);
+  });
+
+  it('shouldArchiveAndBumpVersionAndUpdatedAt', () => {
+    const later = new Date('2026-11-20T10:00:00.000Z');
+    const group = Group.restore({
+      id: GroupId.fromString('grp_1'),
+      name: 'Casa',
+      description: null,
+      defaultCurrency: 'COP',
+      status: 'ACTIVE',
+      createdBy: UserId.fromString('usr_ana'),
+      createdAt: NOW,
+      updatedAt: NOW,
+      version: 3,
+    });
+
+    const archived = group.archive(later);
+
+    expect([archived.status, archived.version, archived.updatedAt, archived.name]).toEqual([
+      'ARCHIVED',
+      4,
+      later,
+      'Casa',
+    ]);
+    // El grupo original no cambia.
+    expect([group.status, group.version]).toEqual(['ACTIVE', 3]);
+  });
+
+  it('shouldRejectChangesOnlyWhenArchived', () => {
+    const active = Group.create(
+      GroupId.fromString('grp_1'),
+      { name: 'Casa', description: null, defaultCurrency: 'COP' },
+      UserId.fromString('usr_ana'),
+      NOW,
+    );
+
+    expect(() => active.ensureActive()).not.toThrow();
+    expect(() => active.archive(NOW).ensureActive()).toThrow(GroupArchivedException);
+    expect(new GroupArchivedException().code).toBe('GROUP_ARCHIVED');
   });
 });

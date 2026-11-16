@@ -1,4 +1,5 @@
 import { AuthenticatedActor } from '../../domain/auth/AuthenticatedActor';
+import { GroupRepository } from '../../domain/group/GroupRepository';
 import { InvitationRepository } from '../../domain/invitation/InvitationRepository';
 import { UserRepository } from '../../domain/user/UserRepository';
 import { ensureActiveUserProfile } from '../user/ensureActiveUserProfile';
@@ -15,6 +16,7 @@ export interface RespondInvitationCommand {
 export class AcceptInvitationUseCase {
   constructor(
     private readonly invitationRepository: InvitationRepository,
+    private readonly groupRepository: GroupRepository,
     private readonly userRepository: UserRepository,
     private readonly now: () => Date,
   ) {}
@@ -26,7 +28,10 @@ export class AcceptInvitationUseCase {
       command.invitationId,
     );
     const now = this.now();
+    // Primero el estado de la invitación (vencida o ya respondida), que la PWA usa para quitarla de Inicio.
     const accepted = invitation.accept(now);
+    // Un grupo archivado no suma miembros.
+    (await this.groupRepository.findById(invitation.groupId))?.ensureActive();
     // La membresía exige el perfil; quien acepta por la API sin pasar por GET /me aún no lo tiene.
     await ensureActiveUserProfile(this.userRepository, command.actor, now);
     await this.invitationRepository.saveAccepted(accepted, command.actor.userId, now);

@@ -67,7 +67,7 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `GET /groups` | Lista grupos del usuario |
 | `GET /groups/{groupId}` | Consulta grupo |
 | `PATCH /groups/{groupId}` | Edita el nombre y la descripción (Owner/Administrator; la moneda base no cambia) |
-| `POST /groups/{groupId}/archive` | Archiva grupo |
+| `POST /groups/{groupId}/archive` | Archiva el grupo (solo Owner; irreversible desde la app): queda de solo lectura y sus mutaciones responden `409 GROUP_ARCHIVED` |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |
 | `GET /invitations` | Lista las invitaciones pendientes y vigentes dirigidas al correo del actor |

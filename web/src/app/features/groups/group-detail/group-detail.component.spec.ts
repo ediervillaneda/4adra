@@ -109,8 +109,9 @@ function render(userId: string | null = 'usr_otro'): ComponentFixture<GroupDetai
 async function respondWithCasa(
   fixture: ComponentFixture<GroupDetailComponent>,
   role = 'MEMBER',
+  status = 'ACTIVE',
 ): Promise<HTMLElement> {
-  http.expectOne('/api/v1/groups/grp_casa').flush({ data: { ...CASA, role }, ...META });
+  http.expectOne('/api/v1/groups/grp_casa').flush({ data: { ...CASA, role, status }, ...META });
   http.expectOne('/api/v1/groups/grp_casa/members').flush({ data: MEMBERS, ...META });
   await fixture.whenStable();
   fixture.detectChanges();
@@ -343,6 +344,28 @@ describe('GroupDetailComponent', () => {
     expect(names).toEqual(['Álvaro', 'beto', 'Zoe']);
   });
 
+  it.each([
+    ['leave-group', '/api/v1/groups/grp_casa/leave'],
+    ['remove-member', '/api/v1/groups/grp_casa/members/usr_alvaro'],
+  ])('groupDetailShouldSayTheGroupWasArchivedMeanwhile (%s)', async (action, url) => {
+    // Otra pestaña (u otro Propietario) lo archivó con este detalle abierto.
+    const fixture = render('usr_zoe');
+    const element = await respondWithCasa(fixture, 'OWNER');
+
+    element.querySelector<HTMLButtonElement>(`[data-testid="${action}"]`)?.click();
+    const dialog = openedDialogs[0] as { confirm: () => Promise<void> };
+
+    const confirmed = dialog.confirm();
+    http
+      .expectOne(url)
+      .flush(
+        { error: { code: 'GROUP_ARCHIVED', message: 'x' }, ...META },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    await expect(confirmed).rejects.toThrow('El grupo está archivado.');
+  });
+
   it('groupDetailShouldRejectRemovalWithTheBackendMessage', async () => {
     const fixture = render('usr_zoe');
     const element = await respondWithCasa(fixture, 'OWNER');
@@ -505,5 +528,72 @@ describe('GroupDetailComponent', () => {
       MEMBER: null,
       READ_ONLY: null,
     });
+  });
+
+  it('groupDetailShouldShowArchivedBannerAndNoActionsForAnyRole', async () => {
+    const actions = [
+      'edit-group',
+      'invite-link',
+      'share-invite-link',
+      'change-role',
+      'remove-member',
+      'leave-group',
+      'archive-group',
+    ];
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role, 'ARCHIVED');
+
+      expect(element.querySelector('[data-testid="archived-banner"]')?.textContent).toContain(
+        'Grupo archivado',
+      );
+      expect(element.querySelectorAll('[data-testid="member-item"]')).toHaveLength(4);
+      const shown = actions.filter((action) => element.querySelector(`[data-testid="${action}"]`));
+      expect({ role, shown }).toEqual({ role, shown: [] });
+      http.verify();
+    }
+  });
+
+  it('groupDetailShouldOfferArchiveOnlyToTheOwnerOfAnActiveGroup', async () => {
+    const labels: Record<string, string | null> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role);
+      labels[role] =
+        element.querySelector('[data-testid="archive-group"]')?.textContent?.trim() ?? null;
+      expect(element.querySelector('[data-testid="archived-banner"]')).toBeNull();
+      http.verify();
+    }
+
+    expect(labels).toEqual({
+      OWNER: 'Archivar grupo',
+      ADMINISTRATOR: null,
+      MEMBER: null,
+      READ_ONLY: null,
+    });
+  });
+
+  it('groupDetailShouldArchiveAfterConfirmingAndGoBackHome', async () => {
+    const fixture = render('usr_zoe');
+    const element = await respondWithCasa(fixture, 'OWNER');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    dialogResult = true;
+
+    element.querySelector<HTMLButtonElement>('[data-testid="archive-group"]')?.click();
+    const dialog = openedDialogs[0] as {
+      title: string;
+      message: string;
+      confirm: () => Promise<void>;
+    };
+    expect(dialog.title).toBe('¿Archivar «Casa compartida»?');
+    expect(dialog.message).toContain('No se puede deshacer');
+
+    const confirmed = dialog.confirm();
+    const request = http.expectOne('/api/v1/groups/grp_casa/archive');
+    expect(request.request.method).toBe('POST');
+    request.flush({ data: { ...CASA, role: 'OWNER', status: 'ARCHIVED' }, ...META });
+    await confirmed;
+
+    expect(navigate).toHaveBeenCalledWith(['/']);
   });
 });

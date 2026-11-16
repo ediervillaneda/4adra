@@ -44,3 +44,12 @@ export class CannotRemoveSelfException extends DomainError {
     super('No puedes removerte a ti mismo; para irte, sal del grupo.');
   }
 }
+
+/** El grupo está archivado: queda de solo lectura (docs/api/Groups.md). */
+export class GroupArchivedException extends DomainError {
+  readonly code = 'GROUP_ARCHIVED';
+
+  constructor() {
+    super('El grupo está archivado.');
+  }
+}

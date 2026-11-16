@@ -55,7 +55,15 @@ POST /api/v1/groups/{groupId}/archive
 Idempotency-Key: 5e32a108-0235-49b1-bf72-91960f66a8e8
 ```
 
-Solo Owner archiva. Un grupo archivado conserva datos históricos y queda de solo lectura, salvo operaciones administrativas de restauración documentadas.
+Sin cuerpo. Solo Owner archiva: Administrator, Member y ReadOnly reciben `403 PERMISSION_DENIED`, y quien no es miembro activo, `404 GROUP_NOT_FOUND`. El grupo pasa a `ARCHIVED`, sube su `version` y actualiza `updatedAt`; responde `200` con el grupo. Archivar un grupo ya archivado responde `200` sin cambios. El archivado es irreversible desde la app; restaurar es una operación administrativa documentada. Por ahora se ignora `Idempotency-Key`.
+
+Un grupo archivado conserva sus datos históricos y queda de solo lectura:
+
+- Consultarlo sigue igual (`GET /groups/{groupId}`, `GET /groups/{groupId}/members`), y `GET /groups` lo sigue listando, con `status: "ARCHIVED"`.
+- Cualquier operación que lo cambie a él o a sus miembros responde `409 GROUP_ARCHIVED` y no cambia nada: editarlo, invitar por correo, crear un enlace, cambiar un rol, remover a alguien, salir del grupo y aceptar una invitación.
+- Sus invitaciones pendientes dejan de aparecer en `GET /invitations`, y sus enlaces responden `404 INVITE_LINK_NOT_FOUND`.
+
+El estado del grupo se revisa al leerlo, no dentro de cada escritura: una operación que empezó justo antes de archivar puede terminar igual.
 
 ## Miembros e invitaciones
 
@@ -94,7 +102,7 @@ La lectura devuelve perfil, versión y fecha de activación. Owner o Administrat
 | Código | Situación |
 |---|---|
 | `GROUP_NOT_FOUND` | Grupo inexistente o no visible |
-| `GROUP_ARCHIVED` | Mutación no permitida en grupo archivado |
+| `GROUP_ARCHIVED` | Mutación no permitida en grupo archivado (`409`) |
 | `PERMISSION_DENIED` | Rol insuficiente |
 | `STALE_VERSION` | `If-Match` no coincide |
 | `LAST_OWNER` | Intento de remover o degradar el último Owner |

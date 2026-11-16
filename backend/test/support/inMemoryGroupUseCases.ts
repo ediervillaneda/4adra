@@ -4,6 +4,7 @@ import { GetGroupUseCase } from '../../src/application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../src/application/group/ListGroupMembersUseCase';
 import { ChangeMemberRoleUseCase } from '../../src/application/group/ChangeMemberRoleUseCase';
 import { RemoveMemberUseCase } from '../../src/application/group/RemoveMemberUseCase';
+import { ArchiveGroupUseCase } from '../../src/application/group/ArchiveGroupUseCase';
 import { LeaveGroupUseCase } from '../../src/application/group/LeaveGroupUseCase';
 import { UpdateGroupUseCase } from '../../src/application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../../src/application/invitation/InviteMemberUseCase';
@@ -27,6 +28,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
   changeMemberRoleUseCase: ChangeMemberRoleUseCase;
   removeMemberUseCase: RemoveMemberUseCase;
   leaveGroupUseCase: LeaveGroupUseCase;
+  archiveGroupUseCase: ArchiveGroupUseCase;
   updateGroupUseCase: UpdateGroupUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
@@ -55,6 +57,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
     changeMemberRoleUseCase: new ChangeMemberRoleUseCase(groups, now),
     removeMemberUseCase: new RemoveMemberUseCase(groups, now),
     leaveGroupUseCase: new LeaveGroupUseCase(groups, now),
+    archiveGroupUseCase: new ArchiveGroupUseCase(groups, now),
     updateGroupUseCase: new UpdateGroupUseCase(groups, now),
     inviteMemberUseCase: new InviteMemberUseCase(
       groups,
@@ -64,7 +67,7 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
       now,
     ),
     listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitations, now),
-    acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, users, now),
+    acceptInvitationUseCase: new AcceptInvitationUseCase(invitations, groups, users, now),
     declineInvitationUseCase: new DeclineInvitationUseCase(invitations, now),
     createInviteLinkUseCase: new CreateInviteLinkUseCase(
       groups,

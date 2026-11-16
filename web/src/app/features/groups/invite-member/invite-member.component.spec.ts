@@ -119,6 +119,7 @@ describe('InviteMemberComponent', () => {
         code: 'MEMBER_ALREADY_ACTIVE',
         expected: 'Esa persona ya es miembro del grupo.',
       },
+      { status: 409, code: 'GROUP_ARCHIVED', expected: 'El grupo está archivado.' },
     ];
 
     for (const { status, code, expected } of rejections) {

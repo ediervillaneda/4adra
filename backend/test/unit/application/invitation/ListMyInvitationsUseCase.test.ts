@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { ListMyInvitationsUseCase } from '../../../../src/application/invitation/ListMyInvitationsUseCase';
+import { ArchiveGroupUseCase } from '../../../../src/application/group/ArchiveGroupUseCase';
 import { NOW, invitationScenario, juan } from '../../../support/invitationScenario';
+import { ana } from '../../../support/inviteLinkScenario';
 
 describe('ListMyInvitationsUseCase', () => {
   it('shouldListPendingInvitationWithGroupNameInviterNameAndRole', async () => {
@@ -46,5 +48,17 @@ describe('ListMyInvitationsUseCase', () => {
     const useCase = new ListMyInvitationsUseCase(invitations, () => NOW);
 
     expect(await useCase.execute(juan)).toEqual([]);
+  });
+
+  it('shouldExcludeInvitationsToArchivedGroups', async () => {
+    const { groups, invitations, seedInvitation } = invitationScenario();
+    seedInvitation({ id: 'inv_casa', groupId: 'grp_casa' });
+    seedInvitation({ id: 'inv_playa', groupId: 'grp_playa' });
+    await new ArchiveGroupUseCase(groups, () => NOW).execute({ actor: ana, groupId: 'grp_casa' });
+    const useCase = new ListMyInvitationsUseCase(invitations, () => NOW);
+
+    const views = await useCase.execute(juan);
+
+    expect(views.map((view) => view.invitationId)).toEqual(['inv_playa']);
   });
 });
