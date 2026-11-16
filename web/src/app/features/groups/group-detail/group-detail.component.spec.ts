@@ -3,6 +3,8 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { GroupDetailComponent } from './group-detail.component';
 
 const CASA = {
@@ -55,7 +57,13 @@ const META = { meta: { requestId: 'req_1' } };
 
 let http: HttpTestingController;
 
+/** Lo que devuelve el diálogo "Cambiar rol" al cerrarse (undefined: cerrado sin cambios). */
+let dialogResult: unknown;
+let openedDialogs: unknown[];
+
 function render(): ComponentFixture<GroupDetailComponent> {
+  dialogResult = undefined;
+  openedDialogs = [];
   TestBed.configureTestingModule({
     imports: [GroupDetailComponent],
     providers: [
@@ -65,6 +73,15 @@ function render(): ComponentFixture<GroupDetailComponent> {
       {
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: convertToParamMap({ groupId: 'grp_casa' }) } },
+      },
+      {
+        provide: MatDialog,
+        useValue: {
+          open: (_component: unknown, config: { data: unknown }) => {
+            openedDialogs.push(config.data);
+            return { afterClosed: () => of(dialogResult) };
+          },
+        },
       },
     ],
   });
@@ -200,5 +217,57 @@ describe('GroupDetailComponent', () => {
       MEMBER: null,
       READ_ONLY: null,
     });
+  });
+
+  it('groupDetailShouldShowChangeRoleOnEveryMemberOnlyForOwner', async () => {
+    const buttons: Record<string, number> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render(), role);
+      buttons[role] = element.querySelectorAll('[data-testid="change-role"]').length;
+      http.verify();
+    }
+
+    expect(buttons).toEqual({ OWNER: 4, ADMINISTRATOR: 0, MEMBER: 0, READ_ONLY: 0 });
+  });
+
+  it('groupDetailShouldReloadAfterRoleChangeAndHideOwnerActionsWhenOwnerDemotedThemself', async () => {
+    const fixture = render();
+    const element = await respondWithCasa(fixture, 'OWNER');
+    const zoe = MEMBERS[3];
+    dialogResult = { ...zoe, role: 'MEMBER' };
+
+    element.querySelectorAll<HTMLButtonElement>('[data-testid="change-role"]')[3]?.click();
+    expect(openedDialogs).toEqual([{ groupId: 'grp_casa', member: zoe }]);
+
+    // El backend dice que ahora el actor es Member: la pantalla recarga y oculta las opciones.
+    http.expectOne('/api/v1/groups/grp_casa').flush({ data: { ...CASA, role: 'MEMBER' }, ...META });
+    http.expectOne('/api/v1/groups/grp_casa/members').flush({
+      data: MEMBERS.map((member) =>
+        member.userId === 'usr_zoe' ? { ...member, role: 'MEMBER' } : member,
+      ),
+      ...META,
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('[data-testid="change-role"]').length).toBe(0);
+    expect(element.querySelector('[data-testid="share-invite-link"]')).toBeNull();
+    const roles = Array.from(element.querySelectorAll('[data-testid="member-role"]')).map((role) =>
+      role.textContent?.trim(),
+    );
+    expect(roles[3]).toBe('Miembro');
+  });
+
+  it('groupDetailShouldNotReloadWhenChangeRoleDialogClosesWithoutChanges', async () => {
+    const fixture = render();
+    const element = await respondWithCasa(fixture, 'OWNER');
+    // Así cierra MatDialogClose un botón con `mat-dialog-close` sin valor.
+    dialogResult = '';
+
+    element.querySelector<HTMLButtonElement>('[data-testid="change-role"]')?.click();
+
+    http.expectNone('/api/v1/groups/grp_casa');
+    expect(element.querySelectorAll('[data-testid="change-role"]').length).toBe(4);
   });
 });

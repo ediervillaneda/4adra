@@ -1,34 +1,34 @@
-# Plan — Historia #5 de `BACKLOG.md`
+# Plan — Historia #6 de `BACKLOG.md`
 
 > Lo escribe `/story` y lo usa `/pair` como entrada. Solo contiene la historia en curso. Al cerrarla, se marca hecha en `BACKLOG.md` y este archivo se reemplaza con la siguiente.
 
 ## Historia
-Como Owner o Administrator, quiero compartir un enlace de invitación, para sumar gente sin escribir cada correo.
+Como Owner, quiero cambiar el rol de un miembro, para repartir los permisos.
 
 ## Criterios de aceptación
-- [x] Dado que soy Owner o Administrator de un grupo, cuando pido el enlace de invitación, entonces veo un enlace que puedo copiar o compartir, válido por 7 días y para varias personas. Si pido uno nuevo, el anterior deja de servir. Si soy Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
-- [x] Dado que tengo acceso a 4adra y abro un enlace vigente, cuando entro con Google (si no tenía sesión) y confirmo "Unirme" en la pantalla que dice a qué grupo me invitan, entonces quedo como Miembro del grupo y lo veo en Inicio. Si ya era miembro activo, entro al grupo sin duplicar mi membresía y sin cambiar mi rol.
-- [x] Dado que el enlace venció, fue reemplazado o no existe, cuando lo abro, entonces veo un mensaje claro y no entro a ningún grupo. Si mi correo no está en la lista de acceso de 4adra, veo "Necesitas una invitación", como hoy.
+- [x] Dado que soy Owner de un grupo, cuando cambio el rol de un miembro activo a Propietario, Administrador, Miembro o Solo lectura, entonces veo su nuevo rol en la lista de miembros, y él tiene los permisos de ese rol desde su siguiente acción. Si soy Administrador, Miembro o Solo lectura, no veo la opción, y si igual lo intento por la API recibo "permiso denegado".
+- [x] Dado que el grupo puede tener varios Owners, cuando promuevo a otro miembro a Propietario, degrado a otro Propietario o me degrado a mí mismo, entonces el cambio se aplica mientras quede al menos un Propietario activo. Si el cambio dejaría el grupo sin Propietario, veo "El grupo necesita al menos un Propietario" y no cambia nada. Si me degrado, dejo de ver las opciones de Propietario.
+- [x] Dado que la persona ya no es miembro activo del grupo (o nunca lo fue), cuando intento cambiar su rol, entonces recibo "miembro no encontrado" y no cambia nada.
 
 ## Plan
-- Base de datos: una migración nueva con los enlaces de cada grupo: el **hash (SHA-256) de un código aleatorio** imposible de adivinar (el código nunca se guarda), quién lo creó, cuándo vence y si fue reemplazado. Un solo enlace vigente por grupo.
-- Backend: tres casos de uso, con auditoría. Crear el enlace (solo Owner o Administrator; reemplaza el anterior). Ver a qué grupo invita un enlace (solo el nombre del grupo y si sigue vigente). Unirse con el enlace (crea el perfil si falta, entra como Miembro y no duplica una membresía activa). El chequeo "¿es Owner o Administrator del grupo?", que ya usa invitar por correo, se extrae para compartirlo entre los dos casos de uso.
-- API: tres endpoints nuevos, que hay que agregar al contrato (`ApiSpecification.md`, `api/Members.md` y `openapi.yaml`) **con tu autorización antes de implementarlos**: crear el enlace de un grupo, consultar un enlace y unirse con él. Errores: permiso denegado, enlace no encontrado y enlace vencido. Pruebas de integración y de contrato.
-- PWA: en el detalle del grupo, para Owner y Administrator, "Compartir enlace" abre un diálogo con el enlace, el botón "Copiar" y, donde el navegador lo permita (celular), el botón "Compartir", que abre la hoja nativa (WhatsApp, Telegram, etc.) sin dependencias nuevas. Una ruta nueva para abrir el enlace, con "Te invitan a «…»" y el botón "Unirme". El login con Google debe volver al enlace, porque hoy siempre regresa a Inicio.
-- Documentación: Members.md, DatabaseSchema, UISpecification, CHANGELOG, checklist de la Fase 1, TODO.md y BACKLOG.md.
+- Backend: un caso de uso "cambiar rol", con auditoría. Solo un Owner activo puede usarlo: quien no es miembro recibe "grupo no encontrado" y los demás roles "permiso denegado". La persona debe ser miembro activo. Se rechaza el cambio que deje el grupo sin Owner, con la condición dentro de la misma escritura, para que dos cambios simultáneos no lo burlen. Sin migración.
+- API: `PATCH /groups/{groupId}/members/{userId}` ya figura en el contrato, pero sin respuesta ni errores definidos. Hay que completarlo (`ApiSpecification.md`, `api/Members.md` y `openapi.yaml`) **con tu autorización antes de implementarlo**: cuerpo `{ role }`, respuesta `200` con la membresía, `400 VALIDATION_ERROR`, `403 PERMISSION_DENIED`, `404 GROUP_NOT_FOUND`, `404 MEMBER_NOT_FOUND` (código nuevo) y `409 LAST_OWNER`. Pruebas de integración y de contrato.
+- PWA: en el detalle del grupo, el Owner ve "Cambiar rol" en cada miembro, que abre un diálogo con los cuatro roles. Al guardar, la lista muestra el rol nuevo. Si el Owner se degradó, la pantalla recarga su propio rol y oculta las acciones que ya no tiene. `LAST_OWNER` muestra su mensaje en el diálogo.
+- Documentación: Members.md, UISpecification, CHANGELOG, el checklist de la Fase 1, TODO.md y BACKLOG.md.
 
 ## Fuera de alcance
-- Dar acceso a 4adra con el enlace: la lista de acceso (ADR-018) no cambia.
-- Elegir el rol del enlace: siempre se entra como Miembro, y el rol se cambia en la historia #6.
-- Anular un enlace sin generar otro, ver quién entró por él o limitar cuántas veces se usa.
-- El popup con enlace después de invitar por correo (pedido durante la #4); si se quiere, va como historia aparte.
-- Envío por correo y notificaciones (Fase 3).
+- `If-Match` / `409 STALE_VERSION` e `Idempotency-Key`: el contrato los menciona, pero, como en las historias anteriores, por ahora se ignoran.
+- Que un Administrator cambie roles: la matriz de `docs/Security.md` no lo permite.
+- Remover miembros (historia #7) y salir del grupo (historia #8).
+- Cambiar el rol de una invitación pendiente.
+- Avisar a la persona de su nuevo rol (notificaciones, Fase 3).
 
 ## Sugerencias (tú decides)
-- Las tres sugerencias de `/story` quedaron aprobadas e incorporadas al plan: guardar solo el hash del código, extraer el chequeo de Owner o Administrator y el botón "Compartir" nativo.
+- Las dos sugerencias de `/story` quedaron aprobadas e incorporadas al plan: el diálogo "Cambiar rol" sigue el patrón del diálogo "Compartir enlace" (`MatDialog` con datos de entrada), y la PWA suma, junto a `INVITABLE_ROLES`, una lista con los cuatro roles.
 
 ## Decisiones durante `/pair`
-- El diálogo crea el enlace solo al pulsar "Crear enlace" y avisa antes que el anterior deja de servir: como solo se guarda el hash, el código no se puede volver a mostrar, y crearlo al abrir mataría el enlace ya compartido.
-- La auditoría enmascara el código en la ruta (`/invite-links/***/join`).
-- `?volver=` se valida resolviendo la ruta contra el mismo origen (rechaza `//`, `/\` y `/<tab>/`), también en el callback de error y en `/entrar` con sesión.
-- Queda para la #7: unirse con una membresía `REMOVED` (hoy no ocurre).
+- El chequeo de rol de la #5 se generalizó a `findGroupWhereActorHasRole(…, roles)`, con `ROLES_THAT_INVITE` y `ROLES_THAT_CHANGE_ROLES` en `MemberRole.ts`.
+- `toGroupMemberView` se extrajo para compartirla entre listar miembros y cambiar el rol.
+- Un `userId` inválido responde `404 MEMBER_NOT_FOUND`, igual que uno inexistente.
+- Tras cerrar el diálogo con cambio, el detalle recarga grupo y miembros (no se parchea la lista a mano): así refleja también la degradación del propio Owner.
+- Tras `/code-review`: el `UPDATE` también exige que el actor siga siendo Owner activo (un Owner degradado a mitad de su petición recibe `403`), y un cambio que no se aplicó se explica leyendo en la misma transacción el rol del actor y los Owners activos, en vez de deducir `LAST_OWNER` de `changes = 0`. "Cancelar" cierra el diálogo sin resultado (antes `''`, que recargaba el detalle) y "Guardar" se deshabilita mientras el rol elegido sea el actual. `MemberRole` se deriva de `MEMBER_ROLES` en backend y PWA.

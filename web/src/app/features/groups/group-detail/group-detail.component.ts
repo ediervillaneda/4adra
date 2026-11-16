@@ -11,6 +11,10 @@ import {
   ShareInviteLinkDialogComponent,
   ShareInviteLinkDialogData,
 } from '../share-invite-link/share-invite-link-dialog.component';
+import {
+  ChangeMemberRoleDialogComponent,
+  ChangeMemberRoleDialogData,
+} from '../change-member-role/change-member-role-dialog.component';
 
 type DetailState =
   | { status: 'loading' }
@@ -18,7 +22,7 @@ type DetailState =
   | { status: 'notFound' }
   | { status: 'error' };
 
-/** Detalle de un grupo: sus datos y sus miembros activos (historia #2 de la pieza 2). */
+/** Detalle de un grupo: sus datos y sus miembros activos (historias #2 y #6 de la pieza 2). */
 @Component({
   selector: 'app-group-detail',
   imports: [RouterLink, MatButtonModule, MatIconModule, MatListModule],
@@ -71,6 +75,17 @@ type DetailState =
                 <span matListItemLine data-testid="member-role">{{
                   texts.groups.roles[member.role]
                 }}</span>
+                @if (canChangeRoles(content.group)) {
+                  <button
+                    matListItemMeta
+                    mat-button
+                    type="button"
+                    data-testid="change-role"
+                    (click)="openChangeRole(content.group, member)"
+                  >
+                    {{ texts.groups.changeRole }}
+                  </button>
+                }
               </mat-list-item>
             }
           </mat-list>
@@ -105,15 +120,37 @@ export class GroupDetailComponent {
   private readonly groupId = inject(ActivatedRoute).snapshot.paramMap.get('groupId') ?? '';
   protected readonly texts = TEXTS;
   protected readonly state = signal<DetailState>({ status: 'loading' });
+  private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {
     // PendingTasks: la app (y las pruebas, con whenStable) no se dan por estables hasta que cargue.
-    void inject(PendingTasks).run(() => this.load());
+    void this.pendingTasks.run(() => this.load());
   }
 
   /** Solo Owner y Administrator ven "Invitar"; el backend vuelve a validar el permiso. */
   protected canInvite(group: GroupSummary): boolean {
     return group.role === 'OWNER' || group.role === 'ADMINISTRATOR';
+  }
+
+  /** Solo el Owner cambia roles (matriz en docs/Security.md); el backend vuelve a validarlo. */
+  protected canChangeRoles(group: GroupSummary): boolean {
+    return group.role === 'OWNER';
+  }
+
+  /** Si hubo cambio, recarga grupo y miembros: si el Owner se degradó, ya no ve sus opciones. */
+  protected openChangeRole(group: GroupSummary, member: GroupMember): void {
+    this.dialog
+      .open<ChangeMemberRoleDialogComponent, ChangeMemberRoleDialogData, GroupMember>(
+        ChangeMemberRoleDialogComponent,
+        { data: { groupId: group.id, member } },
+      )
+      .afterClosed()
+      .subscribe((changed) => {
+        // Cancelar, Escape o clic fuera cierran sin miembro: no hay nada que recargar.
+        if (changed?.userId !== undefined) {
+          void this.pendingTasks.run(() => this.load());
+        }
+      });
   }
 
   protected openShareInviteLink(group: GroupSummary): void {

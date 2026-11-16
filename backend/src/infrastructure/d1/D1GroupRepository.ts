@@ -5,6 +5,7 @@ import {
   GroupMembership,
   GroupRepository,
   MemberGroup,
+  RoleChangeResult,
 } from '../../domain/group/GroupRepository';
 import { MemberRole } from '../../domain/group/MemberRole';
 import { Email } from '../../domain/user/Email';
@@ -46,6 +47,22 @@ function fromRow(row: MemberGroupRow): MemberGroup {
       version: row.version,
     }),
     role: row.role,
+  };
+}
+
+/** Rol del actor y Owners activos, para explicar un cambio de rol que no se aplicó. */
+interface RoleChangeContextRow {
+  actor_role: MemberRole | null;
+  active_owners: number;
+}
+
+function toGroupMember(row: GroupMemberRow): GroupMember {
+  return {
+    userId: UserId.fromString(row.user_id),
+    displayName: row.display_name,
+    photoUrl: row.photo_url,
+    role: row.role,
+    joinedAt: fromIsoDate(row.joined_at),
   };
 }
 
@@ -114,13 +131,7 @@ export class D1GroupRepository implements GroupRepository {
       )
       .bind(groupId.toString())
       .all<GroupMemberRow>();
-    return results.map((row) => ({
-      userId: UserId.fromString(row.user_id),
-      displayName: row.display_name,
-      photoUrl: row.photo_url,
-      role: row.role,
-      joinedAt: fromIsoDate(row.joined_at),
-    }));
+    return results.map(toGroupMember);
   }
 
   async hasActiveMemberWithEmail(groupId: GroupId, email: Email): Promise<boolean> {
@@ -156,5 +167,73 @@ export class D1GroupRepository implements GroupRepository {
     ]);
     const row = selected?.results[0] as { role: MemberRole; joined_at: string };
     return { role: row.role, joinedAt: fromIsoDate(row.joined_at) };
+  }
+
+  async changeMemberRole(
+    groupId: GroupId,
+    actorId: UserId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<RoleChangeResult> {
+    const group = groupId.toString();
+    const [updated, selected, context] = await this.database.batch<
+      GroupMemberRow & RoleChangeContextRow
+    >([
+      // Las dos condiciones van en la misma sentencia (D1 serializa las escrituras): el actor sigue
+      // siendo Owner activo y, si se degrada a un Owner, queda al menos otro.
+      this.database
+        .prepare(
+          `UPDATE group_members SET role = ?, updated_at = ?
+           WHERE group_id = ? AND user_id = ? AND status = 'ACTIVE'
+             AND EXISTS (SELECT 1 FROM group_members
+                         WHERE group_id = ? AND user_id = ? AND role = 'OWNER' AND status = 'ACTIVE')
+             AND (? = 'OWNER' OR role <> 'OWNER'
+                  OR (SELECT COUNT(*) FROM group_members
+                      WHERE group_id = ? AND role = 'OWNER' AND status = 'ACTIVE') > 1)`,
+        )
+        .bind(
+          role,
+          toIsoDate(at),
+          group,
+          userId.toString(),
+          group,
+          actorId.toString(),
+          role,
+          group,
+        ),
+      this.database
+        .prepare(
+          `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.joined_at FROM group_members m
+           JOIN users u ON u.id = m.user_id
+           WHERE m.group_id = ? AND m.user_id = ? AND m.status = 'ACTIVE'`,
+        )
+        .bind(group, userId.toString()),
+      // Lo que explica un UPDATE sin cambios, leído en la misma transacción.
+      this.database
+        .prepare(
+          `SELECT
+             (SELECT role FROM group_members
+              WHERE group_id = ? AND user_id = ? AND status = 'ACTIVE') AS actor_role,
+             (SELECT COUNT(*) FROM group_members
+              WHERE group_id = ? AND role = 'OWNER' AND status = 'ACTIVE') AS active_owners`,
+        )
+        .bind(group, actorId.toString(), group),
+    ]);
+    const row = selected?.results[0];
+    if (updated?.meta.changes !== 0 && row !== undefined) {
+      return { status: 'CHANGED', member: toGroupMember(row) };
+    }
+    const facts = context?.results[0];
+    if (facts?.actor_role !== 'OWNER') {
+      return { status: 'PERMISSION_DENIED' };
+    }
+    if (row === undefined) {
+      return { status: 'MEMBER_NOT_FOUND' };
+    }
+    if (row.role === 'OWNER' && role !== 'OWNER' && facts.active_owners <= 1) {
+      return { status: 'LAST_OWNER' };
+    }
+    throw new Error('El cambio de rol no se aplicó por un motivo no previsto.');
   }
 }

@@ -25,6 +25,13 @@ export interface GroupMembership {
   joinedAt: Date;
 }
 
+/** Resultado de cambiar un rol: el miembro con su rol nuevo, o por qué no cambió nada. */
+export type RoleChangeResult =
+  | { status: 'CHANGED'; member: GroupMember }
+  | { status: 'PERMISSION_DENIED' }
+  | { status: 'MEMBER_NOT_FOUND' }
+  | { status: 'LAST_OWNER' };
+
 export interface GroupRepository {
   /** Guarda el grupo y la membresía OWNER de su creador en una sola operación atómica. */
   createWithOwner(group: Group): Promise<void>;
@@ -46,4 +53,15 @@ export interface GroupRepository {
     role: MemberRole,
     at: Date,
   ): Promise<GroupMembership>;
+  /**
+   * El actor (Owner activo) cambia el rol de un miembro activo, salvo que el grupo quede sin Owner
+   * activo. Ambas condiciones se evalúan en la misma escritura, para que cambios simultáneos no las burlen.
+   */
+  changeMemberRole(
+    groupId: GroupId,
+    actorId: UserId,
+    userId: UserId,
+    role: MemberRole,
+    at: Date,
+  ): Promise<RoleChangeResult>;
 }

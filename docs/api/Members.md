@@ -194,9 +194,29 @@ Idempotency-Key: b390f61e-b971-4596-b91e-bdb34f1ef2f8
 { "role": "ADMINISTRATOR" }
 ```
 
-Solo Owner puede promover, degradar o transferir propiedad. Transferir `OWNER` debe ocurrir en una transacción: el destinatario se activa como Owner antes de degradar al anterior. El sistema rechaza una operación que deje el grupo sin Owner activo.
+Solo un Owner activo cambia roles. Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`; Administrator, Member y ReadOnly reciben `403 PERMISSION_DENIED`. La persona debe ser miembro activo del grupo; si no lo es (o el `userId` no existe), la respuesta es `404 MEMBER_NOT_FOUND`. Roles asignables: `OWNER`, `ADMINISTRATOR`, `MEMBER` y `READ_ONLY`. El cuerpo inválido responde `400 VALIDATION_ERROR` (`role`/`unsupported_role`, `body`/`must_be_object`).
 
-Los Administrators pueden modificar algunos estados operativos de miembros si la política lo permite, pero no cambiar roles ni gestionar Owners.
+Un grupo puede tener varios Owners. Un Owner puede promover a otro miembro a Owner, degradar a otro Owner o degradarse a sí mismo, siempre que quede al menos un Owner activo. Si el cambio dejaría el grupo sin Owner, responde `409 LAST_OWNER` y no cambia nada; la condición se evalúa en la misma escritura, para que dos cambios simultáneos no la burlen. Transferir la propiedad son dos pasos: promover al otro y luego degradarse. Asignar el mismo rol que ya tiene responde `200` sin cambios.
+
+Por ahora se ignoran `If-Match` (no hay `409 STALE_VERSION`) e `Idempotency-Key`. El aviso a la persona llega con las notificaciones (Fase 3).
+
+Respuesta `200`, con la membresía actualizada (sin correo):
+
+```json
+{
+  "data": {
+    "userId": "usr_juan",
+    "displayName": "Juan",
+    "photoUrl": null,
+    "role": "ADMINISTRATOR",
+    "status": "ACTIVE",
+    "joinedAt": "2026-07-14T09:30:00Z"
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+Los Administrators no cambian roles ni gestionan Owners (matriz en `docs/Security.md`).
 
 ## Remover o abandonar grupo
 
@@ -222,7 +242,8 @@ Estados de invitación: `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `REVOKED`.
 | `INVITE_LINK_EXPIRED` | Enlace vencido (`409`) |
 | `MEMBER_ALREADY_ACTIVE` | Usuario ya pertenece al grupo |
 | `EMAIL_NOT_ALLOWED` | El correo invitado no está en la lista de acceso (`422`, ADR-018) |
-| `LAST_OWNER` | Operación dejaría al grupo sin Owner |
+| `MEMBER_NOT_FOUND` | La persona no es miembro activo del grupo (`404`) |
+| `LAST_OWNER` | Operación dejaría al grupo sin Owner (`409`) |
 | `OUTSTANDING_BALANCE` | Salida no permitida por deuda pendiente |
 | `PERMISSION_DENIED` | Rol insuficiente |
 

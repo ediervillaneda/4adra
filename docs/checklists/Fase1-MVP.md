@@ -31,7 +31,8 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] `InviteMember` (Owner/Administrator; solo correos de la lista de acceso; reinvitar devuelve la pendiente vigente).
 - [x] `ListMyInvitations`, `AcceptInvitation`, `DeclineInvitation` (solo el destinatario; una invitación ajena es `INVITATION_NOT_FOUND`; aceptar crea el perfil si falta y no duplica una membresía activa).
 - [x] `CreateInviteLink`, `GetInviteLink`, `JoinGroupWithInviteLink` (crear: Owner/Administrator, reemplaza el anterior; unirse: entra como Member, crea el perfil si falta y no duplica una membresía activa).
-- [ ] `ChangeMemberRole`, `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
+- [x] `ChangeMemberRole` (solo Owner; el grupo conserva al menos un Owner, `409 LAST_OWNER`).
+- [ ] `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
 - [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`).
 - [ ] `CalculateBalances` (recálculo idempotente, ciclo `BalanceDirty` → `BalanceRecalculated`, `docs/Algorithms.md`).
 - [ ] `GenerateSettlementSuggestions`, `CreateSettlement`, `ConfirmSettlement`, `CancelSettlement`, `RejectSettlement`.
@@ -67,6 +68,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] Invitar miembro (`/grupos/:groupId/invitar`).
 - [x] Aceptar/rechazar invitación (sección "Invitaciones" en Inicio).
 - [x] Compartir enlace de invitación (diálogo en el detalle) y unirse con él (`/unirse/:code`), volviendo al enlace después del login.
+- [x] Cambiar el rol de un miembro (diálogo "Cambiar rol" en el detalle, solo Owner).
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
 - [ ] Ver balances del grupo.
 - [ ] Ver sugerencias de liquidación y confirmar una liquidación.

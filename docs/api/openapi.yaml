@@ -839,7 +839,9 @@ paths:
         schema:
           type: string
     patch:
-      summary: Cambia rol o estado de un miembro (Owner)
+      summary: Cambia el rol de un miembro activo (Owner); el grupo conserva al menos un Owner
+      description: >
+        Por ahora se ignoran If-Match e Idempotency-Key. Asignar el rol que ya tiene responde 200 sin cambios.
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -849,13 +851,45 @@ paths:
           application/json:
             schema:
               type: object
+              required: [role]
               properties:
                 role:
                   type: string
                   enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
       responses:
         '200':
-          description: Membresía actualizada
+          description: Membresía con el rol nuevo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '400':
+          description: VALIDATION_ERROR (rol no soportado o cuerpo inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: PERMISSION_DENIED (el actor no es Owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo) o MEMBER_NOT_FOUND (la persona no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: LAST_OWNER (el grupo quedaría sin Owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
     delete:
