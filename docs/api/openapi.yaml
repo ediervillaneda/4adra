@@ -654,15 +654,31 @@ paths:
 
   /groups/{groupId}/leave:
     post:
-      summary: El actor abandona el grupo (si no es el último Owner y su balance es cero)
+      summary: El actor abandona el grupo (cualquier rol; un Owner, solo si queda otro Owner activo)
+      description: >
+        La membresía pasa a REMOVED y nunca se borra. Por ahora se ignora Idempotency-Key;
+        OUTSTANDING_BALANCE entra con los gastos (pieza 3).
       parameters:
         - $ref: '#/components/parameters/GroupId'
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
-          description: Membresía removida
+          description: Membresía del actor (status REMOVED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
-          description: OUTSTANDING_BALANCE o LAST_OWNER
+          description: LAST_OWNER (el actor es el único Owner activo)
           content:
             application/json:
               schema:

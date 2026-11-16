@@ -260,7 +260,29 @@ Por ahora se ignoran `If-Match` e `Idempotency-Key`. La regla de balance (`409 O
 
 ### Abandonar el grupo
 
-Un miembro puede abandonar el grupo solo si no es el último Owner y su balance en ese grupo es exactamente cero; lo mismo aplica para ser removido. No existe excepción por política de grupo: mientras el balance sea distinto de cero, ambas operaciones responden `409 OUTSTANDING_BALANCE`.
+Sin cuerpo. Cualquier miembro activo, con cualquier rol, puede abandonar el grupo. Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`. Un Owner solo puede irse si queda al menos otro Owner activo; si es el único, responde `409 LAST_OWNER` y no cambia nada, aunque sea la única persona del grupo. Para irse, primero debe promover a otro miembro a Owner (`PATCH /groups/{groupId}/members/{userId}`). La condición se evalúa en la misma escritura que el cambio de rol, para que dos Owners que se van a la vez no dejen el grupo sin ninguno.
+
+La membresía pasa a `REMOVED`, igual que al ser removido, y la fila nunca se borra. El actor deja de ver el grupo (`404 GROUP_NOT_FOUND` en su siguiente petición). Si luego acepta una invitación o se une con un enlace, la membresía se reactiva. La auditoría distingue abandonar de ser removido por la ruta.
+
+Además, un miembro solo puede abandonar el grupo (o ser removido) si su balance en ese grupo es exactamente cero. No existe excepción por política de grupo: mientras el balance sea distinto de cero, ambas operaciones responden `409 OUTSTANDING_BALANCE`. Esta regla entra con los gastos (pieza 3).
+
+Respuesta `200`, con la membresía del actor (sin correo):
+
+```json
+{
+  "data": {
+    "userId": "usr_juan",
+    "displayName": "Juan",
+    "photoUrl": null,
+    "role": "MEMBER",
+    "status": "REMOVED",
+    "joinedAt": "2026-07-14T09:30:00Z"
+  },
+  "meta": { "requestId": "req_123" }
+}
+```
+
+Por ahora se ignoran `If-Match` e `Idempotency-Key`.
 
 ## Estados y errores
 
