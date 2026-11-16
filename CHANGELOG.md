@@ -15,6 +15,13 @@ Ver `docs/Workflows.md`.
 ## [Sin publicar]
 
 ### Agregado
+- **Remover a un miembro** (pieza 2, historia #7):
+  - El Owner remueve a cualquier miembro, y el Administrador solo a Miembros y a Solo lectura, desde "Remover" en el detalle del grupo, tras confirmar "¿Remover a «…» del grupo?". Nadie se remueve a sí mismo: para eso estará Salir (#8).
+  - La membresía queda `REMOVED`, nunca se borra. La persona deja de ver el grupo en Inicio y en su detalle ("Grupo no encontrado").
+  - Si luego acepta una invitación o se une con un enlace, la membresía se reactiva con el rol nuevo y una fecha de ingreso nueva. Antes, ambos caminos respondían "activo" pero dejaban a la persona fuera.
+  - El permiso del actor se vuelve a evaluar en la misma escritura de D1.
+  - API: `DELETE /api/v1/groups/{groupId}/members/{userId}`, con `403 PERMISSION_DENIED`, `404 GROUP_NOT_FOUND`, `404 MEMBER_NOT_FOUND` y el código nuevo `409 CANNOT_REMOVE_SELF`. Sin migración.
+  - PWA: un diálogo de confirmación genérico, que reusarán Salir (#8) y Archivar (#10).
 - **Cambiar el rol de un miembro** (pieza 2, historia #6):
   - El Owner ve "Cambiar rol" en cada miembro del detalle del grupo: un diálogo con Propietario, Administrador, Miembro y Solo lectura. Al guardar, la lista muestra el rol nuevo, que rige desde la siguiente acción de esa persona.
   - Un grupo puede tener varios Owners: se puede promover a otro, degradar a otro Owner o degradarse a sí mismo, siempre que quede al menos un Owner activo. Si no, "El grupo necesita al menos un Propietario." y no cambia nada. La condición va en la misma escritura de D1, para que dos cambios simultáneos no la burlen.

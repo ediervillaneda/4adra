@@ -227,7 +227,14 @@ POST /api/v1/groups/{groupId}/leave
 
 ### Remover a un miembro
 
-Sin cuerpo. Owner remueve a cualquier miembro activo (incluido otro Owner); Administrator, solo a Member y ReadOnly. Member y ReadOnly reciben `403 PERMISSION_DENIED`, igual que un Administrator que intenta remover a un Owner o a otro Administrator. Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`. La persona debe ser miembro activo del grupo; si no lo es (o el `userId` no existe), la respuesta es `404 MEMBER_NOT_FOUND`. Nadie se remueve a sí mismo: responde `409 CANNOT_REMOVE_SELF`, y para irse está `POST /groups/{groupId}/leave`.
+Sin cuerpo. Owner remueve a cualquier miembro activo (incluido otro Owner); Administrator, solo a Member y ReadOnly. Los chequeos se evalúan en este orden, y responde el primero que falla:
+
+1. El actor no es miembro activo del grupo: `404 GROUP_NOT_FOUND`.
+2. El actor intenta removerse a sí mismo, con cualquier rol: `409 CANNOT_REMOVE_SELF`. Para irse está `POST /groups/{groupId}/leave`.
+3. La persona no es miembro activo del grupo (o el `userId` no existe): `404 MEMBER_NOT_FOUND`.
+4. El rol del actor no le permite remover a esa persona: `403 PERMISSION_DENIED`. Es el caso de Member y ReadOnly, y de un Administrator que intenta remover a un Owner o a otro Administrator.
+
+Responder `404 MEMBER_NOT_FOUND` antes que `403` no revela nada nuevo: cualquier miembro activo ya ve la lista de miembros (`GET /groups/{groupId}/members`).
 
 El permiso del actor se vuelve a evaluar en la misma escritura, para que un actor degradado o removido a mitad de camino no remueva a nadie. Como el actor que remueve a un Owner sigue siendo Owner, el grupo nunca queda sin Owner por esta vía.
 
