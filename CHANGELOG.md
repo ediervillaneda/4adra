@@ -14,6 +14,10 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+## [0.4.0] - 2026-11-16
+
+Cierra la pieza 2 (grupos y miembros): cambiar roles, remover miembros, salir, editar y archivar grupos. Todavía sin gastos (pieza 3).
+
 ### Agregado
 - **Archivar un grupo** (pieza 2, historia #10):
   - El Owner ve "Archivar grupo" en el detalle, con la confirmación "¿Archivar «…»? No se puede deshacer."; al confirmar vuelve a Inicio. Es irreversible desde la app.
@@ -130,7 +134,8 @@ Andamiaje de la fase 0, sobre Firebase (reemplazado en 0.2.0).
 - **Backend:** `GET /v1/me` de punta a punta, con pruebas unitarias, de integración y de contrato.
 - **Git Flow:** CI de backend y web, más un workflow de release (ADR-013).
 
-[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...HEAD
+[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ediervillaneda/4adra/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ediervillaneda/4adra/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ediervillaneda/4adra/compare/v0.1.0...v0.2.0
