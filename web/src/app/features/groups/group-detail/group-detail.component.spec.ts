@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
@@ -385,5 +385,105 @@ describe('GroupDetailComponent', () => {
       .filter((item) => item.querySelector('[data-testid="remove-member"]') !== null)
       .map((item) => item.querySelector('[data-testid="member-name"]')?.textContent?.trim());
     expect(removable).toEqual(['Álvaro', 'Ana', 'beto']);
+  });
+
+  it('groupDetailShouldOfferLeaveTheGroupToEveryRole', async () => {
+    const labels: Record<string, string | null> = {};
+    for (const role of ['OWNER', 'ADMINISTRATOR', 'MEMBER', 'READ_ONLY']) {
+      TestBed.resetTestingModule();
+      const element = await respondWithCasa(render('usr_zoe'), role);
+      labels[role] =
+        element.querySelector('[data-testid="leave-group"]')?.textContent?.trim() ?? null;
+      http.verify();
+    }
+
+    expect(labels).toEqual({
+      OWNER: 'Salir del grupo',
+      ADMINISTRATOR: 'Salir del grupo',
+      MEMBER: 'Salir del grupo',
+      READ_ONLY: 'Salir del grupo',
+    });
+  });
+
+  it('groupDetailShouldLeaveAfterConfirmingAndGoBackHome', async () => {
+    const fixture = render('usr_ana');
+    const element = await respondWithCasa(fixture, 'MEMBER');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    dialogResult = true;
+
+    element.querySelector<HTMLButtonElement>('[data-testid="leave-group"]')?.click();
+    const dialog = openedDialogs[0] as { title: string; confirm: () => Promise<void> };
+    expect(dialog.title).toBe('¿Salir de «Casa compartida»?');
+
+    const confirmed = dialog.confirm();
+    const request = http.expectOne('/api/v1/groups/grp_casa/leave');
+    expect(request.request.method).toBe('POST');
+    request.flush({ data: { ...MEMBERS[1], status: 'REMOVED' }, ...META });
+    await confirmed;
+
+    expect(navigate).toHaveBeenCalledWith(['/']);
+    http.expectNone('/api/v1/groups/grp_casa');
+  });
+
+  it('groupDetailShouldExplainWhyTheOnlyOwnerCannotLeave', async () => {
+    const fixture = render('usr_zoe');
+    const element = await respondWithCasa(fixture, 'OWNER');
+
+    element.querySelector<HTMLButtonElement>('[data-testid="leave-group"]')?.click();
+    const dialog = openedDialogs[0] as { confirm: () => Promise<void> };
+
+    const confirmed = dialog.confirm();
+    http.expectOne('/api/v1/groups/grp_casa/leave').flush(
+      {
+        error: { code: 'LAST_OWNER', message: 'El grupo necesita al menos un Propietario.' },
+        ...META,
+      },
+      { status: 409, statusText: 'Conflict' },
+    );
+
+    await expect(confirmed).rejects.toThrow('El grupo necesita al menos un Propietario.');
+  });
+
+  it('groupDetailShouldTreatLeavingAGroupYouAreNoLongerInAsDone', async () => {
+    // Te removieron (o saliste en otra pestaña): salir responde 404, que es justo lo que querías.
+    const fixture = render('usr_ana');
+    const element = await respondWithCasa(fixture, 'MEMBER');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    dialogResult = true;
+
+    element.querySelector<HTMLButtonElement>('[data-testid="leave-group"]')?.click();
+    const dialog = openedDialogs[0] as { confirm: () => Promise<void> };
+
+    const confirmed = dialog.confirm();
+    http
+      .expectOne('/api/v1/groups/grp_casa/leave')
+      .flush(
+        { error: { code: 'GROUP_NOT_FOUND', message: 'Grupo no encontrado.' }, ...META },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+    await expect(confirmed).resolves.toBeUndefined();
+    expect(navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('groupDetailShouldStayUnstableUntilTheNavigationHomeFinishes', async () => {
+    const fixture = render('usr_ana');
+    const element = await respondWithCasa(fixture, 'MEMBER');
+    let arrivedHome = false;
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => {
+            arrivedHome = true;
+            resolve(true);
+          }, 50),
+        ),
+    );
+    dialogResult = true;
+
+    element.querySelector<HTMLButtonElement>('[data-testid="leave-group"]')?.click();
+    await fixture.whenStable();
+
+    expect(arrivedHome).toBe(true);
   });
 });

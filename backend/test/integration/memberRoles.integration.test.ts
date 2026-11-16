@@ -1,68 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { env, SELF } from 'cloudflare:test';
-import { sessionCookieFor } from './sessionCookieFor';
-
-const API = 'http://localhost:8787/api/v1';
-
-interface Person {
-  userId: string;
-  cookie: string;
-}
-
-/** Sesión y perfil (vía GET /me, como hace la PWA al entrar). */
-async function signIn(email: string, name: string): Promise<Person> {
-  const cookie = await sessionCookieFor(email, name);
-  const me: { data: { id: string } } = await (
-    await SELF.fetch(`${API}/me`, { headers: { cookie } })
-  ).json();
-  return { userId: me.data.id, cookie };
-}
-
-async function createGroupAs(owner: Person, name: string): Promise<string> {
-  const body: { data: { id: string } } = await (
-    await SELF.fetch(`${API}/groups`, {
-      method: 'POST',
-      headers: { cookie: owner.cookie, 'content-type': 'application/json' },
-      body: JSON.stringify({ name, defaultCurrency: 'COP' }),
-    })
-  ).json();
-  return body.data.id;
-}
-
-function postInviteLink(person: Person, groupId: string): Promise<Response> {
-  return SELF.fetch(`${API}/groups/${groupId}/members/invite-link`, {
-    method: 'POST',
-    headers: { cookie: person.cookie },
-  });
-}
-
-/** El Owner crea un enlace y la persona entra con él, como Member. */
-async function joinAsMember(owner: Person, person: Person, groupId: string): Promise<void> {
-  const link: { data: { code: string } } = await (await postInviteLink(owner, groupId)).json();
-  const response = await SELF.fetch(`${API}/invite-links/${link.data.code}/join`, {
-    method: 'POST',
-    headers: { cookie: person.cookie },
-  });
-  expect(response.status).toBe(200);
-}
-
-function patchRole(
-  actor: Person,
-  groupId: string,
-  userId: string,
-  role: string,
-): Promise<Response> {
-  return SELF.fetch(`${API}/groups/${groupId}/members/${userId}`, {
-    method: 'PATCH',
-    headers: { cookie: actor.cookie, 'content-type': 'application/json' },
-    body: JSON.stringify({ role }),
-  });
-}
-
-async function errorCode(response: Response): Promise<string> {
-  const body: { error: { code: string } } = await response.json();
-  return body.error.code;
-}
+import { env } from 'cloudflare:test';
+import {
+  createGroupAs,
+  errorCode,
+  joinAsMember,
+  patchRole,
+  postInviteLink,
+  signIn,
+} from './groupScenario';
 
 async function roleInD1(groupId: string, userId: string): Promise<string | null> {
   const row = await env.DB.prepare(

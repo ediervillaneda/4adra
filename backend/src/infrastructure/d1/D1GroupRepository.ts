@@ -4,6 +4,7 @@ import {
   GroupMember,
   GroupMembership,
   GroupRepository,
+  LeaveGroupResult,
   MemberGroup,
   MemberRemovalResult,
   RoleChangeResult,
@@ -57,6 +58,16 @@ interface RoleChangeContextRow {
   actor_role: MemberRole | null;
   active_owners: number;
 }
+
+/**
+ * Condición de un `UPDATE … WHERE` sobre `group_members`: la fila no es de un Owner, o el grupo
+ * tiene más de un Owner activo. Así, degradar o sacar a esa persona nunca deja el grupo sin Owner.
+ * La comparten cambiar rol y salir del grupo, y va en la misma sentencia que la escritura.
+ */
+const KEEPS_AN_ACTIVE_OWNER = `(group_members.role <> 'OWNER'
+  OR (SELECT COUNT(*) FROM group_members owners
+      WHERE owners.group_id = group_members.group_id
+        AND owners.role = 'OWNER' AND owners.status = 'ACTIVE') > 1)`;
 
 function toGroupMember(row: GroupMemberRow): GroupMember {
   return {
@@ -194,20 +205,9 @@ export class D1GroupRepository implements GroupRepository {
            WHERE group_id = ? AND user_id = ? AND status = 'ACTIVE'
              AND EXISTS (SELECT 1 FROM group_members
                          WHERE group_id = ? AND user_id = ? AND role = 'OWNER' AND status = 'ACTIVE')
-             AND (? = 'OWNER' OR role <> 'OWNER'
-                  OR (SELECT COUNT(*) FROM group_members
-                      WHERE group_id = ? AND role = 'OWNER' AND status = 'ACTIVE') > 1)`,
+             AND (? = 'OWNER' OR ${KEEPS_AN_ACTIVE_OWNER})`,
         )
-        .bind(
-          role,
-          toIsoDate(at),
-          group,
-          userId.toString(),
-          group,
-          actorId.toString(),
-          role,
-          group,
-        ),
+        .bind(role, toIsoDate(at), group, userId.toString(), group, actorId.toString(), role),
       this.database
         .prepare(
           `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.status, m.joined_at FROM group_members m
@@ -287,5 +287,47 @@ export class D1GroupRepository implements GroupRepository {
     return row?.status === 'ACTIVE'
       ? { status: 'PERMISSION_DENIED' }
       : { status: 'MEMBER_NOT_FOUND' };
+  }
+
+  async leaveGroup(groupId: GroupId, userId: UserId, at: Date): Promise<LeaveGroupResult> {
+    const group = groupId.toString();
+    const [updated, selected, owners] = await this.database.batch<
+      GroupMemberRow & { active_owners: number }
+    >([
+      // La condición del último Owner va en la misma sentencia: dos Owners que salen a la vez no
+      // dejan el grupo sin ninguno.
+      this.database
+        .prepare(
+          `UPDATE group_members SET status = 'REMOVED', updated_at = ?
+           WHERE group_id = ? AND user_id = ? AND status = 'ACTIVE' AND ${KEEPS_AN_ACTIVE_OWNER}`,
+        )
+        .bind(toIsoDate(at), group, userId.toString()),
+      this.database
+        .prepare(
+          `SELECT m.user_id, u.display_name, u.photo_url, m.role, m.status, m.joined_at
+           FROM group_members m JOIN users u ON u.id = m.user_id
+           WHERE m.group_id = ? AND m.user_id = ?`,
+        )
+        .bind(group, userId.toString()),
+      // Lo que explica un UPDATE sin cambios, leído en la misma transacción.
+      this.database
+        .prepare(
+          `SELECT COUNT(*) AS active_owners FROM group_members
+           WHERE group_id = ? AND role = 'OWNER' AND status = 'ACTIVE'`,
+        )
+        .bind(group),
+    ]);
+    const row = selected?.results[0];
+    if (updated?.meta.changes === 1 && row !== undefined) {
+      return { status: 'LEFT', member: toGroupMember(row) };
+    }
+    if (row?.status !== 'ACTIVE') {
+      return { status: 'NOT_MEMBER' };
+    }
+    const activeOwners = owners?.results[0]?.active_owners ?? 0;
+    if (row.role === 'OWNER' && activeOwners <= 1) {
+      return { status: 'LAST_OWNER' };
+    }
+    throw new Error('La salida del grupo no se aplicó por un motivo no previsto.');
   }
 }

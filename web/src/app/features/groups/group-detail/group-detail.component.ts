@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, PendingTasks, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -27,7 +27,7 @@ type DetailState =
   | { status: 'notFound' }
   | { status: 'error' };
 
-/** Detalle de un grupo: sus datos y sus miembros activos (historias #2, #6 y #7 de la pieza 2). */
+/** Detalle de un grupo: sus datos y sus miembros activos (historias #2, #6, #7 y #8 de la pieza 2). */
 @Component({
   selector: 'app-group-detail',
   imports: [RouterLink, MatButtonModule, MatIconModule, MatListModule],
@@ -105,6 +105,14 @@ type DetailState =
               </mat-list-item>
             }
           </mat-list>
+          <button
+            mat-stroked-button
+            type="button"
+            data-testid="leave-group"
+            (click)="openLeaveGroup(content.group)"
+          >
+            {{ texts.groups.leaveGroup }}
+          </button>
         }
       }
       @case ('notFound') {
@@ -138,6 +146,7 @@ export class GroupDetailComponent {
   protected readonly state = signal<DetailState>({ status: 'loading' });
   private readonly pendingTasks = inject(PendingTasks);
   private readonly currentProfile = inject(CurrentProfileStore);
+  private readonly router = inject(Router);
 
   constructor() {
     // PendingTasks: la app (y las pruebas, con whenStable) no se dan por estables hasta que cargue.
@@ -170,6 +179,27 @@ export class GroupDetailComponent {
       group.role === 'OWNER' ||
       (group.role === 'ADMINISTRATOR' && (member.role === 'MEMBER' || member.role === 'READ_ONLY'))
     );
+  }
+
+  /** Cualquier miembro puede salir; el backend rechaza al único Owner (`LAST_OWNER`). */
+  protected openLeaveGroup(group: GroupSummary): void {
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, true>(ConfirmDialogComponent, {
+        data: {
+          title: TEXTS.groups.leaveGroupTitle(group.name),
+          message: TEXTS.groups.leaveGroupMessage,
+          confirmLabel: TEXTS.groups.leaveGroup,
+          confirm: async () => {
+            await this.groupsService.leaveGroup(group.id);
+          },
+        },
+      })
+      .afterClosed()
+      .subscribe((left) => {
+        if (left === true) {
+          void this.pendingTasks.run(() => this.router.navigate(['/']));
+        }
+      });
   }
 
   protected openRemoveMember(group: GroupSummary, member: GroupMember): void {

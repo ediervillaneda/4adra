@@ -4,6 +4,7 @@ import {
   GroupMember,
   GroupMembership,
   GroupRepository,
+  LeaveGroupResult,
   MemberGroup,
   MemberRemovalResult,
   RoleChangeResult,
@@ -149,6 +150,29 @@ export class InMemoryGroupRepository implements GroupRepository {
     return member === undefined
       ? { status: 'MEMBER_NOT_FOUND' }
       : { status: 'REMOVED', member: { ...member, status: 'REMOVED' } };
+  }
+
+  /** Como el `UPDATE … WHERE` de D1: no toca nada si no es miembro activo o es el único Owner. */
+  async leaveGroup(groupId: GroupId, userId: UserId, at: Date): Promise<LeaveGroupResult> {
+    const activeInGroup = this.memberships.filter(
+      (entry) => entry.groupId === groupId.toString() && entry.status === 'ACTIVE',
+    );
+    const leaving = activeInGroup.find((entry) => entry.userId === userId.toString());
+    if (leaving === undefined) {
+      return { status: 'NOT_MEMBER' };
+    }
+    const owners = activeInGroup.filter((entry) => entry.role === 'OWNER').length;
+    if (leaving.role === 'OWNER' && owners <= 1) {
+      return { status: 'LAST_OWNER' };
+    }
+    const member = (await this.listActiveMembers(groupId)).find(
+      (entry) => entry.userId.toString() === userId.toString(),
+    );
+    leaving.status = 'REMOVED';
+    leaving.updatedAt = at;
+    return member === undefined
+      ? { status: 'NOT_MEMBER' }
+      : { status: 'LEFT', member: { ...member, status: 'REMOVED' } };
   }
 
   createWithOwner(group: Group): Promise<void> {

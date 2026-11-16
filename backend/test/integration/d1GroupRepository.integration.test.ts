@@ -194,3 +194,38 @@ describe('D1GroupRepository.removeMember', () => {
     }
   });
 });
+
+describe('D1GroupRepository.leaveGroup', () => {
+  it('shouldLetOneOfTwoOwnersLeaveAndKeepTheOther', async () => {
+    const { group, ana, beto } = await seedGroup('dos-owners-salen', {
+      ana: 'OWNER',
+      beto: 'OWNER',
+      juan: 'MEMBER',
+    });
+    const repository = new D1GroupRepository(env.DB);
+
+    const first = await repository.leaveGroup(group, ana, CHANGED_AT);
+    // Beto pasó el chequeo cuando todavía eran dos Owners, pero escribe después de Ana.
+    const second = await repository.leaveGroup(group, beto, CHANGED_AT);
+
+    expect(first.status).toBe('LEFT');
+    expect(await statusOf(group, ana)).toEqual({
+      status: 'REMOVED',
+      updated_at: CHANGED_AT.toISOString(),
+    });
+    expect(second).toEqual({ status: 'LAST_OWNER' });
+    expect(await statusOf(group, beto)).toEqual({ status: 'ACTIVE', updated_at: AT });
+  });
+
+  it('shouldReportNotMemberForSomeoneWhoAlreadyLeft', async () => {
+    const { group, juan } = await seedGroup('ya-salio', {
+      ana: 'OWNER',
+      beto: 'MEMBER',
+      juan: 'MEMBER',
+    });
+    const repository = new D1GroupRepository(env.DB);
+    await repository.leaveGroup(group, juan, CHANGED_AT);
+
+    expect(await repository.leaveGroup(group, juan, CHANGED_AT)).toEqual({ status: 'NOT_MEMBER' });
+  });
+});

@@ -37,11 +37,28 @@ export class MemberRoleChangeRejectedError extends Error {}
 /** El backend rechazó la remoción por una regla de negocio; `message` ya está en español. */
 export class MemberRemovalRejectedError extends Error {}
 
+/** El backend no dejó salir del grupo por una regla de negocio; `message` ya está en español. */
+export class LeaveGroupRejectedError extends Error {}
+
 /** El código de error del sobre estándar, si la respuesta lo trae. */
 function errorCodeOf(error: unknown): string | undefined {
   return error instanceof HttpErrorResponse
     ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
     : undefined;
+}
+
+/**
+ * Un rechazo de negocio con mensaje propio en `messages` se convierte en `RejectedError` con ese
+ * texto (ya en español); cualquier otro error se devuelve tal cual, para relanzarlo.
+ */
+function rejectionFrom(
+  error: unknown,
+  messages: Record<string, string>,
+  RejectedError: new (message: string) => Error,
+): unknown {
+  const code = errorCodeOf(error);
+  const message = code === undefined ? undefined : messages[code];
+  return message === undefined ? error : new RejectedError(message);
 }
 
 function toGroupNotFound(error: unknown): unknown {
@@ -86,9 +103,21 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const code = errorCodeOf(error);
-      const message = code === undefined ? undefined : TEXTS.groups.inviteErrors[code];
-      throw message === undefined ? error : new InvitationRejectedError(message);
+      throw rejectionFrom(error, TEXTS.groups.inviteErrors, InvitationRejectedError);
+    }
+  }
+
+  /** Si ya no eras miembro (te removieron o saliste en otra pestaña), el resultado es el mismo: ya no estás. */
+  async leaveGroup(groupId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post<ApiSuccessEnvelope<GroupMember>>(`/api/v1/groups/${groupId}/leave`, null),
+      );
+    } catch (error) {
+      if (errorCodeOf(error) === 'GROUP_NOT_FOUND') {
+        return;
+      }
+      throw rejectionFrom(error, TEXTS.groups.leaveGroupErrors, LeaveGroupRejectedError);
     }
   }
 
@@ -101,9 +130,7 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const code = errorCodeOf(error);
-      const message = code === undefined ? undefined : TEXTS.groups.removeMemberErrors[code];
-      throw message === undefined ? error : new MemberRemovalRejectedError(message);
+      throw rejectionFrom(error, TEXTS.groups.removeMemberErrors, MemberRemovalRejectedError);
     }
   }
 
@@ -118,9 +145,7 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const code = errorCodeOf(error);
-      const message = code === undefined ? undefined : TEXTS.groups.changeRoleErrors[code];
-      throw message === undefined ? error : new MemberRoleChangeRejectedError(message);
+      throw rejectionFrom(error, TEXTS.groups.changeRoleErrors, MemberRoleChangeRejectedError);
     }
   }
 
