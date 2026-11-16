@@ -39,7 +39,8 @@ export class InMemoryInvitationRepository implements InvitationRepository {
       }
       const group = this.groups.groupById(invitation.groupId);
       const inviter = await this.users.findById(invitation.invitedBy);
-      if (group !== null && inviter !== null) {
+      // Como el `JOIN groups … AND g.status = 'ACTIVE'` de D1: las de un grupo archivado no se listan.
+      if (group?.status === 'ACTIVE' && inviter !== null) {
         received.push({ invitation, groupName: group.name, invitedByName: inviter.displayName });
       }
     }
@@ -57,9 +58,9 @@ export class InMemoryInvitationRepository implements InvitationRepository {
     return Promise.resolve();
   }
 
-  saveAccepted(accepted: Invitation, member: UserId): Promise<void> {
+  saveAccepted(accepted: Invitation, member: UserId, at: Date): Promise<void> {
     this.replace(accepted);
-    this.groups.joinIfAbsent(accepted.groupId, member, accepted.role);
+    this.groups.joinIfAbsent(accepted.groupId, member, accepted.role, at);
     return Promise.resolve();
   }
 

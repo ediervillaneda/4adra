@@ -3,7 +3,8 @@ import { GroupId } from '../../domain/group/GroupId';
 import { GroupRepository } from '../../domain/group/GroupRepository';
 import { InviteLink } from '../../domain/invitation/InviteLink';
 import { InviteLinkRepository } from '../../domain/invitation/InviteLinkRepository';
-import { findGroupWhereActorInvites } from '../group/findGroupWhereActorInvites';
+import { findGroupWhereActorHasRole } from '../group/findGroupWhereActorHasRole';
+import { ROLES_THAT_INVITE } from '../../domain/group/MemberRole';
 
 export interface CreateInviteLinkCommand {
   actor: AuthenticatedActor;
@@ -30,7 +31,12 @@ export class CreateInviteLinkUseCase {
 
   async execute(command: CreateInviteLinkCommand): Promise<InviteLinkView> {
     const groupId = GroupId.fromString(command.groupId);
-    await findGroupWhereActorInvites(this.groupRepository, groupId, command.actor.userId);
+    await findGroupWhereActorHasRole(
+      this.groupRepository,
+      groupId,
+      command.actor.userId,
+      ROLES_THAT_INVITE,
+    );
 
     const code = this.generateCode();
     const link = InviteLink.create(

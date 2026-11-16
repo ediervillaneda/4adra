@@ -10,11 +10,21 @@ import {
   createGetGroupHandler,
   createGetGroupMembersHandler,
   createGetGroupsHandler,
+  createDeleteMemberHandler,
+  createPatchGroupHandler,
+  createPatchMemberHandler,
+  createPostArchiveGroupHandler,
+  createPostLeaveGroupHandler,
   createPostGroupsHandler,
   createPostInvitationHandler,
 } from './groups/groupsController';
 import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
+import { ChangeMemberRoleUseCase } from '../../application/group/ChangeMemberRoleUseCase';
+import { RemoveMemberUseCase } from '../../application/group/RemoveMemberUseCase';
+import { ArchiveGroupUseCase } from '../../application/group/ArchiveGroupUseCase';
+import { LeaveGroupUseCase } from '../../application/group/LeaveGroupUseCase';
+import { UpdateGroupUseCase } from '../../application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../../application/invitation/InviteMemberUseCase';
 import { ListMyInvitationsUseCase } from '../../application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../../application/invitation/AcceptInvitationUseCase';
@@ -48,6 +58,11 @@ export interface AppDependencies {
   listMyGroupsUseCase: ListMyGroupsUseCase;
   getGroupUseCase: GetGroupUseCase;
   listGroupMembersUseCase: ListGroupMembersUseCase;
+  changeMemberRoleUseCase: ChangeMemberRoleUseCase;
+  removeMemberUseCase: RemoveMemberUseCase;
+  leaveGroupUseCase: LeaveGroupUseCase;
+  archiveGroupUseCase: ArchiveGroupUseCase;
+  updateGroupUseCase: UpdateGroupUseCase;
   inviteMemberUseCase: InviteMemberUseCase;
   listMyInvitationsUseCase: ListMyInvitationsUseCase;
   acceptInvitationUseCase: AcceptInvitationUseCase;
@@ -76,9 +91,26 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.post('/v1/groups', createPostGroupsHandler(dependencies.createGroupUseCase));
   app.get('/v1/groups', createGetGroupsHandler(dependencies.listMyGroupsUseCase));
   app.get('/v1/groups/:groupId', createGetGroupHandler(dependencies.getGroupUseCase));
+  app.patch('/v1/groups/:groupId', createPatchGroupHandler(dependencies.updateGroupUseCase));
   app.get(
     '/v1/groups/:groupId/members',
     createGetGroupMembersHandler(dependencies.listGroupMembersUseCase),
+  );
+  app.patch(
+    '/v1/groups/:groupId/members/:userId',
+    createPatchMemberHandler(dependencies.changeMemberRoleUseCase),
+  );
+  app.delete(
+    '/v1/groups/:groupId/members/:userId',
+    createDeleteMemberHandler(dependencies.removeMemberUseCase),
+  );
+  app.post(
+    '/v1/groups/:groupId/leave',
+    createPostLeaveGroupHandler(dependencies.leaveGroupUseCase),
+  );
+  app.post(
+    '/v1/groups/:groupId/archive',
+    createPostArchiveGroupHandler(dependencies.archiveGroupUseCase),
   );
   app.post(
     '/v1/groups/:groupId/members/invitations',

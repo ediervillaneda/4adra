@@ -14,6 +14,40 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+## [0.4.0] - 2026-11-16
+
+Cierra la pieza 2 (grupos y miembros): cambiar roles, remover miembros, salir, editar y archivar grupos. Todavía sin gastos (pieza 3).
+
+### Agregado
+- **Archivar un grupo** (pieza 2, historia #10):
+  - El Owner ve "Archivar grupo" en el detalle, con la confirmación "¿Archivar «…»? No se puede deshacer."; al confirmar vuelve a Inicio. Es irreversible desde la app.
+  - Inicio separa los grupos activos de la sección "Archivados", plegada, que solo aparece si hay alguno. Todos los miembros ven ahí el grupo archivado.
+  - El detalle de un grupo archivado muestra el aviso "Grupo archivado" con sus datos y sus miembros, sin ninguna acción (editar, invitar, compartir enlace, cambiar rol, remover, salir ni archivar).
+  - Las invitaciones pendientes de un grupo archivado dejan de aparecer en Inicio y no se pueden aceptar; sus enlaces dejan de servir.
+  - API: `POST /api/v1/groups/{groupId}/archive` (`200` con el grupo, también si ya estaba archivado; `403 PERMISSION_DENIED`; `404 GROUP_NOT_FOUND`). Editar, invitar, crear enlace, cambiar rol, remover, salir y aceptar una invitación responden `409 GROUP_ARCHIVED` en un grupo archivado. Sin migración.
+- **Editar el nombre y la descripción del grupo** (pieza 2, historia #9):
+  - Owner y Administrador ven "Editar" en el detalle, que abre `/grupos/:groupId/editar` con los datos precargados. Al guardar vuelven al detalle, y los demás miembros ven el cambio en Inicio y en el detalle.
+  - Las mismas reglas que al crear el grupo (nombre de 1 a 120 caracteres, descripción de hasta 500); vaciar la descripción deja el grupo sin ella. La moneda base se muestra pero no se puede cambiar.
+  - Miembro y Solo lectura no ven "Editar"; si abren la ruta, ven "No tienes permiso para editar este grupo.".
+  - API: `PATCH /api/v1/groups/{groupId}` con `{ name, description }` (los dos obligatorios; cualquier otro campo responde `not_allowed`), `400 VALIDATION_ERROR`, `403 PERMISSION_DENIED` y `404 GROUP_NOT_FOUND`. Sin migración.
+- **Salir de un grupo** (pieza 2, historia #8):
+  - Cualquier miembro ve "Salir del grupo" en el detalle. Tras confirmar "¿Salir de «…»?" vuelve a Inicio, y el grupo deja de aparecer ("Grupo no encontrado" si abre su enlace).
+  - El único Propietario no puede salir: ve "El grupo necesita al menos un Propietario." y primero tiene que nombrar a otro, aunque sea la única persona del grupo. La condición va en la misma escritura de D1, para que dos Owners que salen a la vez no dejen el grupo sin ninguno.
+  - La membresía queda `REMOVED`, como al ser removido; vuelve con una invitación o un enlace.
+  - API: `POST /api/v1/groups/{groupId}/leave`, con `404 GROUP_NOT_FOUND` y `409 LAST_OWNER`. Sin migración.
+- **Remover a un miembro** (pieza 2, historia #7):
+  - El Owner remueve a cualquier miembro, y el Administrador solo a Miembros y a Solo lectura, desde "Remover" en el detalle del grupo, tras confirmar "¿Remover a «…» del grupo?". Nadie se remueve a sí mismo: para eso estará Salir (#8).
+  - La membresía queda `REMOVED`, nunca se borra. La persona deja de ver el grupo en Inicio y en su detalle ("Grupo no encontrado").
+  - Si luego acepta una invitación o se une con un enlace, la membresía se reactiva con el rol nuevo y una fecha de ingreso nueva. Antes, ambos caminos respondían "activo" pero dejaban a la persona fuera.
+  - El permiso del actor se vuelve a evaluar en la misma escritura de D1.
+  - API: `DELETE /api/v1/groups/{groupId}/members/{userId}`, con `403 PERMISSION_DENIED`, `404 GROUP_NOT_FOUND`, `404 MEMBER_NOT_FOUND` y el código nuevo `409 CANNOT_REMOVE_SELF`. Sin migración.
+  - PWA: un diálogo de confirmación genérico, que reusarán Salir (#8) y Archivar (#10).
+- **Cambiar el rol de un miembro** (pieza 2, historia #6):
+  - El Owner ve "Cambiar rol" en cada miembro del detalle del grupo: un diálogo con Propietario, Administrador, Miembro y Solo lectura. Al guardar, la lista muestra el rol nuevo, que rige desde la siguiente acción de esa persona.
+  - Un grupo puede tener varios Owners: se puede promover a otro, degradar a otro Owner o degradarse a sí mismo, siempre que quede al menos un Owner activo. Si no, "El grupo necesita al menos un Propietario." y no cambia nada. La condición va en la misma escritura de D1, para que dos cambios simultáneos no la burlen.
+  - Un Owner que se degrada deja de ver las opciones de Owner.
+  - API: `PATCH /api/v1/groups/{groupId}/members/{userId}`, con `400 VALIDATION_ERROR`, `403 PERMISSION_DENIED`, `404 GROUP_NOT_FOUND`, y los códigos nuevos `404 MEMBER_NOT_FOUND` y `409 LAST_OWNER`. Sin migración.
+
 ## [0.3.1] - 2026-11-13
 
 Solo CI; la app no cambia.
@@ -100,7 +134,8 @@ Andamiaje de la fase 0, sobre Firebase (reemplazado en 0.2.0).
 - **Backend:** `GET /v1/me` de punta a punta, con pruebas unitarias, de integración y de contrato.
 - **Git Flow:** CI de backend y web, más un workflow de release (ADR-013).
 
-[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...HEAD
+[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ediervillaneda/4adra/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ediervillaneda/4adra/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ediervillaneda/4adra/compare/v0.1.0...v0.2.0

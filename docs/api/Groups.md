@@ -38,21 +38,32 @@ Solo se devuelven grupos donde el actor tiene una membresía activa. La lista in
 
 ```http
 PATCH /api/v1/groups/{groupId}
-If-Match: 7
 ```
 
 ```json
-{ "name": "Viaje Guatemala 2027", "description": "Junio", "image": null }
+{ "name": "Viaje Guatemala 2027", "description": "Junio" }
 ```
 
-Owner o Administrator pueden modificar metadatos permitidos. El cambio de moneda base no está permitido si existen gastos activos, salvo migración administrativa aprobada.
+Owner o Administrator cambian el nombre y la descripción del grupo. El cuerpo trae los dos campos (los dos son obligatorios, así que vaciar la descripción es explícito), con las mismas reglas que al crear el grupo: `name` de 1 a 120 caracteres después de recortar espacios, y `description` de hasta 500, o `null` (o vacía) para dejar el grupo sin descripción. Los errores responden `400 VALIDATION_ERROR` con detalle por campo (`required`, `length_1_to_120`, `max_length_500`, `must_be_string`, `must_be_object` o `not_allowed`). Cualquier otro campo, incluida la moneda base, responde `not_allowed`: la moneda base queda fija desde que se crea el grupo.
+
+Quien no es miembro activo recibe `404 GROUP_NOT_FOUND`; Member y ReadOnly reciben `403 PERMISSION_DENIED`. El permiso se revisa antes que el cuerpo, así que esos `404`/`403` llegan aunque el cuerpo sea inválido, y se vuelve a evaluar en la misma escritura. Cada cambio sube la `version` en uno (en la base, no con lo que se leyó antes) y actualiza `updatedAt`. Responde `200` con el grupo actualizado, con el mismo esquema que `GET /groups/{groupId}`.
+
+Por ahora se ignora `If-Match` (no hay `409 STALE_VERSION`): si dos personas editan a la vez, gana la última. La imagen del grupo llega cuando exista almacenamiento de archivos.
 
 ```http
 POST /api/v1/groups/{groupId}/archive
 Idempotency-Key: 5e32a108-0235-49b1-bf72-91960f66a8e8
 ```
 
-Solo Owner archiva. Un grupo archivado conserva datos históricos y queda de solo lectura, salvo operaciones administrativas de restauración documentadas.
+Sin cuerpo. Solo Owner archiva: Administrator, Member y ReadOnly reciben `403 PERMISSION_DENIED`, y quien no es miembro activo, `404 GROUP_NOT_FOUND`. El grupo pasa a `ARCHIVED`, sube su `version` y actualiza `updatedAt`; responde `200` con el grupo. Archivar un grupo ya archivado responde `200` sin cambios. El archivado es irreversible desde la app; restaurar es una operación administrativa documentada. Por ahora se ignora `Idempotency-Key`.
+
+Un grupo archivado conserva sus datos históricos y queda de solo lectura:
+
+- Consultarlo sigue igual (`GET /groups/{groupId}`, `GET /groups/{groupId}/members`), y `GET /groups` lo sigue listando, con `status: "ARCHIVED"`.
+- Cualquier operación que lo cambie a él o a sus miembros responde `409 GROUP_ARCHIVED` y no cambia nada: editarlo, invitar por correo, crear un enlace, cambiar un rol, remover a alguien, salir del grupo y aceptar una invitación.
+- Sus invitaciones pendientes dejan de aparecer en `GET /invitations`, y sus enlaces responden `404 INVITE_LINK_NOT_FOUND`.
+
+El estado del grupo se revisa al leerlo, no dentro de cada escritura: una operación que empezó justo antes de archivar puede terminar igual.
 
 ## Miembros e invitaciones
 
@@ -91,7 +102,7 @@ La lectura devuelve perfil, versión y fecha de activación. Owner o Administrat
 | Código | Situación |
 |---|---|
 | `GROUP_NOT_FOUND` | Grupo inexistente o no visible |
-| `GROUP_ARCHIVED` | Mutación no permitida en grupo archivado |
+| `GROUP_ARCHIVED` | Mutación no permitida en grupo archivado (`409`) |
 | `PERMISSION_DENIED` | Rol insuficiente |
 | `STALE_VERSION` | `If-Match` no coincide |
 | `LAST_OWNER` | Intento de remover o degradar el último Owner |

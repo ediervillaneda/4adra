@@ -17,3 +17,39 @@ export class PermissionDeniedException extends DomainError {
     super('No tienes permiso para hacer esto en el grupo.');
   }
 }
+
+/** La persona no es miembro activo del grupo (o no existe). */
+export class MemberNotFoundException extends DomainError {
+  readonly code = 'MEMBER_NOT_FOUND';
+
+  constructor() {
+    super('Miembro no encontrado.');
+  }
+}
+
+/** La operación dejaría el grupo sin Owner activo. */
+export class LastOwnerException extends DomainError {
+  readonly code = 'LAST_OWNER';
+
+  constructor() {
+    super('El grupo necesita al menos un Propietario.');
+  }
+}
+
+/** Nadie se remueve a sí mismo de un grupo; para irse está salir del grupo. */
+export class CannotRemoveSelfException extends DomainError {
+  readonly code = 'CANNOT_REMOVE_SELF';
+
+  constructor() {
+    super('No puedes removerte a ti mismo; para irte, sal del grupo.');
+  }
+}
+
+/** El grupo está archivado: queda de solo lectura (docs/api/Groups.md). */
+export class GroupArchivedException extends DomainError {
+  readonly code = 'GROUP_ARCHIVED';
+
+  constructor() {
+    super('El grupo está archivado.');
+  }
+}

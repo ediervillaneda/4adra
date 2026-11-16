@@ -11,7 +11,8 @@ import {
 import { validateNewInvitation } from '../../domain/invitation/NewInvitation';
 import { InvitationView } from './InvitationView';
 import { toInvitationView } from './toInvitationView';
-import { findGroupWhereActorInvites } from '../group/findGroupWhereActorInvites';
+import { findGroupWhereActorHasRole } from '../group/findGroupWhereActorHasRole';
+import { ROLES_THAT_INVITE } from '../../domain/group/MemberRole';
 
 export interface InviteMemberCommand {
   actor: AuthenticatedActor;
@@ -34,7 +35,12 @@ export class InviteMemberUseCase {
     const { email, role } = validateNewInvitation(command.input);
     const groupId = GroupId.fromString(command.groupId);
 
-    await findGroupWhereActorInvites(this.groupRepository, groupId, command.actor.userId);
+    await findGroupWhereActorHasRole(
+      this.groupRepository,
+      groupId,
+      command.actor.userId,
+      ROLES_THAT_INVITE,
+    );
     if (!(await this.allowedEmailRepository.isAllowed(email))) {
       throw new EmailNotAllowedException();
     }

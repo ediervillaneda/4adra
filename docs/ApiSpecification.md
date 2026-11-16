@@ -66,8 +66,8 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups` | Crea grupo y membresía Owner |
 | `GET /groups` | Lista grupos del usuario |
 | `GET /groups/{groupId}` | Consulta grupo |
-| `PATCH /groups/{groupId}` | Edita metadatos |
-| `POST /groups/{groupId}/archive` | Archiva grupo |
+| `PATCH /groups/{groupId}` | Edita el nombre y la descripción (Owner/Administrator; la moneda base no cambia) |
+| `POST /groups/{groupId}/archive` | Archiva el grupo (solo Owner; irreversible desde la app): queda de solo lectura y sus mutaciones responden `409 GROUP_ARCHIVED` |
 | `GET /groups/{groupId}/members` | Lista miembros |
 | `POST /groups/{groupId}/members/invitations` | Invita miembro |
 | `GET /invitations` | Lista las invitaciones pendientes y vigentes dirigidas al correo del actor |
@@ -76,9 +76,9 @@ La tabla anterior es un resumen; cada recurso documenta su catálogo completo de
 | `POST /groups/{groupId}/members/invite-link` | Crea el enlace de invitación del grupo y reemplaza el anterior (Owner/Administrator) |
 | `GET /invite-links/{code}` | Muestra a qué grupo invita un enlace vigente |
 | `POST /invite-links/{code}/join` | El actor entra como Member al grupo del enlace |
-| `PATCH /groups/{groupId}/members/{userId}` | Cambia rol o estado |
-| `DELETE /groups/{groupId}/members/{userId}` | Remueve membresía (Owner/Administrator) |
-| `POST /groups/{groupId}/leave` | El actor abandona el grupo (si no es el último Owner y no tiene deuda pendiente) |
+| `PATCH /groups/{groupId}/members/{userId}` | Cambia el rol de un miembro activo (Owner) |
+| `DELETE /groups/{groupId}/members/{userId}` | Remueve a un miembro activo (Owner; Administrator solo a Member/ReadOnly; nunca a sí mismo) |
+| `POST /groups/{groupId}/leave` | El actor abandona el grupo (cualquier rol; un Owner, solo si queda otro Owner; sin deuda pendiente desde la pieza 3) |
 
 ```json
 POST /groups

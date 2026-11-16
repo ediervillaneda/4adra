@@ -330,4 +330,45 @@ describe('HomeComponent', () => {
     expect(element.textContent).toContain('No se pudieron cargar tus invitaciones.');
     expect(element.querySelector('[data-testid="group-item"]')?.textContent).toContain('Casa');
   });
+
+  it('homeShouldListArchivedGroupsApartInACollapsedSection', async () => {
+    const element = await render({
+      groups: [
+        groupOf({ id: 'grp_casa', name: 'Casa' }),
+        groupOf({ id: 'grp_playa', name: 'Playa', status: 'ARCHIVED' }),
+      ],
+    });
+    const titleOf = (item: Element): string | undefined =>
+      item.querySelector('[matListItemTitle]')?.textContent?.trim();
+    const section = element.querySelector<HTMLDetailsElement>(
+      'details[data-testid="archived-section"]',
+    );
+    const archived = Array.from(
+      section?.querySelectorAll<HTMLAnchorElement>('a[data-testid="archived-group-item"]') ?? [],
+    ).map((link) => [titleOf(link), link.getAttribute('href')]);
+
+    expect(Array.from(element.querySelectorAll('[data-testid="group-item"]')).map(titleOf)).toEqual(
+      ['Casa'],
+    );
+    expect(section?.open).toBe(false);
+    expect(section?.querySelector('summary')?.textContent).toContain('Archivados');
+    expect(archived).toEqual([['Playa', '/grupos/grp_playa']]);
+  });
+
+  it('homeShouldNotInviteToCreateTheFirstGroupWhenAllAreArchived', async () => {
+    const element = await render({
+      groups: [groupOf({ id: 'grp_playa', name: 'Playa', status: 'ARCHIVED' })],
+    });
+
+    expect(element.textContent).toContain('No tienes grupos activos');
+    expect(element.textContent).not.toContain('Tus grupos aparecerán aquí');
+    expect(element.querySelector('a[href="/grupos/nuevo"]')?.textContent).toContain('Crear grupo');
+  });
+
+  it('homeShouldHideArchivedSectionWhenThereAreNone', async () => {
+    const element = await render({ groups: [groupOf({ id: 'grp_casa', name: 'Casa' })] });
+
+    expect(element.querySelector('[data-testid="archived-section"]')).toBeNull();
+    expect(element.textContent).not.toContain('Archivados');
+  });
 });

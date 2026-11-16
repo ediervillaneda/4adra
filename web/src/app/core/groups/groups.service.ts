@@ -8,7 +8,10 @@ import {
   GroupSummary,
   Invitation,
   InvitationRequest,
+  MemberRole,
+  GroupChangesRequest,
   NewGroupRequest,
+  RoleChangeRequest,
 } from '../../shared/api';
 import { TEXTS } from '../../shared/texts';
 
@@ -26,8 +29,77 @@ export class GroupNotFoundError extends Error {
   }
 }
 
+/** El rol del actor ya no le permite editar el grupo (403 PERMISSION_DENIED). */
+export class GroupEditDeniedError extends Error {
+  constructor() {
+    super('PERMISSION_DENIED');
+  }
+}
+
+/** El grupo está archivado y ya no admite cambios (409 GROUP_ARCHIVED). */
+export class GroupArchivedError extends Error {
+  constructor() {
+    super('GROUP_ARCHIVED');
+  }
+}
+
 /** El backend rechazó la invitación por una regla de negocio; `message` ya está en español. */
 export class InvitationRejectedError extends Error {}
+
+/** El backend rechazó el cambio de rol por una regla de negocio; `message` ya está en español. */
+export class MemberRoleChangeRejectedError extends Error {}
+
+/** El backend rechazó la remoción por una regla de negocio; `message` ya está en español. */
+export class MemberRemovalRejectedError extends Error {}
+
+/** El backend no dejó salir del grupo por una regla de negocio; `message` ya está en español. */
+export class LeaveGroupRejectedError extends Error {}
+
+/** El backend no dejó archivar el grupo por una regla de negocio; `message` ya está en español. */
+export class ArchiveGroupRejectedError extends Error {}
+
+/** El código de error del sobre estándar, si la respuesta lo trae. */
+function errorCodeOf(error: unknown): string | undefined {
+  return error instanceof HttpErrorResponse
+    ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
+    : undefined;
+}
+
+/**
+ * Un rechazo de negocio con mensaje propio en `messages` se convierte en `RejectedError` con ese
+ * texto (ya en español); cualquier otro error se devuelve tal cual, para relanzarlo.
+ */
+function rejectionFrom(
+  error: unknown,
+  messages: Record<string, string>,
+  RejectedError: new (message: string) => Error,
+): unknown {
+  const code = errorCodeOf(error);
+  const message = code === undefined ? undefined : messages[code];
+  return message === undefined ? error : new RejectedError(message);
+}
+
+/**
+ * Un `400 VALIDATION_ERROR` al crear o editar un grupo se convierte en `GroupValidationError`, con un
+ * mensaje en español por campo; cualquier otro error se devuelve tal cual, para relanzarlo.
+ */
+function toGroupValidationError(error: unknown): unknown {
+  const body =
+    error instanceof HttpErrorResponse && error.status === 400
+      ? (error.error as Partial<ApiErrorEnvelope> | null)
+      : null;
+  if (body?.error?.code !== 'VALIDATION_ERROR') {
+    return error;
+  }
+  const fieldErrors: Record<string, string> = {};
+  for (const detail of body.error.details ?? []) {
+    if (detail.field) {
+      fieldErrors[detail.field] =
+        TEXTS.groups.errors[detail.reason ?? 'unknown'] ?? TEXTS.groups.errors['unknown'];
+    }
+  }
+  return new GroupValidationError(fieldErrors);
+}
 
 function toGroupNotFound(error: unknown): unknown {
   return error instanceof HttpErrorResponse && error.status === 404
@@ -47,6 +119,23 @@ export class GroupsService {
       return response.data;
     } catch (error) {
       throw toGroupNotFound(error);
+    }
+  }
+
+  async updateGroup(groupId: string, request: GroupChangesRequest): Promise<GroupSummary> {
+    try {
+      const response = await firstValueFrom(
+        this.http.patch<ApiSuccessEnvelope<GroupSummary>>(`/api/v1/groups/${groupId}`, request),
+      );
+      return response.data;
+    } catch (error) {
+      if (errorCodeOf(error) === 'PERMISSION_DENIED') {
+        throw new GroupEditDeniedError();
+      }
+      if (errorCodeOf(error) === 'GROUP_ARCHIVED') {
+        throw new GroupArchivedError();
+      }
+      throw toGroupNotFound(toGroupValidationError(error));
     }
   }
 
@@ -71,12 +160,60 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const code =
-        error instanceof HttpErrorResponse
-          ? (error.error as Partial<ApiErrorEnvelope> | null)?.error?.code
-          : undefined;
-      const message = code === undefined ? undefined : TEXTS.groups.inviteErrors[code];
-      throw message === undefined ? error : new InvitationRejectedError(message);
+      throw rejectionFrom(error, TEXTS.groups.inviteErrors, InvitationRejectedError);
+    }
+  }
+
+  /** Si ya no eras miembro (te removieron o saliste en otra pestaña), el resultado es el mismo: ya no estás. */
+  async leaveGroup(groupId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post<ApiSuccessEnvelope<GroupMember>>(`/api/v1/groups/${groupId}/leave`, null),
+      );
+    } catch (error) {
+      if (errorCodeOf(error) === 'GROUP_NOT_FOUND') {
+        return;
+      }
+      throw rejectionFrom(error, TEXTS.groups.leaveGroupErrors, LeaveGroupRejectedError);
+    }
+  }
+
+  async archiveGroup(groupId: string): Promise<GroupSummary> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessEnvelope<GroupSummary>>(`/api/v1/groups/${groupId}/archive`, null),
+      );
+      return response.data;
+    } catch (error) {
+      throw rejectionFrom(error, TEXTS.groups.archiveGroupErrors, ArchiveGroupRejectedError);
+    }
+  }
+
+  async removeMember(groupId: string, userId: string): Promise<GroupMember> {
+    try {
+      const response = await firstValueFrom(
+        this.http.delete<ApiSuccessEnvelope<GroupMember>>(
+          `/api/v1/groups/${groupId}/members/${userId}`,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      throw rejectionFrom(error, TEXTS.groups.removeMemberErrors, MemberRemovalRejectedError);
+    }
+  }
+
+  async changeMemberRole(groupId: string, userId: string, role: MemberRole): Promise<GroupMember> {
+    const request: RoleChangeRequest = { role };
+    try {
+      const response = await firstValueFrom(
+        this.http.patch<ApiSuccessEnvelope<GroupMember>>(
+          `/api/v1/groups/${groupId}/members/${userId}`,
+          request,
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      throw rejectionFrom(error, TEXTS.groups.changeRoleErrors, MemberRoleChangeRejectedError);
     }
   }
 
@@ -94,21 +231,7 @@ export class GroupsService {
       );
       return response.data;
     } catch (error) {
-      const body =
-        error instanceof HttpErrorResponse && error.status === 400
-          ? (error.error as Partial<ApiErrorEnvelope> | null)
-          : null;
-      if (body?.error?.code === 'VALIDATION_ERROR') {
-        const fieldErrors: Record<string, string> = {};
-        for (const detail of body.error.details ?? []) {
-          if (detail.field) {
-            fieldErrors[detail.field] =
-              TEXTS.groups.errors[detail.reason ?? 'unknown'] ?? TEXTS.groups.errors['unknown'];
-          }
-        }
-        throw new GroupValidationError(fieldErrors);
-      }
-      throw error;
+      throw toGroupValidationError(error);
     }
   }
 }

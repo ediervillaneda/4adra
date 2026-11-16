@@ -610,7 +610,10 @@ paths:
         default:
           $ref: '#/components/responses/Error'
     patch:
-      summary: Edita metadatos del grupo (Owner/Administrator)
+      summary: Edita el nombre y la descripción del grupo (Owner/Administrator)
+      description: >
+        La moneda base queda fija desde que se crea el grupo; cualquier otro campo responde
+        VALIDATION_ERROR (not_allowed). Por ahora se ignora If-Match.
       parameters:
         - $ref: '#/components/parameters/IfMatch'
       requestBody:
@@ -619,14 +622,16 @@ paths:
           application/json:
             schema:
               type: object
+              required: [name, description]
               properties:
                 name:
                   type: string
+                  minLength: 1
+                  maxLength: 120
                 description:
                   type: string
-                image:
-                  type: string
                   nullable: true
+                  maxLength: 500
       responses:
         '200':
           description: Grupo actualizado
@@ -637,32 +642,94 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Group'
+        '400':
+          description: VALIDATION_ERROR (detalle por campo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: PERMISSION_DENIED (Member o ReadOnly)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: GROUP_ARCHIVED (el grupo está archivado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
   /groups/{groupId}/archive:
     post:
-      summary: Archiva el grupo (solo Owner)
+      summary: Archiva el grupo (solo Owner); irreversible desde la app
+      description: >
+        El grupo pasa a ARCHIVED y queda de solo lectura: sus mutaciones responden 409 GROUP_ARCHIVED.
+        Archivar un grupo ya archivado responde 200 sin cambios. Por ahora se ignora Idempotency-Key.
       parameters:
         - $ref: '#/components/parameters/GroupId'
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
-          description: Grupo archivado
+          description: Grupo archivado (status ARCHIVED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Group'
+        '403':
+          description: PERMISSION_DENIED (el actor no es Owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
   /groups/{groupId}/leave:
     post:
-      summary: El actor abandona el grupo (si no es el último Owner y su balance es cero)
+      summary: El actor abandona el grupo (cualquier rol; un Owner, solo si queda otro Owner activo)
+      description: >
+        La membresía pasa a REMOVED y nunca se borra. Por ahora se ignora Idempotency-Key;
+        OUTSTANDING_BALANCE entra con los gastos (pieza 3).
       parameters:
         - $ref: '#/components/parameters/GroupId'
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200':
-          description: Membresía removida
+          description: Membresía del actor (status REMOVED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
-          description: OUTSTANDING_BALANCE o LAST_OWNER
+          description: LAST_OWNER (el actor es el único Owner activo) | GROUP_ARCHIVED (el grupo está archivado)
           content:
             application/json:
               schema:
@@ -723,6 +790,12 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Invitation'
+        '409':
+          description: GROUP_ARCHIVED (el grupo está archivado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
@@ -749,6 +822,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: GROUP_NOT_FOUND (inexistente o el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: GROUP_ARCHIVED (el grupo está archivado)
           content:
             application/json:
               schema:
@@ -839,7 +918,9 @@ paths:
         schema:
           type: string
     patch:
-      summary: Cambia rol o estado de un miembro (Owner)
+      summary: Cambia el rol de un miembro activo (Owner); el grupo conserva al menos un Owner
+      description: >
+        Por ahora se ignoran If-Match e Idempotency-Key. Asignar el rol que ya tiene responde 200 sin cambios.
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -849,22 +930,76 @@ paths:
           application/json:
             schema:
               type: object
+              required: [role]
               properties:
                 role:
                   type: string
                   enum: [OWNER, ADMINISTRATOR, MEMBER, READ_ONLY]
       responses:
         '200':
-          description: Membresía actualizada
+          description: Membresía con el rol nuevo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '400':
+          description: VALIDATION_ERROR (rol no soportado o cuerpo inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: PERMISSION_DENIED (el actor no es Owner)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo) o MEMBER_NOT_FOUND (la persona no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: LAST_OWNER (el grupo quedaría sin Owner) | GROUP_ARCHIVED (el grupo está archivado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
     delete:
-      summary: Remueve una membresía (Owner/Administrator según política; no el último Owner ni con balance pendiente)
+      summary: Remueve a un miembro activo (Owner; Administrator solo a Member o ReadOnly; nunca a sí mismo)
+      description: >
+        La membresía pasa a REMOVED y nunca se borra. Por ahora se ignoran If-Match e Idempotency-Key;
+        OUTSTANDING_BALANCE entra con los gastos (pieza 3).
       responses:
         '200':
-          description: Membresía removida
+          description: Membresía removida (status REMOVED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Membership'
+        '403':
+          description: PERMISSION_DENIED (Member o ReadOnly, o Administrator que intenta remover a un Owner o Administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo) o MEMBER_NOT_FOUND (la persona no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
-          description: OUTSTANDING_BALANCE o LAST_OWNER
+          description: CANNOT_REMOVE_SELF (el actor intentó removerse; para irse está leave) | GROUP_ARCHIVED (el grupo está archivado)
           content:
             application/json:
               schema:
@@ -916,7 +1051,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: INVITATION_EXPIRED o INVITATION_ALREADY_RESPONDED
+          description: INVITATION_EXPIRED o INVITATION_ALREADY_RESPONDED | GROUP_ARCHIVED (el grupo está archivado)
           content:
             application/json:
               schema:

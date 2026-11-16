@@ -42,6 +42,8 @@ export interface InvitationScenario {
   invitations: InMemoryInvitationRepository;
   seedInvitation: (seed: SeededInvitation) => void;
   joinAs: (groupId: string, role: MemberRole) => void;
+  /** Suma a otra persona (con perfil) como miembro activo del grupo. */
+  addMember: (groupId: string, userId: string, name: string, role: MemberRole) => void;
   statusOf: (invitationId: string) => InvitationStatus | undefined;
 }
 
@@ -107,6 +109,15 @@ export function invitationScenario(): InvitationScenario {
       groups.seedMembership(groupsById.get(groupId) as Group, {
         groupId,
         userId: 'usr_juan',
+        role,
+        status: 'ACTIVE',
+      });
+    },
+    addMember: (groupId, userId, name, role): void => {
+      seedUser(users, userId, name, `${name.toLowerCase()}@example.com`);
+      groups.seedMembership(groupsById.get(groupId) as Group, {
+        groupId,
+        userId,
         role,
         status: 'ACTIVE',
       });

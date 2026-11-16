@@ -20,6 +20,11 @@ import { CreateGroupUseCase } from '../application/group/CreateGroupUseCase';
 import { ListMyGroupsUseCase } from '../application/group/ListMyGroupsUseCase';
 import { GetGroupUseCase } from '../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../application/group/ListGroupMembersUseCase';
+import { ChangeMemberRoleUseCase } from '../application/group/ChangeMemberRoleUseCase';
+import { RemoveMemberUseCase } from '../application/group/RemoveMemberUseCase';
+import { ArchiveGroupUseCase } from '../application/group/ArchiveGroupUseCase';
+import { LeaveGroupUseCase } from '../application/group/LeaveGroupUseCase';
+import { UpdateGroupUseCase } from '../application/group/UpdateGroupUseCase';
 import { InviteMemberUseCase } from '../application/invitation/InviteMemberUseCase';
 import { ListMyInvitationsUseCase } from '../application/invitation/ListMyInvitationsUseCase';
 import { AcceptInvitationUseCase } from '../application/invitation/AcceptInvitationUseCase';
@@ -64,6 +69,11 @@ export function composeApp(env: Env): Hono<AppEnv> {
     listMyGroupsUseCase: new ListMyGroupsUseCase(groupRepository),
     getGroupUseCase: new GetGroupUseCase(groupRepository),
     listGroupMembersUseCase: new ListGroupMembersUseCase(groupRepository),
+    changeMemberRoleUseCase: new ChangeMemberRoleUseCase(groupRepository, () => new Date()),
+    removeMemberUseCase: new RemoveMemberUseCase(groupRepository, () => new Date()),
+    leaveGroupUseCase: new LeaveGroupUseCase(groupRepository, () => new Date()),
+    archiveGroupUseCase: new ArchiveGroupUseCase(groupRepository, () => new Date()),
+    updateGroupUseCase: new UpdateGroupUseCase(groupRepository, () => new Date()),
     inviteMemberUseCase: new InviteMemberUseCase(
       groupRepository,
       allowedEmails,
@@ -74,6 +84,7 @@ export function composeApp(env: Env): Hono<AppEnv> {
     listMyInvitationsUseCase: new ListMyInvitationsUseCase(invitationRepository, () => new Date()),
     acceptInvitationUseCase: new AcceptInvitationUseCase(
       invitationRepository,
+      groupRepository,
       userRepository,
       () => new Date(),
     ),

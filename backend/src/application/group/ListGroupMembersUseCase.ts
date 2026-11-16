@@ -2,16 +2,7 @@ import { AuthenticatedActor } from '../../domain/auth/AuthenticatedActor';
 import { GroupNotFoundException } from '../../domain/group/errors';
 import { GroupId } from '../../domain/group/GroupId';
 import { GroupMember, GroupRepository } from '../../domain/group/GroupRepository';
-import { MemberRole } from '../../domain/group/MemberRole';
-
-export interface GroupMemberView {
-  userId: string;
-  displayName: string;
-  photoUrl: string | null;
-  role: MemberRole;
-  status: 'ACTIVE';
-  joinedAt: string;
-}
+import { GroupMemberView, toGroupMemberView } from './toGroupMemberView';
 
 /** Orden alfabético en español: sin distinguir mayúsculas ni tildes. */
 const spanishNames = new Intl.Collator('es', { sensitivity: 'base' });
@@ -36,13 +27,6 @@ export class ListGroupMembersUseCase {
       throw new GroupNotFoundException();
     }
     const members = await this.groupRepository.listActiveMembers(groupId);
-    return [...members].sort(byNameThenUserId).map((member) => ({
-      userId: member.userId.toString(),
-      displayName: member.displayName,
-      photoUrl: member.photoUrl,
-      role: member.role,
-      status: 'ACTIVE',
-      joinedAt: member.joinedAt.toISOString(),
-    }));
+    return [...members].sort(byNameThenUserId).map(toGroupMemberView);
   }
 }

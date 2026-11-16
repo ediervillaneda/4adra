@@ -81,11 +81,11 @@ import { TEXTS } from '../../shared/texts';
         }
       </section>
     }
-    @if (groups(); as groups) {
-      @if (groups.length > 0) {
+    @if (groups() !== null) {
+      @if (activeGroups().length > 0) {
         <h2 class="section-title">{{ texts.home.groupsTitle }}</h2>
         <mat-nav-list>
-          @for (group of groups; track group.id) {
+          @for (group of activeGroups(); track group.id) {
             <a mat-list-item data-testid="group-item" [routerLink]="['/grupos', group.id]">
               <mat-icon matListItemIcon>group</mat-icon>
               <span matListItemTitle>{{ group.name }}</span>
@@ -101,10 +101,38 @@ import { TEXTS } from '../../shared/texts';
         </a>
       } @else {
         <section class="empty">
-          <h2>{{ texts.home.emptyGroupsTitle }}</h2>
+          @if (archivedGroups().length > 0) {
+            <!-- Si todos están archivados, "aparecerán aquí" contradice la sección de abajo. -->
+            <h2>{{ texts.home.noActiveGroupsTitle }}</h2>
+          } @else {
+            <h2>{{ texts.home.emptyGroupsTitle }}</h2>
+          }
           <p>{{ texts.home.emptyGroupsBody }}</p>
           <a mat-flat-button routerLink="/grupos/nuevo">{{ texts.home.createGroup }}</a>
         </section>
+      }
+      @if (archivedGroups().length > 0) {
+        <!-- Plegada por defecto: los archivados son de solo lectura y no estorban en Inicio. -->
+        <details class="archived" data-testid="archived-section">
+          <summary class="section-title">
+            {{ texts.home.archivedTitle }} ({{ archivedGroups().length }})
+          </summary>
+          <mat-nav-list>
+            @for (group of archivedGroups(); track group.id) {
+              <a
+                mat-list-item
+                data-testid="archived-group-item"
+                [routerLink]="['/grupos', group.id]"
+              >
+                <mat-icon matListItemIcon>inventory_2</mat-icon>
+                <span matListItemTitle>{{ group.name }}</span>
+                <span matListItemLine
+                  >{{ texts.groups.roles[group.role] }} · {{ group.defaultCurrency }}</span
+                >
+              </a>
+            }
+          </mat-nav-list>
+        </details>
       }
     }
   `,
@@ -134,6 +162,12 @@ import { TEXTS } from '../../shared/texts';
         bottom: 24px;
       }
     }
+    .archived {
+      margin-top: 24px;
+    }
+    .archived summary {
+      cursor: pointer;
+    }
     .empty {
       padding: 32px 16px;
       text-align: center;
@@ -157,6 +191,12 @@ export class HomeComponent {
   protected readonly texts = TEXTS;
   /** null mientras carga: así no parpadea el estado vacío. */
   protected readonly groups = signal<GroupSummary[] | null>(null);
+  protected readonly activeGroups = computed(() =>
+    (this.groups() ?? []).filter((group) => group.status === 'ACTIVE'),
+  );
+  protected readonly archivedGroups = computed(() =>
+    (this.groups() ?? []).filter((group) => group.status === 'ARCHIVED'),
+  );
   protected readonly invitations = signal<ReceivedInvitation[]>([]);
   protected readonly invitationsLoadFailed = signal(false);
   /** Invitaciones con una respuesta en curso: sus botones quedan deshabilitados. */

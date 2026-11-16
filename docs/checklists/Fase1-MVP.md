@@ -27,11 +27,13 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 
 - [x] `CreateGroup` (y `ListMyGroups`).
 - [x] `GetGroup` y `ListGroupMembers` (solo para miembros activos; si no, `GROUP_NOT_FOUND`).
-- [ ] `ArchiveGroup`.
+- [x] `ArchiveGroup` (solo Owner; archivar de nuevo responde igual; un grupo archivado rechaza cualquier cambio con `409 GROUP_ARCHIVED`).
 - [x] `InviteMember` (Owner/Administrator; solo correos de la lista de acceso; reinvitar devuelve la pendiente vigente).
 - [x] `ListMyInvitations`, `AcceptInvitation`, `DeclineInvitation` (solo el destinatario; una invitación ajena es `INVITATION_NOT_FOUND`; aceptar crea el perfil si falta y no duplica una membresía activa).
 - [x] `CreateInviteLink`, `GetInviteLink`, `JoinGroupWithInviteLink` (crear: Owner/Administrator, reemplaza el anterior; unirse: entra como Member, crea el perfil si falta y no duplica una membresía activa).
-- [ ] `ChangeMemberRole`, `RemoveMember`, `LeaveGroup` (bloqueado si balance ≠ 0, `docs/BusinessRules.md`).
+- [x] `ChangeMemberRole` (solo Owner; el grupo conserva al menos un Owner, `409 LAST_OWNER`).
+- [x] `RemoveMember` (Owner; Administrator solo a Member/ReadOnly; nunca a sí mismo). El bloqueo por balance ≠ 0 entra con los gastos (pieza 3).
+- [x] `LeaveGroup` (cualquier rol; el único Owner recibe `409 LAST_OWNER`). El bloqueo por balance ≠ 0 entra con los gastos (pieza 3).
 - [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`).
 - [ ] `CalculateBalances` (recálculo idempotente, ciclo `BalanceDirty` → `BalanceRecalculated`, `docs/Algorithms.md`).
 - [ ] `GenerateSettlementSuggestions`, `CreateSettlement`, `ConfirmSettlement`, `CancelSettlement`, `RejectSettlement`.
@@ -63,10 +65,14 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [ ] Autenticación ("Continuar con Google" con el cliente de Better Auth) y perfil.
 - [x] Crear y listar grupos (Inicio y `/grupos/nuevo`).
 - [x] Ver un grupo y sus miembros con su rol (`/grupos/:groupId`).
-- [ ] Archivar grupos.
+- [x] Archivar grupos (confirmación en el detalle, sección "Archivados" en Inicio, detalle de solo lectura).
 - [x] Invitar miembro (`/grupos/:groupId/invitar`).
 - [x] Aceptar/rechazar invitación (sección "Invitaciones" en Inicio).
 - [x] Compartir enlace de invitación (diálogo en el detalle) y unirse con él (`/unirse/:code`), volviendo al enlace después del login.
+- [x] Cambiar el rol de un miembro (diálogo "Cambiar rol" en el detalle, solo Owner).
+- [x] Remover a un miembro (confirmación en el detalle), y reingreso por invitación o enlace.
+- [x] Salir del grupo (confirmación en el detalle, vuelve a Inicio).
+- [x] Editar el nombre y la descripción del grupo (`/grupos/:groupId/editar`, Owner y Administrador).
 - [ ] Crear/listar/editar/eliminar gastos con reparto Equal/ExactAmount/Percentage/Shares.
 - [ ] Ver balances del grupo.
 - [ ] Ver sugerencias de liquidación y confirmar una liquidación.

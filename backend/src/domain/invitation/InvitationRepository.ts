@@ -13,7 +13,7 @@ export interface ReceivedInvitation {
 export interface InvitationRepository {
   /** La invitación `PENDING` más reciente de ese correo en el grupo, vencida o no. */
   findPending(groupId: GroupId, email: Email): Promise<Invitation | null>;
-  /** Invitaciones `PENDING` dirigidas a ese correo, vencidas o no. */
+  /** Invitaciones `PENDING` dirigidas a ese correo, vencidas o no, de grupos activos. */
   listPendingFor(email: Email): Promise<ReceivedInvitation[]>;
   findById(invitationId: string): Promise<Invitation | null>;
   save(invitation: Invitation): Promise<void>;
