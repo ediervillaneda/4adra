@@ -16,7 +16,7 @@ Decisiones caras:
 - **Idioma:** solo español.
 
 ## Backlog
-1. [ ] Como miembro, quiero registrar un gasto que pagué, repartido en partes iguales entre todos los miembros, y verlo en la lista del grupo, para llevar la cuenta.
+1. [x] Como miembro, quiero registrar un gasto que pagué, repartido en partes iguales entre todos los miembros, y verlo en la lista del grupo, para llevar la cuenta.
 2. [ ] Como miembro, quiero elegir quién pagó y entre quiénes se reparte un gasto, para registrar gastos que pagó otro o que no son de todos. Requiere: #1
 3. [ ] Como miembro, quiero ver el balance del grupo (cuánto pagó y consumió cada uno, y a quién le deben o quién debe), para saber cómo vamos. Requiere: #1
 4. [ ] Como miembro, quiero abrir un gasto y ver cuánto le toca a cada participante, para entender el reparto. Requiere: #1

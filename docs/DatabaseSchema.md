@@ -59,17 +59,17 @@ El grupo y la membresía Owner de quien lo crea se insertan en el mismo `db.batc
 | Tabla | Claves e integridad | Notas |
 |---|---|---|
 | `invite_links` | FK `group_id` → `groups` y `created_by` → `users`; `code_hash` `UNIQUE`; índice único parcial `(group_id) WHERE replaced_at IS NULL` | Solo el hash SHA-256 del código (128 bits aleatorios); el código nunca se guarda. `expires_at` = `created_at` + 7 días. Crear otro enlace marca el anterior con `replaced_at` en el mismo `db.batch`; un enlace nunca se borra |
+| `calculation_profiles` | PK `(id, version)`; triggers `BEFORE UPDATE` y `BEFORE DELETE` que abortan | Versiones publicadas inmutables (ADR-005). Semilla `default` v1: `EQUAL`, `CLASSIC`, `MINIMUM_TRANSACTIONS`, `HISTORIC_RATE`, `HALF_EVEN` (migración `0006`) |
+| `groups` (perfil) | `calculation_profile_id` (`'default'`) y `calculation_profile_version` (`1`) por defecto | SQLite no suma una FK compuesta con `ALTER TABLE`: la referencia al perfil la exige `expenses` |
+| `expenses` | FK `group_id`, `paid_by`, `created_by` → `users`; FK `(calculation_profile_id, calculation_profile_version)` → `calculation_profiles`; `UNIQUE (created_by, idempotency_key)`; índice `(group_id, status, expense_date)` | Exactamente un pagador; montos `TEXT` exactos con los decimales de la moneda; tasa (`1` por ahora), monto convertido y versión del perfil congelados al crear. `request_fingerprint` (contenido normalizado) distingue un reintento de un conflicto. Estados `ACTIVE`/`DELETED`. `category_id` llega con las categorías (Fase 3) |
+| `expense_splits` | PK `(expense_id, user_id)`; FK a `expenses` y `users` | La parte de cada participante (`TEXT`, puede ser `0`). Se escriben en el mismo `db.batch` que el gasto, y solo si el gasto se insertó |
 
 ## Tablas previstas (se crean en la fase que las implemente)
 
 | Tabla | Claves e integridad | Notas |
 |---|---|---|
-| `calculation_profiles` | PK `(id, version)` | Versiones publicadas inmutables (trigger), ADR-005 |
-| `groups` (columnas pendientes) | FK `(calculation_profile_id, calculation_profile_version)` | Se agregan con los gastos (pieza 3) |
 | `categories` | — | Catálogo global gestionado por la plataforma |
 | `exchange_rates` | Índice `(from_currency, to_currency, captured_at)` | Una tasa usada no cambia (triggers) |
-| `expenses` | FK `group_id`, `paid_by`, `category_id`, `created_by` | Exactamente un pagador; tasa y versión de perfil congeladas al crear |
-| `expense_splits` | `UNIQUE (expense_id, user_id)` | Se escriben en el mismo `batch` que el gasto |
 | `settlements` | `CHECK (from_user <> to_user)` | Estados `PENDING`/`CONFIRMED`/`REJECTED`/`CANCELLED` |
 | `balances` | PK `(group_id, user_id)` | Proyección regenerable; nunca se edita manualmente |
 | `notifications` | Índice `(user_id, created_at)` | Usuario, título, mensaje, lectura y fecha |

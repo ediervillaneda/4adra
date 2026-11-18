@@ -23,6 +23,8 @@ interface MemberGroupRow {
   description: string | null;
   default_currency: string;
   status: GroupStatus;
+  calculation_profile_id: string;
+  calculation_profile_version: number;
   version: number;
   created_by: string;
   created_at: string;
@@ -48,6 +50,10 @@ function toGroup(row: GroupRow): Group {
     description: row.description,
     defaultCurrency: row.default_currency,
     status: row.status,
+    calculationProfile: {
+      id: row.calculation_profile_id,
+      version: row.calculation_profile_version,
+    },
     createdBy: UserId.fromString(row.created_by),
     createdAt: fromIsoDate(row.created_at),
     updatedAt: fromIsoDate(row.updated_at),

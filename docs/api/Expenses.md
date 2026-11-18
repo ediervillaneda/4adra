@@ -32,6 +32,16 @@ Idempotency-Key: 5b76ec1c-1d89-455f-8dfc-f93d5c4b91f2
 
 El backend determina el perfil activo del grupo, conserva su versión en el gasto, resuelve los importes con la estrategia indicada, congela la tasa y persiste gasto, splits, auditoría y proyección de balances en una operación consistente.
 
+**Implementado hoy (pieza 3, historia #1):**
+- Solo `split.type: "EQUAL"`, en la moneda base del grupo y con tasa 1. Otra moneda, o una tasa distinta de 1, responde `422 CURRENCY_MISMATCH`. `categoryId` todavía no se usa.
+- Pueden crear gastos Owner, Administrator y Member; ReadOnly recibe `403 PERMISSION_DENIED`, quien no es miembro activo `404 GROUP_NOT_FOUND`, y en un grupo archivado se responde `409 GROUP_ARCHIVED`.
+- `title` va de 1 a 120 caracteres y `description` (opcional) hasta 500. `expenseDate` es el día del gasto a las 00:00 Z.
+- `amount` debe ser positivo y tener los decimales de la moneda (COP ninguno; USD, EUR, MXN y GTQ dos). Si no, responde `400 INVALID_AMOUNT`.
+- Pagador y participantes deben ser miembros activos (`422 MEMBER_NOT_ACTIVE`). Sin participantes o con alguno repetido, responde `400 INVALID_SPLIT`.
+- **Idempotencia:** `Idempotency-Key` es obligatoria y única por usuario. Repetirla con el mismo contenido devuelve el gasto ya creado (`201`, sin crear otro); repetirla con otro contenido responde `409 IDEMPOTENCY_CONFLICT`.
+- Responde `201` con el gasto, que incluye `split.participants` con el `amount` de cada uno. La proyección de balances llega con la historia #3.
+- La lista (`GET`) devuelve todos los gastos activos, por `expenseDate` descendente y luego por `id` descendente. Por ahora ignora filtros y paginación.
+
 ## Tipos de reparto
 
 | Tipo | Datos por participante | Regla |
@@ -84,11 +94,12 @@ La primera ruta recibe nombre, tipo MIME y tamaño esperado; devuelve una URL fi
 | Código | Situación |
 |---|---|
 | `EXPENSE_NOT_FOUND` | Gasto inexistente o fuera del grupo |
-| `INVALID_SPLIT` | Reparto no totaliza o tiene datos inválidos |
-| `INVALID_AMOUNT` | Monto no positivo o decimal inválido |
-| `MEMBER_NOT_ACTIVE` | Pagador o participante no activo |
-| `CURRENCY_MISMATCH` | Moneda o tasa no permitida |
-| `STALE_VERSION` | Edición concurrente |
-| `GROUP_ARCHIVED` | Grupo no permite mutaciones |
+| `INVALID_SPLIT` (400) | Reparto no totaliza o tiene datos inválidos |
+| `INVALID_AMOUNT` (400) | Monto no positivo, decimal inválido o con más decimales que la moneda |
+| `MEMBER_NOT_ACTIVE` (422) | Pagador o participante no activo |
+| `CURRENCY_MISMATCH` (422) | Moneda o tasa no permitida |
+| `STALE_VERSION` (409) | Edición concurrente |
+| `GROUP_ARCHIVED` (409) | Grupo no permite mutaciones |
+| `IDEMPOTENCY_CONFLICT` (409) | Misma `Idempotency-Key` con otro contenido |
 
 Cada alta, edición, eliminación, restauración o modificación de adjuntos queda auditada y emite el evento de dominio correspondiente.

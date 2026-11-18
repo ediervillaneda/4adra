@@ -13,6 +13,9 @@ import { D1AllowedEmailRepository } from '../infrastructure/d1/D1AllowedEmailRep
 import { D1GroupRepository } from '../infrastructure/d1/D1GroupRepository';
 import { D1InvitationRepository } from '../infrastructure/d1/D1InvitationRepository';
 import { D1InviteLinkRepository } from '../infrastructure/d1/D1InviteLinkRepository';
+import { D1ExpenseRepository } from '../infrastructure/d1/D1ExpenseRepository';
+import { CreateExpenseUseCase } from '../application/expense/CreateExpenseUseCase';
+import { ListExpensesUseCase } from '../application/expense/ListExpensesUseCase';
 import { generateInviteCode, hashInviteCode } from '../infrastructure/crypto/inviteCode';
 import { Email } from '../domain/user/Email';
 import { GetCurrentUserProfileUseCase } from '../application/user/GetCurrentUserProfileUseCase';
@@ -41,6 +44,7 @@ export function composeApp(env: Env): Hono<AppEnv> {
   const groupRepository = new D1GroupRepository(env.DB);
   const invitationRepository = new D1InvitationRepository(env.DB);
   const inviteLinkRepository = new D1InviteLinkRepository(env.DB);
+  const expenseRepository = new D1ExpenseRepository(env.DB);
   // Solo desarrollo (ver devSignInEmail): en producción siempre es null.
   const devEmail = devSignInEmail(env.DEV_LOGIN_EMAIL, env.BETTER_AUTH_URL);
   const auth = createAuth({
@@ -123,5 +127,12 @@ export function composeApp(env: Env): Hono<AppEnv> {
     ),
     authHandler: (request) => auth.handler(request),
     generateRequestId: () => crypto.randomUUID(),
+    createExpenseUseCase: new CreateExpenseUseCase(
+      groupRepository,
+      expenseRepository,
+      () => uuidv7(),
+      () => new Date(),
+    ),
+    listExpensesUseCase: new ListExpensesUseCase(groupRepository, expenseRepository),
   });
 }

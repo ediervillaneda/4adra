@@ -18,6 +18,9 @@ import {
   createPostGroupsHandler,
   createPostInvitationHandler,
 } from './groups/groupsController';
+import { createGetExpensesHandler, createPostExpenseHandler } from './expenses/expensesController';
+import { CreateExpenseUseCase } from '../../application/expense/CreateExpenseUseCase';
+import { ListExpensesUseCase } from '../../application/expense/ListExpensesUseCase';
 import { GetGroupUseCase } from '../../application/group/GetGroupUseCase';
 import { ListGroupMembersUseCase } from '../../application/group/ListGroupMembersUseCase';
 import { ChangeMemberRoleUseCase } from '../../application/group/ChangeMemberRoleUseCase';
@@ -70,6 +73,8 @@ export interface AppDependencies {
   createInviteLinkUseCase: CreateInviteLinkUseCase;
   getInviteLinkUseCase: GetInviteLinkUseCase;
   joinGroupWithInviteLinkUseCase: JoinGroupWithInviteLinkUseCase;
+  createExpenseUseCase: CreateExpenseUseCase;
+  listExpensesUseCase: ListExpensesUseCase;
   /** Rutas de Better Auth (`/api/auth/*`): login con Google, callback, sesión, cierre. */
   authHandler: (request: Request) => Promise<Response>;
   generateRequestId: () => string;
@@ -133,6 +138,15 @@ export function createApp(dependencies: AppDependencies): Hono<AppEnv> {
   app.post(
     '/v1/invite-links/:code/join',
     createPostJoinWithInviteLinkHandler(dependencies.joinGroupWithInviteLinkUseCase),
+  );
+
+  app.post(
+    '/v1/groups/:groupId/expenses',
+    createPostExpenseHandler(dependencies.createExpenseUseCase),
+  );
+  app.get(
+    '/v1/groups/:groupId/expenses',
+    createGetExpensesHandler(dependencies.listExpensesUseCase),
   );
 
   app.notFound((c) =>

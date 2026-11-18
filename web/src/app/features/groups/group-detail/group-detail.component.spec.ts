@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { signal } from '@angular/core';
 import { CurrentProfileStore } from '../../../core/profile/current-profile.store';
 import { GroupDetailComponent } from './group-detail.component';
+import { ExpensesService } from '../../../core/expenses/expenses.service';
 
 const CASA = {
   id: 'grp_casa',
@@ -89,6 +90,8 @@ function render(userId: string | null = 'usr_otro'): ComponentFixture<GroupDetai
         provide: CurrentProfileStore,
         useValue: { profile, load: () => loadProfile(profile) },
       },
+      // La lista de gastos (pestaña Gastos) tiene sus propias pruebas; aquí, un grupo sin gastos.
+      { provide: ExpensesService, useValue: { listExpenses: () => Promise.resolve([]) } },
       {
         provide: MatDialog,
         useValue: {
@@ -115,7 +118,29 @@ async function respondWithCasa(
   http.expectOne('/api/v1/groups/grp_casa/members').flush({ data: MEMBERS, ...META });
   await fixture.whenStable();
   fixture.detectChanges();
+  await openTab(fixture, 'Miembros');
   return fixture.nativeElement as HTMLElement;
+}
+
+/** Abre una pestaña del detalle por su nombre (las pruebas de miembros miran la pestaña Miembros). */
+async function openTab(
+  fixture: ComponentFixture<GroupDetailComponent>,
+  label: string,
+): Promise<void> {
+  const tab = Array.from(
+    (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[role="tab"]'),
+  ).find((element) => element.textContent?.trim() === label);
+  tab?.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
+
+function tabLabels(element: HTMLElement): [string, boolean][] {
+  return Array.from(element.querySelectorAll('[role="tab"]')).map((tab) => [
+    tab.textContent?.trim() ?? '',
+    tab.getAttribute('aria-selected') === 'true',
+  ]);
 }
 
 describe('GroupDetailComponent', () => {
@@ -126,6 +151,21 @@ describe('GroupDetailComponent', () => {
 
   afterEach(() => {
     http.verify();
+  });
+
+  it('shouldShowTheExpensesTabFirstAndSayThereAreNoExpensesYet', async () => {
+    const fixture = render();
+    http.expectOne('/api/v1/groups/grp_casa').flush({ data: CASA, ...META });
+    http.expectOne('/api/v1/groups/grp_casa/members').flush({ data: MEMBERS, ...META });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(tabLabels(element)).toEqual([
+      ['Gastos', true],
+      ['Miembros', false],
+    ]);
+    expect(element.textContent).toContain('Todavía no hay gastos');
   });
 
   it('shouldShowGroupNameDescriptionAndCurrency', async () => {
