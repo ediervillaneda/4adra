@@ -37,12 +37,12 @@ Define el contrato HTTP público para el cliente web (PWA). Un Cloudflare Worker
 
 | HTTP | Código | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR`, `INVALID_SPLIT` | Solicitud inválida |
+| 400 | `VALIDATION_ERROR`, `INVALID_SPLIT`, `INVALID_AMOUNT` | Solicitud inválida |
 | 401 | `UNAUTHENTICATED` | Cookie de sesión ausente, alterada o expirada |
 | 403 | `PERMISSION_DENIED` | Permisos insuficientes |
 | 404 | `GROUP_NOT_FOUND` | Recurso inexistente o no visible |
-| 409 | `STALE_VERSION`, `CONFLICT` | Conflicto de concurrencia |
-| 422 | `CURRENCY_MISMATCH` | Regla de dominio incumplida |
+| 409 | `STALE_VERSION`, `CONFLICT`, `GROUP_ARCHIVED`, `IDEMPOTENCY_CONFLICT` | Conflicto de concurrencia o de estado |
+| 422 | `CURRENCY_MISMATCH`, `MEMBER_NOT_ACTIVE` | Regla de dominio incumplida |
 | 429 | `RATE_LIMITED` | Límite de solicitudes |
 | 500 | `INTERNAL_ERROR` | Error inesperado |
 

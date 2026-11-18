@@ -66,8 +66,10 @@ components:
   schemas:
     Money:
       type: string
-      description: Importe decimal exacto, nunca número de punto flotante.
-      pattern: '^-?\d+\.\d+$'
+      description: >
+        Importe decimal exacto, nunca número de punto flotante, con los decimales de su moneda:
+        COP sin decimales ("150000"); USD, EUR, MXN y GTQ con dos ("125.50").
+      pattern: '^-?\d+(\.\d+)?$'
       example: "125.50"
 
     CurrencyCode:
@@ -315,8 +317,10 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         categoryId:
           type: string
+          nullable: true
         paidBy:
           type: string
         originalAmount:
@@ -1168,7 +1172,14 @@ paths:
     parameters:
       - $ref: '#/components/parameters/GroupId'
     post:
-      summary: Registra un gasto y su reparto
+      summary: Registra un gasto y su reparto (Owner, Administrator o Member)
+      description: >
+        Por ahora solo split.type EQUAL, en la moneda base del grupo (tasa 1). El pagador y cada
+        participante deben ser miembros activos; las partes suman exactamente el monto y el sobrante
+        va por UserId ascendente. El gasto guarda la versión del perfil de cálculo del grupo.
+        Idempotency-Key es obligatoria: repetirla con el mismo contenido devuelve el gasto ya creado
+        (201, sin crear otro); repetirla con otro contenido responde 409 IDEMPOTENCY_CONFLICT. La
+        clave es única por usuario.
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1181,10 +1192,12 @@ paths:
               properties:
                 title:
                   type: string
+                  minLength: 1
+                  maxLength: 120
                 description:
                   type: string
-                categoryId:
-                  type: string
+                  nullable: true
+                  maxLength: 500
                 paidBy:
                   type: string
                 amount:
@@ -1193,14 +1206,16 @@ paths:
                   $ref: '#/components/schemas/CurrencyCode'
                 exchangeRate:
                   type: string
+                  description: Opcional; por ahora debe ser 1 (sin multimoneda).
                 expenseDate:
                   type: string
                   format: date-time
+                  description: Día del gasto a las 00:00 Z.
                 split:
                   $ref: '#/components/schemas/Split'
       responses:
         '201':
-          description: Gasto creado
+          description: Gasto creado (o el mismo gasto, si se repite la Idempotency-Key)
           content:
             application/json:
               schema:
@@ -1208,10 +1223,49 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/Expense'
+        '400':
+          description: >
+            VALIDATION_ERROR (título, descripción, fecha, Idempotency-Key o forma del cuerpo),
+            INVALID_AMOUNT (monto no positivo o con más decimales que la moneda) o INVALID_SPLIT
+            (tipo distinto de EQUAL, sin participantes o repetidos)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: PERMISSION_DENIED (el actor es ReadOnly)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: GROUP_ARCHIVED o IDEMPOTENCY_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: >
+            MEMBER_NOT_ACTIVE (pagador o participante que no es miembro activo) o CURRENCY_MISMATCH
+            (moneda distinta de la base del grupo, o tasa distinta de 1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
     get:
       summary: Lista gastos del grupo con filtros
+      description: >
+        Por ahora devuelve todos los gastos activos, por expenseDate descendente y después por id
+        descendente; los filtros, limit y pageToken se ignoran (llegan en la Fase 3). Cualquier
+        miembro activo puede listar, también en un grupo archivado.
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/PageToken'
@@ -1251,6 +1305,12 @@ paths:
                       $ref: '#/components/schemas/Expense'
                   meta:
                     $ref: '#/components/schemas/Meta'
+        '404':
+          description: GROUP_NOT_FOUND (el actor no es miembro activo)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         default:
           $ref: '#/components/responses/Error'
 
