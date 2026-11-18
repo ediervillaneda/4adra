@@ -33,3 +33,7 @@ backend/.dev.vars
 
 # Credenciales OAuth descargadas de Google Cloud Console (nunca versionar)
 client_secret_*.json
+
+# Backlog e historia en curso: locales, los escriben /backlog y /story (CLAUDE.md)
+/BACKLOG.md
+/PLAN.md
