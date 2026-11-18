@@ -14,6 +14,9 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+### Cambiado
+- `PLAN.md` deja de versionarse: es el borrador local de la historia en curso (`/story` lo reescribe). `BACKLOG.md` sigue en el repositorio.
+
 ## [0.4.1] - 2026-11-16
 
 Solo documentación; la app no cambia.
