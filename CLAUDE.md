@@ -57,10 +57,10 @@ Si `wrangler dev` deja de responder, revisa que no queden instancias anteriores 
 Todo trabajo nuevo sigue tres pasos, en orden y sin saltarse ninguno:
 
 1. **`/backlog`** de la fase en curso (hoy, la pieza 3: gastos y balances) → escribe **`BACKLOG.md`** en la raíz: contexto, stack y la lista de historias, con las hechas marcadas.
-2. **`/story`** (el "plan") de UNA historia de `BACKLOG.md` → escribe **`PLAN.md`** en la raíz: la historia en curso con sus criterios, el plan, lo que queda fuera y sugerencias. Se reemplaza en cada historia nueva; al cerrarla, se marca hecha en `BACKLOG.md`.
+2. **`/story`** (el "plan") de UNA historia de `BACKLOG.md` → escribe **`PLAN.md`** en la raíz: la historia en curso con sus criterios, el plan, lo que queda fuera y sugerencias. Se reemplaza en cada historia nueva; al cerrarla, se marca hecha en `BACKLOG.md` dentro del mismo PR de la historia.
 3. **`/pair`** sobre `PLAN.md` → primero la lista de pruebas, y luego cada prueba en rojo antes del código mínimo. Nunca hace commit.
 
-`BACKLOG.md` y `PLAN.md` se leen antes de proponer o escribir código. Esta regla manda sobre lo que digan los skills (por ejemplo, que el backlog no se guarde en archivos).
+`BACKLOG.md` y `PLAN.md` se leen antes de proponer o escribir código. `BACKLOG.md` se versiona; `PLAN.md` es un borrador local que no se versiona (`.gitignore`): en un clon nuevo, otro equipo o un worktree no existe, y se vuelve a generar con `/story` de la historia en curso (la primera sin marcar en `BACKLOG.md`). Esta regla manda sobre lo que digan los skills (por ejemplo, que el backlog no se guarde en archivos).
 
 ## Documento maestro
 
