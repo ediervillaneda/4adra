@@ -27,6 +27,7 @@ Better Auth dentro del Worker es el proveedor oficial (ADR-016), con Google como
 - **Tokens de Google en reposo:** los `accessToken`, `refreshToken` e `idToken` de Google se cifran en D1 (`account.encryptOAuthTokens`, XChaCha20-Poly1305 con `BETTER_AUTH_SECRET`). La app no los usa después del login.
 - **Renovación de sesión:** cuando Better Auth extiende una sesión durante una solicitud `/api/v1/*`, el Worker reenvía el `Set-Cookie` renovado.
 - **Cierre de sesión:** `POST /api/auth/sign-out` invalida la sesión en D1, no solo en el navegador.
+- **Login de desarrollo (solo local):** `GET /api/auth/dev/entrar[?correo=…]` abre una sesión real sin pasar por Google, para probar la app en local. Solo existe si `DEV_LOGIN_EMAIL` tiene un correo **y** `BETTER_AUTH_URL` es `http://localhost` o `http://127.0.0.1`. Con `https://4adra.edier.me` la ruta no se registra (responde `404`), aunque la variable llegara por error a producción. También respeta la lista de acceso: un correo fuera de `allowed_emails` recibe `403 NOT_INVITED` y no se crea nada. Nunca se define `DEV_LOGIN_EMAIL` en `wrangler.jsonc` ni como secreto de Cloudflare.
 - **Cuentas administrativas:** usar MFA de Google en las cuentas que administren Cloudflare, GitHub y Google Cloud Console.
 
 ## Autorización

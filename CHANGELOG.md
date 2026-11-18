@@ -14,6 +14,9 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+### Agregado
+- Login de desarrollo sin Google: `GET /api/auth/dev/entrar[?correo=…]`, solo en local (`DEV_LOGIN_EMAIL` en `.dev.vars` con `BETTER_AUTH_URL` en `http://localhost`) y solo para correos de la lista de acceso.
+
 ### Cambiado
 - `PLAN.md` deja de versionarse: es el borrador local de la historia en curso (`/story` lo reescribe). `BACKLOG.md` sigue en el repositorio.
 

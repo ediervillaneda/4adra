@@ -4,6 +4,7 @@ import { createApp } from './http/createApp';
 import { AppEnv } from './http/AppEnv';
 import { createAuth } from '../infrastructure/auth/createAuth';
 import { parseTrustedOrigins } from '../infrastructure/auth/parseTrustedOrigins';
+import { devSignInEmail } from '../infrastructure/auth/devSignInEmail';
 import { betterAuthSessionLookup } from '../infrastructure/auth/betterAuthSessionLookup';
 import { BetterAuthAuthenticationProvider } from '../infrastructure/auth/BetterAuthAuthenticationProvider';
 import { D1UserRepository } from '../infrastructure/d1/D1UserRepository';
@@ -40,6 +41,8 @@ export function composeApp(env: Env): Hono<AppEnv> {
   const groupRepository = new D1GroupRepository(env.DB);
   const invitationRepository = new D1InvitationRepository(env.DB);
   const inviteLinkRepository = new D1InviteLinkRepository(env.DB);
+  // Solo desarrollo (ver devSignInEmail): en producción siempre es null.
+  const devEmail = devSignInEmail(env.DEV_LOGIN_EMAIL, env.BETTER_AUTH_URL);
   const auth = createAuth({
     database: env.DB,
     secret: env.BETTER_AUTH_SECRET,
@@ -47,6 +50,15 @@ export function composeApp(env: Env): Hono<AppEnv> {
     google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET },
     isSignUpAllowed: (email) => allowedEmails.isAllowed(Email.fromString(email)),
     trustedOrigins: parseTrustedOrigins(env.TRUSTED_ORIGINS),
+    ...(devEmail
+      ? {
+          devSignIn: {
+            defaultEmail: devEmail,
+            isAllowed: (email: string): Promise<boolean> =>
+              allowedEmails.isAllowed(Email.fromString(email)),
+          },
+        }
+      : {}),
   });
 
   return createApp({

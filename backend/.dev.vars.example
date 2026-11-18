@@ -6,3 +6,6 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 # Solo desarrollo: origen de `ng serve` (web/) para que Better Auth acepte el login desde ahí.
 TRUSTED_ORIGINS=http://localhost:4200
+# Solo desarrollo: entrar sin Google con GET /api/auth/dev/entrar[?correo=…] (debe estar en
+# allowed_emails). Se ignora salvo que BETTER_AUTH_URL sea http://localhost. Vacío = apagado.
+DEV_LOGIN_EMAIL=
