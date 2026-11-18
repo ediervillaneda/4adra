@@ -34,7 +34,7 @@ Resolver el flujo principal (grupo → gasto → balance → liquidación) con i
 - [x] `ChangeMemberRole` (solo Owner; el grupo conserva al menos un Owner, `409 LAST_OWNER`).
 - [x] `RemoveMember` (Owner; Administrator solo a Member/ReadOnly; nunca a sí mismo). El bloqueo por balance ≠ 0 entra con los gastos (pieza 3).
 - [x] `LeaveGroup` (cualquier rol; el único Owner recibe `409 LAST_OWNER`). El bloqueo por balance ≠ 0 entra con los gastos (pieza 3).
-- [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`).
+- [ ] `CreateExpense`, `UpdateExpense`, `DeleteExpense`, `RestoreExpense` — cualquier Member puede editar/eliminar cualquier gasto activo del grupo (`docs/Security.md`). `CreateExpense` (solo `EQUAL`, con `Idempotency-Key`) y `ListExpenses` hechos en la historia #1 de la pieza 3.
 - [ ] `CalculateBalances` (recálculo idempotente, ciclo `BalanceDirty` → `BalanceRecalculated`, `docs/Algorithms.md`).
 - [ ] `GenerateSettlementSuggestions`, `CreateSettlement`, `ConfirmSettlement`, `CancelSettlement`, `RejectSettlement`.
 - [ ] `UpdateProfile` (`GET/PATCH /me`).
