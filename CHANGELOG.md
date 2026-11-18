@@ -19,6 +19,7 @@ Ver `docs/Workflows.md`.
 - Login de desarrollo sin Google: `GET /api/auth/dev/entrar[?correo=…]`, solo en local (`DEV_LOGIN_EMAIL` en `.dev.vars` con `BETTER_AUTH_URL` en `http://localhost`) y solo para correos de la lista de acceso.
 
 ### Cambiado
+- `npm audit` del CI admite excepciones puntuales con fecha de revisión (`.github/audit-exceptions.json`, `docs/Security.md`). La primera es `GHSA-fc5q-39xc-vjpf` (`picomatch`), sin versión corregida y fuera del código del Worker.
 - `PLAN.md` deja de versionarse: es el borrador local de la historia en curso (`/story` lo reescribe). `BACKLOG.md` sigue en el repositorio.
 
 ## [0.4.1] - 2026-11-16
