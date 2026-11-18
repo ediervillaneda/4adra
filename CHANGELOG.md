@@ -18,6 +18,9 @@ Ver `docs/Workflows.md`.
 - Gastos (pieza 3, historia #1): registrar un gasto pagado por uno mismo, repartido en partes iguales entre todos los miembros activos, y verlo en la nueva pestaña "Gastos" del grupo. `POST`/`GET /api/v1/groups/{groupId}/expenses`, con `Idempotency-Key` obligatoria (un reintento no duplica el gasto). COP sin decimales y el resto con dos; el peso o centavo sobrante va por `UserId` ascendente. Perfil de cálculo `default` v1 inmutable, guardado en cada gasto (migración `0006`).
 - Login de desarrollo sin Google: `GET /api/auth/dev/entrar[?correo=…]`, solo en local (`DEV_LOGIN_EMAIL` en `.dev.vars` con `BETTER_AUTH_URL` en `http://localhost`) y solo para correos de la lista de acceso.
 
+### Cambiado
+- `PLAN.md` deja de versionarse: es el borrador local de la historia en curso (`/story` lo reescribe). `BACKLOG.md` sigue en el repositorio.
+
 ## [0.4.1] - 2026-11-16
 
 Solo documentación; la app no cambia.
