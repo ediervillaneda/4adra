@@ -1,0 +1,8 @@
+[
+  {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "reason": "ReDoS en picomatch sin versión corregida (afecta a todas). Llega a las dependencias de producción por better-auth → vitest, pero el Worker no lo importa ni lo empaqueta: solo existe en node_modules.",
+    "reviewBy": "2026-12-18"
+  }
+]

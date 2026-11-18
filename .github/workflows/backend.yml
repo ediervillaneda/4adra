@@ -76,7 +76,9 @@ jobs:
 
       - name: Análisis de dependencias (npm audit)
         working-directory: backend
-        run: npm audit --omit=dev --audit-level=high
+        # Igual que npm audit --omit=dev --audit-level=high, salvo las excepciones con fecha de
+        # revisión de .github/audit-exceptions.json (docs/Security.md).
+        run: node ../.github/scripts/auditDependencies.mjs
 
       - name: Build de la PWA (los assets del Worker son web/dist)
         working-directory: web

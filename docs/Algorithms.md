@@ -46,7 +46,7 @@ Crear, editar, eliminar o restaurar un gasto y confirmar una liquidación marcan
 
 ### Residuales
 
-Se asignan de forma determinista: ordenar participantes por `UserId` ascendente y distribuir las unidades mínimas de moneda restantes en ese orden. Para 100.00 entre 3: 33.34, 33.33 y 33.33 según ese orden. La suma siempre debe coincidir exactamente con el monto.
+Se asignan de forma determinista: ordenar participantes por `UserId` ascendente y distribuir las unidades mínimas de moneda restantes en ese orden. Para 100.00 USD entre 3: 33.34, 33.33 y 33.33 según ese orden; en COP, que no tiene decimales, 100 entre 3 da 34, 33 y 33. La suma siempre debe coincidir exactamente con el monto. El orden de `UserId` es por código (comparación de texto), no por idioma.
 
 ### Percentage Split
 

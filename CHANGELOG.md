@@ -14,6 +14,16 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+## [0.5.0] - 2026-11-18
+
+### Agregado
+- Gastos (pieza 3, historia #1): registrar un gasto pagado por uno mismo, repartido en partes iguales entre todos los miembros activos, y verlo en la nueva pestaña "Gastos" del grupo. `POST`/`GET /api/v1/groups/{groupId}/expenses`, con `Idempotency-Key` obligatoria (un reintento no duplica el gasto). COP sin decimales y el resto con dos; el peso o centavo sobrante va por `UserId` ascendente. Perfil de cálculo `default` v1 inmutable, guardado en cada gasto (migración `0006`).
+- Login de desarrollo sin Google: `GET /api/auth/dev/entrar[?correo=…]`, solo en local (`DEV_LOGIN_EMAIL` en `.dev.vars` con `BETTER_AUTH_URL` en `http://localhost`) y solo para correos de la lista de acceso.
+
+### Cambiado
+- `npm audit` del CI admite excepciones puntuales con fecha de revisión (`.github/audit-exceptions.json`, `docs/Security.md`). La primera es `GHSA-fc5q-39xc-vjpf` (`picomatch`), sin versión corregida y fuera del código del Worker.
+- `PLAN.md` deja de versionarse: es el borrador local de la historia en curso (`/story` lo reescribe). `BACKLOG.md` sigue en el repositorio.
+
 ## [0.4.1] - 2026-11-16
 
 Solo documentación; la app no cambia.
@@ -141,7 +151,8 @@ Andamiaje de la fase 0, sobre Firebase (reemplazado en 0.2.0).
 - **Backend:** `GET /v1/me` de punta a punta, con pruebas unitarias, de integración y de contrato.
 - **Git Flow:** CI de backend y web, más un workflow de release (ADR-013).
 
-[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.4.1...HEAD
+[Sin publicar]: https://github.com/ediervillaneda/4adra/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ediervillaneda/4adra/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/ediervillaneda/4adra/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ediervillaneda/4adra/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ediervillaneda/4adra/compare/v0.3.0...v0.3.1

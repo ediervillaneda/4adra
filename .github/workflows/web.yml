@@ -47,7 +47,9 @@ jobs:
 
       - name: Análisis de dependencias (npm audit)
         working-directory: web
-        run: npm audit --omit=dev --audit-level=high
+        # Igual que npm audit --omit=dev --audit-level=high, salvo las excepciones con fecha de
+        # revisión de .github/audit-exceptions.json (docs/Security.md).
+        run: node ../.github/scripts/auditDependencies.mjs
 
       - name: Build de producción
         working-directory: web

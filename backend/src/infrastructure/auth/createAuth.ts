@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { v7 as uuidv7 } from 'uuid';
+import { DevSignInOptions, devSignInPlugin } from './devSignInPlugin';
 
 const MIN_SECRET_LENGTH = 32;
 
@@ -18,6 +19,8 @@ interface AuthConfig {
   isSignUpAllowed?: (email: string) => Promise<boolean>;
   /** Orígenes extra aceptados además de baseURL (solo desarrollo, ver parseTrustedOrigins). */
   trustedOrigins?: string[];
+  /** Solo desarrollo: login sin Google (devSignInPlugin). Producción nunca lo define. */
+  devSignIn?: DevSignInOptions;
 }
 
 /**
@@ -47,6 +50,7 @@ export function createAuth(config: AuthConfig) {
     account: { encryptOAuthTokens: true },
     ...(config.google ? { socialProviders: { google: config.google } } : {}),
     ...(config.isSignUpAllowed ? { databaseHooks: signUpGate(config.isSignUpAllowed) } : {}),
+    ...(config.devSignIn ? { plugins: [devSignInPlugin(config.devSignIn)] } : {}),
     advanced: {
       database: { generateId: () => uuidv7() },
       useSecureCookies: config.baseURL.startsWith('https://'),

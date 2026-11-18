@@ -42,6 +42,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'grupos/:groupId/gastos/nuevo',
+    canActivate: [sessionGuard],
+    loadComponent: () =>
+      import('./features/expenses/create-expense/create-expense.component').then(
+        (m) => m.CreateExpenseComponent,
+      ),
+  },
+  {
     path: 'grupos/:groupId',
     canActivate: [sessionGuard],
     loadComponent: () =>

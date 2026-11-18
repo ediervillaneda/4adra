@@ -33,3 +33,7 @@ backend/.dev.vars
 
 # Credenciales OAuth descargadas de Google Cloud Console (nunca versionar)
 client_secret_*.json
+
+# Plan de la historia en curso: borrador local que reescribe /story en cada historia (CLAUDE.md).
+# BACKLOG.md sí se versiona: guarda las decisiones de la pieza y qué historias están hechas.
+/PLAN.md

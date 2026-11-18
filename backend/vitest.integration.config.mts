@@ -15,6 +15,8 @@ export default defineConfig({
           BETTER_AUTH_SECRET: 'test-secret-at-least-32-characters-long',
           GOOGLE_CLIENT_ID: '',
           GOOGLE_CLIENT_SECRET: '',
+          // Apagado aunque el .dev.vars local lo active: las pruebas no dependen de cada equipo.
+          DEV_LOGIN_EMAIL: '',
         },
       },
     })),

@@ -15,6 +15,9 @@ import { CreateInviteLinkUseCase } from '../../src/application/invitation/Create
 import { GetInviteLinkUseCase } from '../../src/application/invitation/GetInviteLinkUseCase';
 import { JoinGroupWithInviteLinkUseCase } from '../../src/application/invitation/JoinGroupWithInviteLinkUseCase';
 import { InMemoryInviteLinkRepository } from './InMemoryInviteLinkRepository';
+import { InMemoryExpenseRepository } from './InMemoryExpenseRepository';
+import { CreateExpenseUseCase } from '../../src/application/expense/CreateExpenseUseCase';
+import { ListExpensesUseCase } from '../../src/application/expense/ListExpensesUseCase';
 import { InMemoryGroupRepository } from './InMemoryGroupRepository';
 import { InMemoryInvitationRepository } from './InMemoryInvitationRepository';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
@@ -37,11 +40,14 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
   createInviteLinkUseCase: CreateInviteLinkUseCase;
   getInviteLinkUseCase: GetInviteLinkUseCase;
   joinGroupWithInviteLinkUseCase: JoinGroupWithInviteLinkUseCase;
+  createExpenseUseCase: CreateExpenseUseCase;
+  listExpensesUseCase: ListExpensesUseCase;
 } {
   const users = new InMemoryUserRepository();
   const groups = new InMemoryGroupRepository(users);
   const invitations = new InMemoryInvitationRepository(groups, users);
   const links = new InMemoryInviteLinkRepository(groups);
+  const expenses = new InMemoryExpenseRepository();
   const hashCode = (code: string): Promise<string> => Promise.resolve(`sha256(${code})`);
   let sequence = 0;
   return {
@@ -85,5 +91,12 @@ export function inMemoryGroupUseCases(now: () => Date = () => new Date('2026-11-
       hashCode,
       now,
     ),
+    createExpenseUseCase: new CreateExpenseUseCase(
+      groups,
+      expenses,
+      () => `exp_${String((sequence += 1))}`,
+      now,
+    ),
+    listExpensesUseCase: new ListExpensesUseCase(groups, expenses),
   };
 }

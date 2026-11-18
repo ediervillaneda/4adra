@@ -22,6 +22,30 @@ describe('Group', () => {
     ]);
   });
 
+  it('shouldStartOnThePublishedDefaultCalculationProfileAndKeepARestoredOne', () => {
+    const created = Group.create(
+      GroupId.fromString('grp_1'),
+      { name: 'Casa', description: null, defaultCurrency: 'COP' },
+      UserId.fromString('usr_ana'),
+      NOW,
+    );
+    const restored = Group.restore({
+      id: GroupId.fromString('grp_2'),
+      name: 'Viaje',
+      description: null,
+      defaultCurrency: 'USD',
+      status: 'ACTIVE',
+      calculationProfile: { id: 'default', version: 2 },
+      createdBy: UserId.fromString('usr_ana'),
+      createdAt: NOW,
+      updatedAt: NOW,
+      version: 1,
+    });
+
+    expect(created.calculationProfile).toEqual({ id: 'default', version: 1 });
+    expect(restored.calculationProfile).toEqual({ id: 'default', version: 2 });
+  });
+
   it('shouldRestorePersistedState', () => {
     const group = Group.restore({
       id: GroupId.fromString('grp_1'),
@@ -29,6 +53,7 @@ describe('Group', () => {
       description: 'Gastos del hogar',
       defaultCurrency: 'COP',
       status: 'ARCHIVED',
+      calculationProfile: { id: 'default', version: 1 },
       createdBy: UserId.fromString('usr_ana'),
       createdAt: NOW,
       updatedAt: NOW,
@@ -50,6 +75,7 @@ describe('Group', () => {
       description: 'Gastos del hogar',
       defaultCurrency: 'COP',
       status: 'ACTIVE',
+      calculationProfile: { id: 'default', version: 1 },
       createdBy: UserId.fromString('usr_ana'),
       createdAt: NOW,
       updatedAt: NOW,
@@ -91,6 +117,7 @@ describe('Group', () => {
       description: null,
       defaultCurrency: 'COP',
       status: 'ACTIVE',
+      calculationProfile: { id: 'default', version: 1 },
       createdBy: UserId.fromString('usr_ana'),
       createdAt: NOW,
       updatedAt: NOW,

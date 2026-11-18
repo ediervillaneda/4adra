@@ -128,6 +128,26 @@ export const TEXTS = {
       unknown: 'Valor inválido.',
     } as Record<string, string>,
   },
+  expenses: {
+    tabTitle: 'Gastos',
+    empty: 'Todavía no hay gastos',
+    paidBy: (name: string) => `Pagó ${name}`,
+    formerMember: 'un exmiembro',
+    create: 'Nuevo gasto',
+    createTitle: 'Nuevo gasto',
+    title: 'Título',
+    amount: 'Monto',
+    expenseDate: 'Fecha',
+    description: 'Descripción (opcional)',
+    splitHint: 'Lo pagas tú y se reparte en partes iguales entre todos los miembros.',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    invalidAmount: (currency: string) =>
+      currency === 'COP'
+        ? 'Escribe un monto mayor que cero, sin decimales en COP.'
+        : `Escribe un monto mayor que cero, con hasta 2 decimales en ${currency}.`,
+    invalidDate: 'Elige una fecha válida.',
+  },
   inviteLinks: {
     dialogTitle: 'Compartir enlace',
     explanation: 'Quien lo abra entra al grupo como Miembro. El enlace vale 7 días.',

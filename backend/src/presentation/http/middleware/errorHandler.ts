@@ -23,6 +23,11 @@ const STATUS_BY_CODE: Record<string, ContentfulStatusCode> = {
   INVITE_LINK_EXPIRED: 409,
   EMAIL_NOT_ALLOWED: 422,
   VALIDATION_ERROR: 400,
+  INVALID_AMOUNT: 400,
+  INVALID_SPLIT: 400,
+  MEMBER_NOT_ACTIVE: 422,
+  CURRENCY_MISMATCH: 422,
+  IDEMPOTENCY_CONFLICT: 409,
 };
 
 /** Traduce errores a HTTP con el sobre estándar; nunca filtra detalles internos. */

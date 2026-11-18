@@ -1,3 +1,7 @@
+import {
+  CalculationProfileRef,
+  DEFAULT_CALCULATION_PROFILE,
+} from '../calculation/CalculationProfile';
 import { GroupId } from './GroupId';
 import { GroupDetails } from './GroupDetails';
 import { GroupArchivedException } from './errors';
@@ -12,6 +16,7 @@ interface GroupProps {
   description: string | null;
   defaultCurrency: string;
   status: GroupStatus;
+  calculationProfile: CalculationProfileRef;
   createdBy: UserId;
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +33,7 @@ export class Group {
       id,
       ...data,
       status: 'ACTIVE',
+      calculationProfile: DEFAULT_CALCULATION_PROFILE,
       createdBy,
       createdAt: now,
       updatedAt: now,
@@ -85,6 +91,11 @@ export class Group {
 
   get status(): GroupStatus {
     return this.props.status;
+  }
+
+  /** Perfil activo: los gastos nuevos guardan esta versión. */
+  get calculationProfile(): CalculationProfileRef {
+    return this.props.calculationProfile;
   }
 
   get createdBy(): UserId {

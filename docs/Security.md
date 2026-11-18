@@ -27,6 +27,7 @@ Better Auth dentro del Worker es el proveedor oficial (ADR-016), con Google como
 - **Tokens de Google en reposo:** los `accessToken`, `refreshToken` e `idToken` de Google se cifran en D1 (`account.encryptOAuthTokens`, XChaCha20-Poly1305 con `BETTER_AUTH_SECRET`). La app no los usa después del login.
 - **Renovación de sesión:** cuando Better Auth extiende una sesión durante una solicitud `/api/v1/*`, el Worker reenvía el `Set-Cookie` renovado.
 - **Cierre de sesión:** `POST /api/auth/sign-out` invalida la sesión en D1, no solo en el navegador.
+- **Login de desarrollo (solo local):** `GET /api/auth/dev/entrar[?correo=…]` abre una sesión real sin pasar por Google, para probar la app en local. Solo existe si `DEV_LOGIN_EMAIL` tiene un correo **y** `BETTER_AUTH_URL` es `http://localhost` o `http://127.0.0.1`. Con `https://4adra.edier.me` la ruta no se registra (responde `404`), aunque la variable llegara por error a producción. También respeta la lista de acceso: un correo fuera de `allowed_emails` recibe `403 NOT_INVITED` y no se crea nada. Nunca se define `DEV_LOGIN_EMAIL` en `wrangler.jsonc` ni como secreto de Cloudflare.
 - **Cuentas administrativas:** usar MFA de Google en las cuentas que administren Cloudflare, GitHub y Google Cloud Console.
 
 ## Autorización
@@ -74,6 +75,8 @@ El código de un enlace de invitación es un secreto: en D1 solo se guarda su ha
 Rotar `BETTER_AUTH_SECRET` invalida todas las sesiones. Hacerlo de inmediato ante una sospecha de filtración, y revocar en el acto cualquier token expuesto.
 
 Auditar actor, fecha, operación, entidad, resultado, request ID y cambios relevantes; enmascarar PII. Aplicar rate limiting por usuario, IP y grupo. Alertar ante fallos repetidos de autenticación, escalamiento de privilegios, exportaciones masivas y mutaciones anómalas.
+
+**Dependencias vulnerables:** el CI (`backend.yml` y `web.yml`) falla con cualquier aviso alto o crítico de `npm audit` en dependencias de producción (`.github/scripts/auditDependencies.mjs`). Una excepción solo se admite cuando no hay versión corregida y el código vulnerable no llega al Worker ni a la PWA; va en `.github/audit-exceptions.json` con el aviso exacto, el motivo y una fecha de revisión (`reviewBy`), y al vencer vuelve a fallar. Vigente: `GHSA-fc5q-39xc-vjpf` (`picomatch`, ReDoS, sin versión corregida; llega por `better-auth → vitest` y el Worker no lo importa), a revisar el 2026-12-18.
 
 ## Clientes y despliegue
 
