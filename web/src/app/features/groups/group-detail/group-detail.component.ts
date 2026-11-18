@@ -3,6 +3,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatTabsModule } from '@angular/material/tabs';
+import { ExpenseListComponent } from '../../expenses/expense-list/expense-list.component';
 import { MatDialog } from '@angular/material/dialog';
 import { GroupNotFoundError, GroupsService } from '../../../core/groups/groups.service';
 import { GroupMember, GroupSummary } from '../../../shared/api';
@@ -34,7 +36,14 @@ type DetailState =
  */
 @Component({
   selector: 'app-group-detail',
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatListModule],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatListModule,
+    MatTabsModule,
+    ExpenseListComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (state().status) {
@@ -64,87 +73,93 @@ type DetailState =
               >{{ texts.groups.edit }}</a
             >
           }
-          <h2 class="section-title">{{ texts.groups.membersTitle }}</h2>
-          @if (canInvite(content.group)) {
-            <a
-              mat-stroked-button
-              data-testid="invite-link"
-              [routerLink]="['/grupos', content.group.id, 'invitar']"
-              >{{ texts.groups.invite }}</a
-            >
-            <button
-              mat-stroked-button
-              type="button"
-              data-testid="share-invite-link"
-              (click)="openShareInviteLink(content.group)"
-            >
-              {{ texts.groups.shareInviteLink }}
-            </button>
-          }
-          <mat-list>
-            @for (member of content.members; track member.userId) {
-              <mat-list-item data-testid="member-item">
-                @if (member.photoUrl) {
-                  <img
-                    matListItemAvatar
-                    [src]="member.photoUrl"
-                    alt=""
-                    referrerpolicy="no-referrer"
-                  />
-                } @else {
-                  <mat-icon matListItemIcon>person</mat-icon>
-                }
-                <span matListItemTitle data-testid="member-name">{{ member.displayName }}</span>
-                <span matListItemLine data-testid="member-role">{{
-                  texts.groups.roles[member.role]
-                }}</span>
-                @if (canChangeRoles(content.group)) {
-                  <button
-                    matListItemMeta
-                    mat-button
-                    type="button"
-                    data-testid="change-role"
-                    (click)="openChangeRole(content.group, member)"
-                  >
-                    {{ texts.groups.changeRole }}
-                  </button>
-                }
-                @if (canRemove(content.group, member)) {
-                  <button
-                    matListItemMeta
-                    mat-button
-                    type="button"
-                    data-testid="remove-member"
-                    (click)="openRemoveMember(content.group, member)"
-                  >
-                    {{ texts.groups.removeMember }}
-                  </button>
-                }
-              </mat-list-item>
-            }
-          </mat-list>
-          @if (isActive(content.group)) {
-            <div class="group-actions">
-              <button
-                mat-stroked-button
-                type="button"
-                data-testid="leave-group"
-                (click)="openLeaveGroup(content.group)"
-              >
-                {{ texts.groups.leaveGroup }}
-              </button>
-              @if (canArchive(content.group)) {
+          <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false">
+            <mat-tab [label]="texts.expenses.tabTitle">
+              <app-expense-list [group]="content.group" [members]="content.members" />
+            </mat-tab>
+            <mat-tab [label]="texts.groups.membersTitle">
+              @if (canInvite(content.group)) {
+                <a
+                  mat-stroked-button
+                  data-testid="invite-link"
+                  [routerLink]="['/grupos', content.group.id, 'invitar']"
+                  >{{ texts.groups.invite }}</a
+                >
                 <button
                   mat-stroked-button
                   type="button"
-                  data-testid="archive-group"
-                  (click)="openArchiveGroup(content.group)"
+                  data-testid="share-invite-link"
+                  (click)="openShareInviteLink(content.group)"
                 >
-                  {{ texts.groups.archiveGroup }}
+                  {{ texts.groups.shareInviteLink }}
                 </button>
               }
-            </div>
-          }
+              <mat-list>
+                @for (member of content.members; track member.userId) {
+                  <mat-list-item data-testid="member-item">
+                    @if (member.photoUrl) {
+                      <img
+                        matListItemAvatar
+                        [src]="member.photoUrl"
+                        alt=""
+                        referrerpolicy="no-referrer"
+                      />
+                    } @else {
+                      <mat-icon matListItemIcon>person</mat-icon>
+                    }
+                    <span matListItemTitle data-testid="member-name">{{ member.displayName }}</span>
+                    <span matListItemLine data-testid="member-role">{{
+                      texts.groups.roles[member.role]
+                    }}</span>
+                    @if (canChangeRoles(content.group)) {
+                      <button
+                        matListItemMeta
+                        mat-button
+                        type="button"
+                        data-testid="change-role"
+                        (click)="openChangeRole(content.group, member)"
+                      >
+                        {{ texts.groups.changeRole }}
+                      </button>
+                    }
+                    @if (canRemove(content.group, member)) {
+                      <button
+                        matListItemMeta
+                        mat-button
+                        type="button"
+                        data-testid="remove-member"
+                        (click)="openRemoveMember(content.group, member)"
+                      >
+                        {{ texts.groups.removeMember }}
+                      </button>
+                    }
+                  </mat-list-item>
+                }
+              </mat-list>
+              @if (isActive(content.group)) {
+                <div class="group-actions">
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    data-testid="leave-group"
+                    (click)="openLeaveGroup(content.group)"
+                  >
+                    {{ texts.groups.leaveGroup }}
+                  </button>
+                  @if (canArchive(content.group)) {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      data-testid="archive-group"
+                      (click)="openArchiveGroup(content.group)"
+                    >
+                      {{ texts.groups.archiveGroup }}
+                    </button>
+                  }
+                </div>
+              }
+            </mat-tab>
+          </mat-tab-group>
         }
       }
       @case ('notFound') {

@@ -136,3 +136,35 @@ export interface ApiErrorEnvelope {
   error: { code: string; message: string; details?: ApiErrorDetail[] };
   meta?: { requestId?: string };
 }
+
+/** Un gasto (schema Expense de docs/api/openapi.yaml). Los montos son decimales exactos en texto. */
+export interface Expense {
+  id: string;
+  groupId: string;
+  title: string;
+  description: string | null;
+  paidBy: string;
+  originalAmount: string;
+  currency: string;
+  exchangeRate: string;
+  convertedAmount: string;
+  calculationProfileVersion: number;
+  expenseDate: string;
+  split: { type: 'EQUAL'; participants: { userId: string; amount: string }[] };
+  status: 'ACTIVE' | 'DELETED';
+  resourceVersion: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Cuerpo de POST /api/v1/groups/{groupId}/expenses (por ahora solo reparto EQUAL). */
+export interface NewExpenseRequest {
+  title: string;
+  description: string | null;
+  paidBy: string;
+  amount: string;
+  currency: string;
+  expenseDate: string;
+  split: { type: 'EQUAL'; participants: { userId: string }[] };
+}
