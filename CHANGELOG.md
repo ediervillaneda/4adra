@@ -14,6 +14,9 @@ Ver `docs/Workflows.md`.
 
 ## [Sin publicar]
 
+### Agregado
+- Login de desarrollo sin Google: `GET /api/auth/dev/entrar[?correo=…]`, solo en local (`DEV_LOGIN_EMAIL` en `.dev.vars` con `BETTER_AUTH_URL` en `http://localhost`) y solo para correos de la lista de acceso.
+
 ## [0.4.1] - 2026-11-16
 
 Solo documentación; la app no cambia.

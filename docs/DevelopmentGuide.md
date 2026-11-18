@@ -37,6 +37,8 @@ La lista de acceso de la base local es independiente de la de producción: hay q
 
 Para el login con Google desde `localhost:4200`, `backend/.dev.vars` debe tener `TRUSTED_ORIGINS=http://localhost:4200`, y el cliente OAuth debe autorizar ese origen. Detén `wrangler dev` con Ctrl+C antes de abrir otra instancia: dos instancias en el puerto 8787 hacen que todo deje de responder. Si la app local se queda en "Cargando…", revisa con `netstat -ano | findstr :8787` que haya una sola instancia escuchando.
 
+**Entrar sin Google (solo local):** con `DEV_LOGIN_EMAIL=tu-correo@gmail.com` en `backend/.dev.vars` (el correo debe estar en la lista de acceso local), reinicia `npm run dev` y abre `http://localhost:4200/api/auth/dev/entrar` (o `:8787`). Deja una sesión real y vuelve a la app. Para entrar como otra persona, por ejemplo al probar con dos usuarios, usa `?correo=otra@example.com`; ese correo también debe estar en `allowed_emails`. Solo funciona si `BETTER_AUTH_URL` es `http://localhost` (ver `Security.md`). Vacío, queda apagado.
+
 No copiar secretos de producción a archivos locales. Para login real en local, usar el cliente OAuth de Google con `http://localhost:8787` autorizado (ver `Deployment.md`).
 
 ## Organización y límites de capas
