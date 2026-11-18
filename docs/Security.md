@@ -76,6 +76,8 @@ Rotar `BETTER_AUTH_SECRET` invalida todas las sesiones. Hacerlo de inmediato ant
 
 Auditar actor, fecha, operación, entidad, resultado, request ID y cambios relevantes; enmascarar PII. Aplicar rate limiting por usuario, IP y grupo. Alertar ante fallos repetidos de autenticación, escalamiento de privilegios, exportaciones masivas y mutaciones anómalas.
 
+**Dependencias vulnerables:** el CI (`backend.yml` y `web.yml`) falla con cualquier aviso alto o crítico de `npm audit` en dependencias de producción (`.github/scripts/auditDependencies.mjs`). Una excepción solo se admite cuando no hay versión corregida y el código vulnerable no llega al Worker ni a la PWA; va en `.github/audit-exceptions.json` con el aviso exacto, el motivo y una fecha de revisión (`reviewBy`), y al vencer vuelve a fallar. Vigente: `GHSA-fc5q-39xc-vjpf` (`picomatch`, ReDoS, sin versión corregida; llega por `better-auth → vitest` y el Worker no lo importa), a revisar el 2026-12-18.
+
 ## Clientes y despliegue
 
 - PWA: escape de contenido, CSP, dependencias actualizadas y nada de HTML no confiable. Nunca leer ni guardar tokens (la cookie es `HttpOnly`).
